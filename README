@@ -1,0 +1,148 @@
+                     SOAP::Lite for Perl
+                     ===================
+
+SOAP::Lite for Perl is a collection of Perl modules which provides a simple 
+and lightweight interface to the Simple Object Access Protocol (SOAP) both 
+on client and server side. 
+
+To learn more about SOAP, see
+<URL:http://www.w3.org/TR/SOAP>
+<URL:http://www.perfectxml.com/soap.asp>
+<URL:http://www.w3schools.com/soap/>
+<URL:http://www.xml.com/pub/Guide/SOAP/>
+<URL:http://msdn.microsoft.com/msdnmag/issues/0300/soap/soap.asp>
+<URL:http://xml.apache.org/soap/>
+<URL:http://www.develop.com/soap/>
+<URL:http://www.soap-wrc.com/>
+<URL:http://discuss.develop.com/soap.html>
+<URL:http://soap.weblogs.com/>
+<URL:http://www.oasis-open.org/cover/soap.html>
+<URL:http://www.xmlrpc.com/stories/storyReader$555>
+<URL:http://davenet.userland.com/1998/07/14/xmlRpcForNewbies>
+<URL:http://scriptingnews.userland.com/backissues/2000/06/27#performanceOfSoap>
+
+This version of SOAP::Lite supports a subset of the SOAP 1.1 specification.
+See <URL:http://www.w3.org/TR/SOAP> for details. 
+See LIMITATIONS section for SOAP::Lite major limitations.
+
+FEATURES
+
+- Supports SOAP 1.1 spec.
+- Provides full namespace support for SOAP 1.1.
+- Contains various reusable components (modules) that can be
+  used separately or together, like SOAP::Serializer and SOAP::Deserializer.
+- Provides an object oriented interface for serializing/deserializing and
+  sending/receiving SOAP packets.
+- Supports serialization/deserialization of sophisticated object graphs
+  which may have cycles (a circular queue would serialize just fine,
+  as well as $a=\$a. See test.pl and documentation for more examples).
+- Has more than 20 tests that access public test servers with different 
+  implementations: Apache SOAP, Frontier, Perl, XSLT, COM and VB6.
+- Support for extensibility of the serialization/deserialization
+  architecture has been included; see SOAP::Data for details.
+- Supports blessed object references.
+- Supports arrays (both serialization and deserialization with autotyping).
+- Supports ordered hashes (as working example of user-defined data types).
+- Custom/user-defined types (see SOAP::Data::as_ordered_hash for example).
+- Customizible auto type definitions.
+- Supports Base64 encoding.
+- Supports XML entity encoding.
+- Supports header attributes.
+- Supports out parameters binding.
+- Supports transparent SOAP calls with autodispatch feature.
+- Supports dynamic/static class/method binding.
+- Provides CGI/daemon/mod_perl server implementation
+- Provides shell for interactive SOAP sessions. See SOAPsh.pl.
+- Easy services deployment. Just put module in specified directory and 
+  it'll be accessible.
+
+PREREQUISITES
+
+This library has been tested by the author on Perl version 5.005 
+(it should work with 5.6.0 also). 
+Some modules within this package depend on other packages that are
+distributed separately from Perl. It supposes that you have the
+following distributions installed before you install SOAP::Lite:
+
+  XML::Parser
+
+Following modules will be loaded on demand only:
+
+  XML::Parser::Expat (included with XML::Parser)
+  MIME::Base64                                  
+  URI (for HTTP transport and autodispatch)
+  HTTP::Daemon (for daemon server implementation, included with libwww-perl) 
+  Apache (for mod_perl server implementation, included with mod_perl) 
+
+Following modules will be used for HTTP protocol only:
+
+  LWP::UserAgent (included with libwww-perl) 
+  HTTP::Request (included with libwww-perl) 
+  HTTP::Header (included with libwww-perl) 
+  HTTP::Status (included with libwww-perl) 
+
+These modules should be available on CPAN.
+For details on which versions are recommended, please see MakeFile.PL.
+
+INSTALLATION
+
+You install SOAP::Lite as you would install any perl module library,
+by running these commands:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+During the "make test" phase, there is an optional test that makes a
+live SOAP call over HTTP to an example server running on Internet. 
+If you aren't connected to the Internet, you should skip this test.
+
+DOCUMENTATION
+
+See lib/SOAP/Lite.pm for an overview of the library. Documentation is 
+included in modules and scripts. These are normally converted to manual 
+pages and installed as part of the "make install" process.  You should 
+also be able to use the 'perldoc' utility to extract and read 
+documentation from the module files directly.
+
+LIMITATIONS
+
+Library currenly supports only HTTP protocol with no M-POST requests.
+No support for multidimensional, partially transmitted and sparse arrays 
+(however arrays of arrays are supported, as well as any other data
+structures, and you can add your own implementation with SOAP::Data).
+No support for xsd schemas (or any other kind of schema).
+
+SUPPORT
+
+Questions about how to use this library should be directed to the SOAP 
+mailing list. Bug reports and suggestions for improvements can also be 
+sent there. This mailing list is also the place for general discussions 
+and development of the SOAP protocol itself. 
+Feel free to send mail directly to author with your comments, suggestions, 
+bug reports and complains. 
+
+AVAILABILITY
+
+You can download the latest version SOAP::Lite for Unix or SOAP::Lite for 
+Win32 from http://www.geocities.com/paulclinger/soap.html. 
+SOAP::Lite should be available also from CPAN. 
+
+SEE ALSO
+
+You can get SOAP/Perl library from Keith Brown (http://develop.com/soap) 
+or directly from CPAN. I tried to introduce no interactions between these 
+two libraries and hopefully you'll be able to use both simultaneously. 
+Let me know if I did something wrong and you cannot use both at the same time. 
+
+COPYRIGHT
+
+(C) 2000 Paul Kulchenko. All rights reserved.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+AUTHOR
+
+Paul Kulchenko (paulclinger@yahoo.com)

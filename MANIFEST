@@ -1,0 +1,18 @@
+Changes
+MANIFEST
+Makefile.PL
+README
+test.pl
+lib/SOAP/Lite.pm              Main SOAP::Lite module
+lib/SOAP/Transport/HTTP.pm    Module for HTTP transport, client and server
+examples/SOAPsh.pl            SOAP shell
+examples/soap.cgi             SOAP server, CGI implementation
+examples/soap.daemon          SOAP server, daemon implementation
+examples/pingpong.pl          Example for local/remote access to the same object
+examples/autoeliza.pl         Script for Chatbot::Eliza with autodispatching
+examples/autoexamples.pl      Script for My::Examples with autodispatching
+examples/Apache.pm            Module for SOAP server, mod_perl implementation
+examples/My/Examples.pm       Module for server with Examples backend
+examples/My/PingPong.pm       Module for server with PingPong backend
+examples/My/Parameters.pm     Module for server with Paramaters backend
+examples/Chatbot/Eliza.pm     Fixed version of Chatbot::Eliza

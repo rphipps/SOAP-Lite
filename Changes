@@ -1,0 +1,63 @@
+Revision history for Perl extension SOAP::Lite.
+
+0.1  Mon Aug 11 23:12:02 2000
+	- first version; serialization part only
+
+0.2  Mon Aug 24 19:34:24 2000
+	- next stable version; works with public test servers
+
+0.3  Mon Sep  4 00:59:04 2000
+	- first public beta version
+	+ added live SOAP calls
+	+ added test suite (25 tests)
+	+ added documentation
+	+ added interactive shell (SOAPsh.pl)
+
+0.31 Wed Sep  6 00:36:15 2000
+        + added expressions to SOAP::SOM->match method
+        + added deserialization of circular references
+        + added tests for deserialization
+        + added documentation
+
+0.32 Sun Sep 10 23:27:10 2000
+        ! fixed warnings with -w
+        ! fixed blessed reference serialization. Assigned type has top priority
+        + added working with current node in SOAP::SOM
+        + SOAP::SOM::valueof returns nodeset 
+        + SOAP::SOM::match returns boolean in boolean context
+        + added raw xml accepting and output
+        + added UserAgent parameters to SOAP::Transport (understands timeout)
+        + added better diagnostic on transport errors in test.pl
+        + added 'method', 'fault', 'freeform' types of Envelope
+        + added server implementation
+        + added CGI interface to server implementation
+        + added My::Examples.pm as example of loaded class for SOAP server 
+        + added more tests (47 for now)
+
+0.35 Sun Sep 17 23:57:10 2000
+        + fixed minors (Response instead of Respond, server will map client's uri)
+        + cleaned HTTP::Server internals (will go to SOAP::Server in future)
+        + test.pl won't abort on transport errors. Failed test will be skipped
+        + added daemon server implementation
+        + added cgi/daemon server implementation examples
+        + added deserialization into blessed reference
+        + added dynamic/static class/method binding
+        + added output parameters matching based on signature (name/type)
+        + added real object transferring back and forth (see example of Chatbot::Eliza, fixed for CODE references)
+        + added more interoperability with on_action on client and server side
+        + added new events (on_action, on_fault, on_nonserialized)
+        + added global class settings with 'use SOAP::Lite ...'
+        + added code for returning application errors on server
+        + added autodispatch
+        + added SOAP prefix to method calls 
+        + added more documentation
+        + added more tests (54 for now)
+        + added examples (Chatbot::Eliza, My::PingPong, My::Calculator)
+
+0.36 Sun Sep 24 20:12:10 2000
+        + fixed output parameters autobinding
+        + added mod_perl server implementation
+        + added recognizing all simple types mentioned in specification
+        + added support for 'hex' type
+        + added more documentation (twice as much as before)
+        + added more tests (75 for now)
