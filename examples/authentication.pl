@@ -2,19 +2,16 @@
 #!d:\perl\bin\perl.exe 
 
 # you can do this
-use SOAP::Lite +autodispatch 
-  => (uri => 'urn:/My/Examples', 
-      proxy => 'http://localhost/', 
-      # proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
-      # proxy => 'http://localhost/',                 # local daemon server
-      # proxy => 'http://localhost/soap',             # local mod_perl server
-      # proxy => 'https://localhost/soap',            # local mod_perl SECURE server
-      on_fault => sub {
-        my($soap, $res) = @_;
-        ref $res ? die(join "\n", "--- SOAP FAULT ---", $res->faultcode, $res->faultstring, $res->faultdetail, '') 
-                 : die(join "\n", "--- TRANSPORT ERROR ---", $soap->transport->status, '');
-      }
-     )
+use SOAP::Lite +autodispatch => 
+  uri => 'urn:/My/Examples', 
+  proxy => 'http://localhost/', 
+# proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
+# proxy => 'http://localhost/',                 # local daemon server
+# proxy => 'http://localhost/soap',             # local mod_perl server
+# proxy => 'https://localhost/soap',            # local mod_perl SECURE server
+  on_fault => sub { my($soap, $res) = @_; 
+    die ref $res ? $res->faultdetail : $soap->transport->status, "\n";
+  }
 ;
 sub SOAP::Transport::HTTP::Client::get_basic_credentials { return ('user' => 'password') };
 

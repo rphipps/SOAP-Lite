@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.39 2000/10/08 22:55:20 $
+# $Id: SOAP::Transport::HTTP.pm,v 0.40 2000/10/15 18:20:55 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.39';
+$VERSION = '0.40';
 
 # ======================================================================
 
@@ -190,8 +190,8 @@ sub handle {
   my $code = $self->response->code;
   binmode(STDOUT); print STDOUT 
     "Status: $code ", HTTP::Status::status_message($code), 
-    "\n", $self->response->headers_as_string, 
-    "\n", $self->response->content;
+    "\015\012", $self->response->headers_as_string, 
+    "\015\012", $self->response->content;
 }
 
 # ======================================================================

@@ -2,9 +2,8 @@
 #!d:\perl\bin\perl.exe 
 
 use SOAP::Lite +autodispatch => 
-  uri => 'urn:/My/Examples', 
-  proxy => 'http://localhost/', 
-# proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
+  uri => 'http://my.own.site.com/My/Parameters',
+  proxy => 'http://localhost/soap',
 # proxy => 'http://localhost/',                 # local daemon server
 # proxy => 'http://localhost/soap',             # local mod_perl server
 # proxy => 'https://localhost/soap',            # local mod_perl SECURE server
@@ -13,7 +12,12 @@ use SOAP::Lite +autodispatch =>
   }
 ;
 
-print getStateName(1), "\n\n";
-print getStateNames(12,24,26,13), "\n\n";
-print getStateList([11,12,13,42])->[0], "\n\n";
-print getStateStruct({item1 => 10, item2 => 4})->{item2}, "\n\n";
+print "Session iterator\n";
+my $p = My::SessionIterator->new(10);     
+print $p->next, "\n";  
+print $p->next, "\n";   
+
+print "Persistent iterator\n";
+$p = My::PersistentIterator->new(10);     
+print $p->next, "\n";  
+print $p->next, "\n";   

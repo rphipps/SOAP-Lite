@@ -4,11 +4,11 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::MAILTO.pm,v 0.40 2000/10/15 18:20:55 $
+# $Id: SOAP::Transport::LOCAL.pm,v 0.40 2000/10/15 18:20:55 $
 #
 # ======================================================================
 
-package SOAP::Transport::MAILTO;
+package SOAP::Transport::LOCAL;
 
 use strict;
 use vars qw($VERSION);
@@ -16,14 +16,21 @@ $VERSION = '0.40';
 
 # ======================================================================
 
-package SOAP::Transport::MAILTO::Client;
+package SOAP::Transport::LOCAL::Client;
 
-sub new { eval "use MIME::Lite; use URI"; die if $@;
+use vars qw(@ISA);
+@ISA = qw(SOAP::Server);
+
+use SOAP::Lite;
+
+sub new { 
   my $self = shift;
   my $class = ref($self) || $self;
 
   unless (ref $self) {
-    $self = bless {} => $class;
+    $self = bless SOAP::Server->new => $class;
+    $self->is_success(1);     # it's difficult to fail in this module
+    $self->dispatch_to(@INC);
     $self->on_debug(sub {});
   }
 
@@ -52,34 +59,11 @@ sub send_receive {
   my($envelope, $endpoint, $action) = 
     @parameters{qw(envelope endpoint action)};
 
-  $endpoint ||= $self->endpoint;
-  my $uri = URI->new($endpoint);
-  %parameters = ((map {URI::Escape::uri_unescape($_)} map {split/=/,$_,2} split /[&;]/, $uri->query), 
-                 %{$self->parameters});
+  $self->on_debug->($envelope);
+  my $respond = $self->SUPER::handle($envelope);
+  $self->on_debug->($respond);
 
-  my $msg = MIME::Lite->new(
-    From       => $parameters{From},
-    To         => $uri->to,
-    'Reply-To' => $parameters{'Reply-To'} || $parameters{From},
-    Subject    => $parameters{Subject},
-    Type       => 'text/xml',
-    Encoding   => 'base64',
-    Data       => $envelope,
-  );
-  $msg->add(SOAPAction => $action);
-
-  $self->on_debug->($msg->as_string);
-    
-  MIME::Lite->send(map {exists $parameters{$_} ? ($_ => $parameters{$_}) : ()} 'smtp', 'sendmail');
-  eval { local $SIG{__DIE__}; $msg->send };
-  (my $code = $@) =~ s/ at .*\n//;
-
-  $self->code($code);
-  $self->message($code);
-  $self->is_success(!defined $code || $code eq '');
-  $self->status($code);
-
-  return;
+  $respond;
 }
 
 # ======================================================================

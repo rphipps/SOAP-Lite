@@ -78,3 +78,15 @@ Revision history for Perl extension SOAP::Lite.
 0.39 Sun Oct  8 22:55:20 2000
         ! fixed incompatibility with Perl 5.005
         + added interactive Makefile.PL for CPAN installation
+
+0.40 Sun Oct 15 18:20:55 2000
+        ! fixed die in mailto: protocol if you don't have URI::URL installed
+        ! fixed misbehavior on Mac platform (thanks to Carl K. Cunningham)
+        + added default namespace processing [xmlns] (thanks to Petr Janata)
+        + added objects-by-reference, simple garbage collection and activation
+        + added full access to envelope on server side (see examples in 
+          My::ParametersByName.pm and parametersbyname.pl)
+        + added versionMismatch reaction
+        + added local: protocol for local binding without any transport
+        + added examples for objects-by-reference: persistent/session
+          iterators and chat (40 lines on server and 25 lines on client side)

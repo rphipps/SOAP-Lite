@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Lite.pm,v 0.39 2000/10/08 22:55:20 $
+# $Id: SOAP::Lite.pm,v 0.40 2000/10/15 18:20:55 $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package SOAP::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.39';
+$VERSION = '0.40';
 
 # ======================================================================
 
@@ -24,10 +24,12 @@ use vars qw($NSMASK);
 $NSMASK = '[a-zA-Z_:][\w.\-:]*'; 
 
 use vars qw($NEXT_ACTOR $NS_XSD $NS_XSI $NS_ENV $NS_ENC 
-            $FAULT_CLIENT $FAULT_SERVER $HTTP_ON_FAULT_CODE $HTTP_ON_SUCCESS_CODE);
+            $FAULT_CLIENT $FAULT_SERVER $FAULT_VERSION_MISMATCH
+            $HTTP_ON_FAULT_CODE $HTTP_ON_SUCCESS_CODE);
 
 $FAULT_CLIENT = 'Client';
 $FAULT_SERVER = 'Server';
+$FAULT_VERSION_MISMATCH = 'VersionMismatch';
 
 $HTTP_ON_SUCCESS_CODE = 200; # OK
 $HTTP_ON_FAULT_CODE   = 500; # INTERNAL_SERVER_ERROR
@@ -222,7 +224,7 @@ sub new {
       _encoding => 'ISO-8859-1',
       _objectstack => {},
       _signature => [],
-      _on_nonserialized => sub {carp "Cannot marshall @{[ref shift]} reference\n" if $^W; return},
+      _on_nonserialized => sub {carp "Cannot marshall @{[ref shift]} reference" if $^W; return},
     } => $class;
   }
 
@@ -632,7 +634,7 @@ sub BEGIN {
     fault       => '/Envelope/Body/Fault',
     faultcode   => '/Envelope/Body/Fault/faultcode',
     faultstring => '/Envelope/Body/Fault/faultstring',
-    faultaction => '/Envelope/Body/Fault/faultaction',
+    faultactor  => '/Envelope/Body/Fault/faultactor',
     faultdetail => '/Envelope/Body/Fault/detail',
   );
   for my $method (keys %path) {
@@ -784,7 +786,8 @@ sub deserialize {
 sub traverse_ids {
   my $self = shift;
   my $ref = shift;
-  my(undef, $attrs, $childs) = @$ref;
+  my($undef, $attrs, $childs) = @$ref;
+  #  ^^^^^^ to fix nasty error on Mac platform (Carl K. Cunningham)
 
   $self->ids->{$attrs->{id}} = $ref if exists $attrs->{id};
   map {$self->traverse_ids($_)} @$childs if ref $childs;
@@ -793,18 +796,18 @@ sub traverse_ids {
 sub decode_object {
   my $self = shift;              
   my $ref = shift;
-  # decode element if special attribute is present
+
+  # decode element name if special attribute is present
   if (exists $ref->[1]->{__} && delete $ref->[1]->{__} eq 'encoded') {
     $ref->[0] =~ s/(-+)$/'=' x length($1)/e;
     require MIME::Base64; $ref->[0] = MIME::Base64::decode_base64($ref->[0]); 
   }
   my($name, $attrs, $childs, $value) = @$ref;
-  $name =~ s/^($SOAP::Constants::NSMASK)://; # drop namespace from name
 
-  use vars qw($ns %uris);
-  local $ns = $1 || $ns || '';
-  local %uris = (%uris, map {$_ => $attrs->{$_}} grep {/^xmlns:/} keys %$attrs);
-  $ref->[1]->{"xmlns:~"} = $uris{"xmlns:$ns"} || '';
+  use vars qw($ns %uris); # drop namespace from name
+  local $ns = ($name =~ s/^($SOAP::Constants::NSMASK):// ? $1 : '');
+  local %uris = (%uris, map {$_ => $attrs->{$_}} grep {/^xmlns(:|$)/} keys %$attrs);
+  $ref->[1]->{"xmlns:~"} = ($ns ? $uris{"xmlns:$ns"} : $uris{"xmlns"}) || '';
 
   return $name => undef if grep {/^xsi:null$/ && $attrs->{$_} == 1} keys %$attrs;
 
@@ -877,6 +880,55 @@ positiveInteger date time
 
 # ======================================================================
 
+package SOAP::Server::Object;
+
+my %alive;
+my %objects;
+
+sub gen_id { shift =~ /\((0x\w+)\)/; $1 }
+
+sub reference {
+  my $self = shift;
+  my $stamp = time;
+  my $object = shift; 
+  my $id = $stamp . gen_id($object);
+
+  # this is code for garbage collection
+  my $time = time;
+  my $type = ref $object;
+  my @objects = grep { $objects{$_}->[1] eq $type } keys %objects;
+  for (grep { $alive{$type}->(scalar @objects, $time, @{$objects{$_}}) } @objects) { 
+    delete $objects{$_}; 
+  } 
+
+  $objects{$id} = [$object, $type, $stamp];
+  bless { id => $id } => ref $object;
+}
+
+sub objects_by_reference { 
+  shift; 
+  while (@_) { @alive{shift()} = ref $_[0] ? shift : sub { $_[1]-$_[$_[5] ? 5 : 4] > 600 } } 
+  keys %alive;
+}
+
+sub object {
+  my $self = shift;
+  my $class = ref($self) || $self;
+  my $object = shift;
+  return $object unless ref($object) && $alive{ref $object} && exists $object->{id};
+  my $reference = $objects{$object->{id}};
+  die "Object with specified id couldn't be found\n" unless ref $reference->[0];
+  $reference->[3] = time; # last access time
+  return $reference->[0]; # reference to actual object
+}
+
+sub references {
+  my $self = shift;
+  map { CORE::ref && exists $alive{ref $_} ? $self->reference($_) : $_ } @_;
+}
+
+# ======================================================================
+
 package SOAP::Server;
 
 sub new { 
@@ -920,6 +972,11 @@ sub BEGIN {
   }
 }
 
+sub objects_by_reference { 
+  my $self = shift->new;
+  @_ ? (SOAP::Server::Object->objects_by_reference(@_), return $self) : SOAP::Server::Object->objects_by_reference; 
+}
+
 sub dispatched {
   my $self = shift->new;
   @_ ? (push(@{$self->{_dispatched}}, @_), return $self) : return @{$self->{_dispatched}};
@@ -931,6 +988,9 @@ sub handle {
   my $request = eval { local $SIG{'__DIE__'}; SOAP::Deserializer->deserialize(shift) };
   return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Data' => "Application failed during request deserialization")
     if $@;
+
+  return $self->make_fault($SOAP::Constants::FAULT_VERSION_MISMATCH, 'Bad version' => "Expected $SOAP::Constants::NS_ENV")
+    if $request->namespaceuriof(SOAP::SOM::envelope) ne $SOAP::Constants::NS_ENV;
 
   my($method_uri, $method_name) = ($request->namespaceuriof(SOAP::SOM::method), $request->dataof(SOAP::SOM::method)->name);
   $method_name =~ s/^$SOAP::Constants::NSMASK://; # ignore namespace
@@ -946,15 +1006,16 @@ sub handle {
   return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Class Name' => "Failed to access class ($class)")
     unless $class =~ /^([\w:]+)$/;
 
+  my $fullname = "$class\::$method_name";
   my $static = grep { 
-    /^$class$/ ||                          # MODULE
-    /^${class}::$method_name$/ ||          # MODULE::method
-    /^$method_name$/ && ($class eq 'main') # method (main assumed)
-  } grep {!m![/\\]!} $self->dispatch_to;   # filter PATH
+    $class =~ /^$_$/ ||                          # MODULE
+    $fullname =~ /^$_$/ ||                       # MODULE::method
+    $method_name =~ /^$_$/ && ($class eq 'main') # method (main assumed)
+  } grep {!m![/\\.]!} $self->dispatch_to;        # filter PATH
 
   no strict 'refs';
   unless (defined %{"${class}::"} && UNIVERSAL::can($class => $method_name)) {   
-    local @INC = grep {m![/\\]!} $self->dispatch_to # '\' to keep windows guys happy
+    local @INC = grep {m![/\\.]!} $self->dispatch_to # '\' to keep windows guys happy
       unless $static;
     eval 'local $SIG{"__DIE__"}; local $^W; ' . "require $class";
     return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Class Name' => "Failed to access class ($class)")
@@ -968,11 +1029,11 @@ sub handle {
   my @results = eval { local $SIG{'__DIE__'}; 
     my($object, @parameters) = $request->paramsin;
     local $^W;
-    my @header = $request->headerof(SOAP::SOM::headers);
+    my @headers = $request->headerof(SOAP::SOM::headers);
     defined $object && ref $object && UNIVERSAL::isa($object => $class) 
-      ? ($object->$method_name(@parameters, @header), 
-         $request->dataof(SOAP::SOM::method.'/[1]')->value($object))
-      : $class->$method_name($object, @parameters, @header) 
+      ? (SOAP::Server::Object->object($object)->$method_name(@parameters, @headers, $request), 
+         $request->headerof(SOAP::SOM::method.'/[1]')->value($object))
+      : SOAP::Server::Object->references($class->$method_name($object, @parameters, @headers, $request));
   };
 
   return unless defined wantarray; # nothing to do in void context
@@ -980,7 +1041,7 @@ sub handle {
   # let application errors pass through with 'Server' code
   return ($@ =~ s/ at .*\n//, $@ =~ /^Can't locate object method/) 
     ? $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Method Call' => "Failed to locate method ($method_name) in class ($class)")
-    : $self->make_fault($SOAP::Constants::FAULT_SERVER, 'Application error' => "Application failed during method execution: $@")
+    : $self->make_fault($SOAP::Constants::FAULT_SERVER, 'Application error' => "Application failed: $@")
     if $@;
 
   return SOAP::Serializer
@@ -1014,18 +1075,19 @@ sub import {
 
       my $uri = URI->new($soap->uri);
       my $currenturi = $uri->path;
-      my $askeduri = $package;
-      if ($package eq 'SOAP') {
-        carp "Uri for SOAP call is unspecified. Trying to guess it..." if $^W && !$currenturi;
-        $askeduri = $currenturi || ref $_[0] || $_[0];
-        ($package) = map { s!^/!!; s!/!::!g; $_ } $askeduri;
-      }
-      $uri->path(map { s!::!/!g; s!^/?!/!; $_ } $askeduri);
-      $soap->uri($uri->as_string) 
-        if !$currenturi || $askeduri ne $currenturi && $askeduri ne '/main';
-
+      for ($currenturi) { s!^/!!; s!/!::!g }
+      $package = 
+        $package eq 'SOAP' ? ref $_[0] || ($_[0] eq 'SOAP' 
+          ? $currenturi || croak "URI is not specified for SOAP call" : $_[0]) :
+        $package eq 'main' ? $currenturi || $package  
+                           : $package;
       # drop first parameter if it's a class name
-      shift @_ if !ref $_[0] && $_[0] eq $package;
+      # this function should be called as method ONLY
+      shift @_ if !ref $_[0];
+
+      $uri->path(map { s!::!/!g; s!^/?!/!; $_ } $package);
+
+      $soap->uri($uri->as_string);
       $soap->call($method => @_)->result;
     };
   }
@@ -1119,17 +1181,17 @@ sub call {
 
   unless ($self->transport->is_success) {
     my $result = eval { SOAP::Deserializer->deserialize($respond) } if $respond;
-    return $self->on_fault->($self, $@ ? $respond : $result);
+    return $self->on_fault->($self, $@ ? $respond : $result) || $result;
   }
 
   return unless $respond; # nothing to do for one-ways
   my $result = SOAP::Deserializer->deserialize($respond);
 
   # little bit tricky part that binds in/out parameters
-  if ($result->paramsout && $self->serializer->signature) {
+  if (($result->paramsout || $result->headers) && $self->serializer->signature) {
     my $num = 0;
     my %signatures = map {s/(^|$;)$SOAP::Constants::NSMASK:/$1/; $_ => $num++} @{$self->serializer->signature};
-    for ($result->match(SOAP::SOM::paramsout)->dataof) {
+    for ($result->match(SOAP::SOM::paramsout)->dataof, $result->match(SOAP::SOM::headers)->dataof) {
       my $signature = join $;, map {s/^$SOAP::Constants::NSMASK://; $_} $_->name, $_->type;
       if (exists $signatures{$signature}) {
         my $param = $signatures{$signature};
@@ -1144,6 +1206,8 @@ sub call {
   }
   return $result;
 }
+
+# ======================================================================
 
 1;
 
@@ -1221,7 +1285,7 @@ as well as $a=\$a. See test.pl and documentation for more examples).
 
 =item *
 
-Has more than 20 tests that access public test servers with different 
+Has more than 40 tests that access public test servers with different 
 implementations: Apache SOAP, Frontier, Perl, XSLT, COM and VB6.
 
 =item *
@@ -1327,6 +1391,7 @@ library.
  -- SOAP::Deserializer -- Deserializes result of SOAP::Parser into objects
  -- SOAP::SOM          -- Provides access to deserialized object tree
  -- SOAP::Constants    -- Provides access to common constants
+ -- SOAP::Server::Object -- Provides access to objects-by-reference on server
 
  SOAP::Transport::HTTP.pm
  -- SOAP::Transport::HTTP::Client  -- Client interface to HTTP transport
@@ -1340,6 +1405,9 @@ library.
 
  SOAP::Transport::MAILTO.pm
  -- SOAP::Transport::MAILTO::Client -- Client interface to SMTP/sendmail
+
+ SOAP::Transport::LOCAL.pm
+ -- SOAP::Transport::LOCAL::Client -- Client interface to local transport
 
 =head2 SOAP::Lite
 
@@ -1873,16 +1941,16 @@ For example:
 tells autodispatch all calls to 'http://localhost/' endpoint with
 'urn:/My/Examples' uri. All consequent call can look like:
 
-  print getStateName(1), "\n\n";
-  print getStateNames(12,24,26,13), "\n\n";
-  print getStateList([11,12,13,42])->[0], "\n\n";
-  print getStateStruct({item1 => 10, item2 => 4})->{item2}, "\n\n";
+  print getStateName(1), "\n";
+  print getStateNames(12,24,26,13), "\n";
+  print getStateList([11,12,13,42])->[0], "\n";
+  print getStateStruct({item1 => 10, item2 => 4})->{item2}, "\n";
 
 As you can see, there is no SOAP specific coding at all.
 
 The same logic will work for objects also:
 
-  my $e = new Chatbot::Eliza 'Your name';
+  my $e = new My::Chatbot::Eliza 'Your name';
   print "Talk, please\n> ";
   while (<>) {
     print $e->transform;
@@ -1890,12 +1958,12 @@ The same logic will work for objects also:
     print "\n> ";
   }
 
-will access remote Chatbot::Eliza module, get object, and then call
+will access remote My::Chatbot::Eliza module, get object, and then call
 remote method again. Object will be transferred there, method executed
 and result (and modified object!) will be transferred back.
 
 Autodispatch will work B<only> if you don't have the same method in your
-code. For example, if you have C<use Chatbot::Eliza> somewhere in your
+code. For example, if you have C<use My::Chatbot::Eliza> somewhere in your
 code for previous example all methods will be resolved locally with no
 SOAP calls. If you want to get access to remote objects/methods even
 in that case, use C<SOAP::> prefix to your methods, like:
@@ -1906,7 +1974,64 @@ See pingpong.pl for example of script, that work with the same object
 locally and remotely.
 
 You can mix autodispatch and usual SOAP calls in the same code if
-you need it. 
+you need it. Keep in mind, call with SOAP:: prefix should always be a
+method call, so if you want to call function, use C<SOAP->myfunction()>
+instead of C<SOAP::myfunction()>.
+
+=head2 ACCESSING HEADERS AND ENVELOPE ON SERVER SIDE
+
+SOAP::Lite gives you easy access to all headers and whole envelope on 
+server side. Consider following code from My::ParametersByName.pm:
+
+  sub byname { 
+    my($a, $b, $c) = @{pop->method}{qw(a b c)};
+    return "a=$a, b=$b, c=$c";
+  }
+
+Every method on server side will be called as class/object method, so it'll
+get B<object reference> or B<class name> as the first parameter, then method
+parameters, then optional headers (SOAP::Header objects if any) and then
+envelope as SOAP::SOM object. Shortly:
+
+  $self [, @parameters] [, @headers] , $envelope
+
+If you have fixed number of parameters, you can simple do:
+
+  my $self = shift;
+  my($param1, $param2) = @_;
+
+and ignore headers and envelope. If you need access to envelope you can do:
+
+  my $envelope = pop; 
+
+since envelope is always last element in parameters list.
+In mentioned byname() method C<pop-E<gt>method> will return hash with
+parameter names as keys and values as values. So:
+
+  my($a, $b, $c) = @{pop->method}{qw(a b c)};
+
+gives you by-name access to your parameters.
+
+If you have variable number of parameters and simply want to filter
+all specific parameters you can do:
+
+  my($self, @parameters) = grep {ref !~ /^SOAP::/} @_;
+
+=head2 OBJECTS-BY-REFERENCE
+
+SOAP::Lite implements experimental (yet fully functional) support for
+objects-by-reference. You shouldn't see any differences on client side.
+On server side you should specify name of the class you want to return
+by reference (instead of by value) in C<objects_by_reference()> method for
+your server implementation (see soap.pop3, soap.daemon and Apache.pm).
+Garbage collection is done on server side (no early than after 600 
+seconds of inactivity time), and you can overload default behavior with 
+specific function for any particular class. Binding doesn't have any 
+special syntax and implemented on server side (see difference between 
+My::SessionIterator and My::PersistentIterator). On client side object 
+will have same type as before (C<My::SessionIterator-E<gt>new()> will return 
+object of My::SessionIterator type), however this object is just a stub 
+with object ID inside.
 
 =head2 DEFAULT HANDLERS
 
@@ -1949,10 +2074,10 @@ No support for xsd schemas.
 
 =item MacOS
 
-Information about XML::Parser for MacPerl is here:
+Information about XML::Parser for MacPerl could be found here:
 http://bumppo.net/lists/macperl-modules/1999/07/msg00047.html
 
-Compiled XML::Parser for MacOS is here:
+Compiled XML::Parser for MacOS could be found here:
 http://www.perl.com/CPAN-local/authors/id/A/AS/ASANDSTRM/XML-Parser-2.27-bin-1-MacOS.tgz
 
 =back

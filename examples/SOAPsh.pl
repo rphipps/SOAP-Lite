@@ -72,7 +72,7 @@ headers sent and recieved.
 
 =head1 COPYRIGHT
 
-(C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000 Paul Kulchenko. All rights reserved.
 
 =head1 AUTHOR
 

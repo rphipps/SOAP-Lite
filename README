@@ -56,6 +56,7 @@ FEATURES
 - Supports SMTP protocol
 - Provides POP3 server implementation
 - Supports Basic/Digest server authentication
+- Supports objects-by-reference with simple garbage collection and activation.
 - Provides shell for interactive SOAP sessions. See SOAPsh.pl.
 - Easy services deployment. Just put module in specified directory and 
   it'll be accessible.
@@ -95,6 +96,17 @@ INSTALLATION
 You install SOAP::Lite as you would install any perl module library,
 by running these commands:
 
+if you have CPAN.pm installed and are connected to the Internet
+
+   perl -MCPAN -e shell
+   > install SOAP::Lite
+
+or even 
+
+   perl -MCPAN -e 'install SOAP::Lite'
+
+otherwise
+
    perl Makefile.PL
    make
    make test
@@ -123,11 +135,12 @@ No support for xsd schemas (or any other kind of schema).
 SUPPORT
 
 Questions about how to use this library should be directed to the SOAP 
-mailing list. Bug reports and suggestions for improvements can also be 
-sent there. This mailing list is also the place for general discussions 
-and development of the SOAP protocol itself. 
+mailing list (http://discuss.develop.com/soap.html). Bug reports and 
+suggestions for improvements can also be sent there. This mailing list is 
+also the place for general discussions and development of the SOAP protocol 
+itself. 
 Feel free to send mail directly to author with your comments, suggestions, 
-bug reports and complains. 
+bug reports and complaints. 
 
 AVAILABILITY
 

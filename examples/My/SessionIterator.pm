@@ -1,4 +1,4 @@
-package My::PingPong;
+package My::SessionIterator;
 
 sub new { 
   my $self = shift;
@@ -9,11 +9,6 @@ sub new {
 sub next {
   my $self = shift;
   $self->{_num}++;
-}
-
-sub value {
-  my $self = shift;
-  $self->{_num};
 }
 
 1;

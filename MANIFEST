@@ -7,6 +7,7 @@ lib/SOAP/Lite.pm              Main SOAP::Lite module
 lib/SOAP/Transport/HTTP.pm    Module for HTTP transport, client and server
 lib/SOAP/Transport/MAILTO.pm  Module for SMTP/sendmail transport, client
 lib/SOAP/Transport/POP3.pm    Module for POP3 transport, server
+lib/SOAP/Transport/LOCAL.pm   Module for LOCAL transport, server
 examples/SOAPsh.pl            SOAP shell
 examples/soap.cgi             SOAP server, CGI implementation
 examples/soap.daemon          SOAP server, daemon implementation
@@ -16,8 +17,15 @@ examples/autoeliza.pl         Script for Chatbot::Eliza with autodispatching
 examples/autoexamples.pl      Script for My::Examples with autodispatching
 examples/authentication.pl    Example for Basic/Digest server authentication
 examples/soapsmtp.pl          Example for SMTP/sendmail message sending
-examples/Apache.pm            Module for SOAP server, mod_perl implementation
-examples/My/Examples.pm       Module for server with Examples backend
-examples/My/PingPong.pm       Module for server with PingPong backend
-examples/My/Parameters.pm     Module for server with Paramaters backend
+examples/parametersbyname.pl  Example for passing parameters-by-name 
+examples/chat.pl              Client side for Chat implementation 
+examples/iterator.pl          Example for Session/Persistent iterators
+examples/Apache.pm                 Module for SOAP server, mod_perl implementation
+examples/My/Chat.pm                Module with Chat server implementation 
+examples/My/Examples.pm            Module with Examples backend
+examples/My/PingPong.pm            Module with PingPong backend
+examples/My/Parameters.pm          Module with Paramaters backend
+examples/My/ParametersByName.pm    Module with ParametersByName backend
+examples/My/SessionIterator.pm     Module with Iterator backend
+examples/My/PersistentIterator.pm  Module with Iterator backend
 examples/My/Chatbot/Eliza.pm  Chatbot::Eliza, fixed for serialization

@@ -2,7 +2,7 @@
 #!d:\perl\bin\perl.exe 
 
 use SOAP::Lite +autodispatch => 
-  uri => 'urn:', 
+  uri => 'http://my.own.site.com/My/ParametersByName',
   proxy => 'http://localhost/', 
 # proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
 # proxy => 'http://localhost/',                 # local daemon server
@@ -13,12 +13,12 @@ use SOAP::Lite +autodispatch =>
   }
 ;
 
-use My::PingPong;
-# you can manipulate same object on remote and local machine
-my $p = My::PingPong->new(10);           # local
-# my $p = My::PingPong->SOAP::new(10);   # same thing remotely
-print 'remote: ', $p->SOAP::next, "\n";  # remote
-print 'local: ', $p->next, "\n";         # local
-print 'remote: ', $p->SOAP::value, "\n"; # remote
+my @parameters = (
+  SOAP::Data->name(b => 222), 
+  SOAP::Data->name(c => 333), 
+  SOAP::Data->name(a => 111)
+);
 
-
+print "Parameters: ", join(' ', map {$_->value} @parameters), "\n";
+print "By order: ", byorder(@parameters), "\n";
+print "By name: ", byname(@parameters), "\n";
