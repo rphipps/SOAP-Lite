@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: UDDI::Lite.pm,v 0.46 2001/01/31 16:30:24 $
+# $Id: UDDI::Lite.pm,v 0.50 2001/04/18 11:45:14 $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package UDDI::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.46';
+$VERSION = '0.50';
 
 use SOAP::Lite;
 
@@ -143,9 +143,11 @@ sub new {
 
   unless (ref $self) {
     $self = $class->SUPER::new(
-      @_,
-      attr => {'xmlns:~V' => $SOAP::Constants::NS_ENV},
+      attr => {
+        $SOAP::Constants::PREFIX_ENV ? (SOAP::Utils::qualify(xmlns => $SOAP::Constants::PREFIX_ENV) => $SOAP::Constants::NS_ENV) : (),
+      },
       autotype => 0,
+      @_,
     );
   }
   return $self;
@@ -163,8 +165,9 @@ sub as_uddi {
 }                                                                                          
 
 sub encode_array {
-  my $encoded = shift->SUPER::encode_array(@_);
-  delete $encoded->[1]->{'~C:arrayType'};
+  my $self = shift;
+  my $encoded = $self->SUPER::encode_array(@_);
+  delete $encoded->[1]->{SOAP::Utils::qualify($self->encodingspace => 'arrayType')};
   return $encoded;
 }
 
@@ -241,7 +244,7 @@ sub AUTOLOAD {
   no strict 'refs';
   *$AUTOLOAD = sub { 
     return shift->call($method => @_) if UNIVERSAL::isa($_[0] => __PACKAGE__);
-    my $som = (__PACKAGE__->autodispatched || Carp::croak "Method call on unspecified object. Died")->call($method => @_);
+    my $som = (__PACKAGE__->self || Carp::croak "Method call on unspecified object. Died")->call($method => @_);
     UNIVERSAL::isa($som => 'SOAP::SOM') ? $som->result : $som;
   };
   goto &$AUTOLOAD;

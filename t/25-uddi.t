@@ -30,7 +30,7 @@ unless (defined $r && defined $r->envelope) {
 }
 # ------------------------------------------------------
 
-plan tests => 17;
+plan tests => 24;
 
 {
   $a = bindingTemplate([
@@ -178,4 +178,49 @@ plan tests => 17;
       }    
     }
   }
+}
+
+{
+  # You may run these tests/examples for UDDI publishing API against
+  # UDDI registry that was kindly provided with following disclamer:
+  # "This is just a free demo registry provided by ICZ Prague, IBM Czech
+  # Republic and KPNQwest Czechia. Use commercial test registries for 
+  # serious work." 
+  # Thanks to Petr Janata <petr.janata@i.cz> for help and support
+
+  # forget autodispatch if any
+  UDDI::Lite->self(undef);
+
+  eval qq!
+  use UDDI::Lite 
+    import => ['UDDI::Data'], 
+    import => ['UDDI::Lite'],
+    proxy => "http://srv.trebic.cz:8080/uddi/servlet/uddi",
+  ; 1! or die;
+
+  my $name = 'Sample business ' . $$ . time; # just to make it unique
+
+  print "Authorizing...\n";
+  my $auth = get_authToken({userID => 'wstkDemo', cred => 'wstkPwd'})->authInfo;
+  ok(defined $auth);
+  my $busent = businessEntity(name($name))->operator('soaplite.com');
+  ok(defined $busent);
+
+  print "Saving business '$name'...\n";
+  my $newent = save_business($auth, $busent)->businessEntity;
+  ok(UNIVERSAL::isa($newent => 'HASH'));
+  my $newkey = $newent->businessKey;
+  ok(length($newkey) == 36);
+
+  ok($newent->discoveryURLs->discoveryURL =~ /$newkey/);
+  print "Created...\n";
+  print $newkey, "\n";
+  print $newent->discoveryURLs->discoveryURL, "\n";
+
+  print "Deleting '$newkey'...\n";
+  my $result = delete_business($auth, $newkey)->result;
+  ok(defined $result);
+
+  ok($result->errInfo =~ /succ?essful/i);
+  print $result->errInfo, "\n";
 }

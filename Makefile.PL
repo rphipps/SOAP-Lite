@@ -73,7 +73,7 @@ that may take long and may fail due to server/connectivity problems.
 
 Do you want to perform these tests in addition to core tests?', 'no') =~ /^\s*(y)/i;
 
-my $tests = $noncoretests ? 't/*.t' : 't/0*.t';
+my $tests = join ' ', glob ($noncoretests ? 't/*.t' : 't/0*.t');
 
 WriteMakefile(
     'NAME'	   => 'SOAP::Lite',

@@ -4,7 +4,7 @@
 # -- SOAP::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
 
 use SOAP::Lite +autodispatch => 
-  uri => 'http://soaplite.com/', 
+  uri => 'http://www.soaplite.com/', 
   proxy => 'http://localhost/', 
 # proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
 # proxy => 'http://localhost/',                 # local daemon server

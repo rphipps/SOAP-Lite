@@ -4,7 +4,7 @@
 # -- SOAP::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
 
 use SOAP::Lite +autodispatch => 
-  uri => 'http://soaplite.com/My/Examples', 
+  uri => 'http://www.soaplite.com/My/Examples', 
   proxy => 'tcp:localhost:82',                  # local tcp server
   on_fault => sub { my($soap, $res) = @_; 
     die ref $res ? $res->faultdetail : $soap->transport->status, "\n";

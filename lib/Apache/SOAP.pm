@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Apache::SOAP.pm,v 0.47 2001/02/21 17:11:12 $
+# $Id: Apache::SOAP.pm,v 0.50 2001/04/18 11:45:14 $
 #
 # ======================================================================
 
@@ -15,7 +15,7 @@ use vars qw(@ISA $VERSION);
 use SOAP::Transport::HTTP;
 
 @ISA = qw(SOAP::Transport::HTTP::Apache);
-$VERSION = '0.47';
+$VERSION = '0.50';
 
 my $server = Apache::SOAP->new;
 
@@ -24,8 +24,8 @@ sub handler {
   foreach (%$config) {
     $config->{$_} =~ /=>/
       ? $server->$_({split /\s*(?:=>|,)\s*/, $config->{$_}})
-      : ref $server->$_ ? 'hm, nothing can be done here'
-                        : $server->$_(split /\s+|\s*,\s*/, $config->{$_})
+      : ref $server->$_() ? () # hm, nothing can be done here
+                          : $server->$_(split /\s+|\s*,\s*/, $config->{$_})
       if $server->can($_);
   }
   $server->SUPER::handler(@_);
@@ -39,7 +39,7 @@ __END__
 
 =head1 NAME
 
-Apache::SOAP - Provide SOAP server functionality with simple configuration
+Apache::SOAP - Provides SOAP server capabilities with minimum configuration
 
 =head1 SYNOPSIS
 

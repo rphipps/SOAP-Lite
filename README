@@ -5,62 +5,61 @@ SOAP::Lite for Perl is a collection of Perl modules which provides a simple
 and lightweight interface to the Simple Object Access Protocol (SOAP) both 
 on client and server side. 
 
-To learn more about SOAP, see
-http://www.w3.org/TR/SOAP
-http://www.perfectxml.com/soap.asp
-http://www.w3schools.com/soap/
-http://www.xml.com/pub/Guide/SOAP/
-http://msdn.microsoft.com/msdnmag/issues/0300/soap/soap.asp
-http://xml.apache.org/soap/
-http://www.develop.com/soap/
-http://www.soap-wrc.com/
-http://discuss.develop.com/soap.html
-http://soap.weblogs.com/
-http://www.soapwebservices.com/
-http://www.oasis-open.org/cover/soap.html
-http://www.xmlrpc.com/stories/storyReader$555
-http://davenet.userland.com/1998/07/14/xmlRpcForNewbies
-http://scriptingnews.userland.com/backissues/2000/06/27#performanceOfSoap
+To learn about SOAP, go to http://www.soaplite.com/#LINKS for more
+information.
 
 This version of SOAP::Lite supports a subset of the SOAP 1.1 specification.
-See <URL:http://www.w3.org/TR/SOAP> for details. 
+See http://www.w3.org/TR/SOAP for details. 
 
 FEATURES
 
-- Supports SOAP 1.1 spec.
-- Provides full namespace support for SOAP 1.1.
-- Supports XML entity encoding.
-- Supports header attributes.
-- Supports HTTPS protocol.
-- Supports SMTP protocol.
-- Provides POP3 server implementation.
-- Supports Basic/Digest server authentication.
-- Provides COM interface.
-- Supports blessed object references.
-- Contains various reusable components (modules) that can be used 
-  independently, as, for instance, SOAP::Serializer and SOAP::Deserializer.
-- Provides an object oriented interface for serializing/deserializing and
-  sending/receiving SOAP packets. Support for extensibility of the 
-  serialization/deserialization architecture has been included.
-- Supports serialization/deserialization of sophisticated object graphs
-  which may have cycles (a circular queue would serialize just fine,
-  as well as $a=\$a. See tests and documentation for more examples).
-- Supports arrays (both serialization and deserialization with autotyping).
-- Custom/user-defined types (see SOAP::Data::as_ordered_hash for example).
-- Supports ordered hashes (as working example of user-defined data types).
-- Customizable auto type definitions.
-- Has more than 40 tests that access public test servers with different 
-  implementations: Apache SOAP, Frontier, Perl, XSLT, COM and VB6.
-- Has (limited) schema support (WSDL) with dynamic and stub access.
-- Supports Base64 encoding.
-- Supports out parameters binding.
-- Supports transparent SOAP calls with autodispatch feature.
-- Supports dynamic/static class/method binding.
-- Provides CGI/daemon server implementation.
-- Provides interactive shell for SOAP sessions (examples/SOAPsh.pl).
-- Easy services deployment. Put module in specified directory and 
-  it'll be accessible.
-- Has enough examples and documentation to be up and running in no time.
+- Supports SOAP 1.1 spec. 
+- Interoperability tests with different implementations: Apache SOAP, Frontier, 
+  Microsoft SOAP, Microsoft .NET, DevelopMentor, XMethods, 4s4c, Phalanx, 
+  Kafka, SQLData, Lucin (in Java, Perl, C++, Python, VB, COM, XSLT). 
+- Provides COM interface. Single dll (standalone [2.5MB] or minimal [32kB]). 
+  Works on Windows 9x/Me/NT/2K. Doesn't require ROPE or MSXML. 
+  Examples in VB, Excel/VBA, C#, ASP, JavaScript, PerlScript and Perl. 
+- Provides transparent compression support for HTTP transport. 
+- Provides mod_soap module. Make SOAP server with a few lines in .htaccess 
+  or .conf file. 
+- Includes XML::Parser::Lite (regexp-based XML parser) which runs instead 
+  of XML::Parser where Perl 5.6 runs (even on WinCE) with some limitations. 
+- Includes XMLRPC::Lite, implementation of XML-RPC protocol on client and 
+  server side. All transports and features of SOAP::Lite are available. 
+- Supports multipart/form-data MIME attachments. 
+- Supports circular linked lists and multiple references. 
+- Supports Map datatype (encoding of maps/hashes with arbitrary keys). 
+- Supports HTTPS protocol. 
+- Provides proxy support. 
+- Provides CGI/daemon/mod_perl/Apache::Registry server implementations. 
+- Provides TCP server implementation. 
+- Provides IO (STDIN/STDOUT/File) server implementation. 
+- Provides FTP client implementation. 
+- Supports single/multipart MIME attachment (parsing side only). 
+- Supports SMTP protocol. 
+- Provides POP3 server implementation. 
+- Supports M-POST and redirects in HTTP transport. 
+- Supports Basic/Digest server authentication. 
+- Works with CGI accelerators, like VelociGen and PerlEx. 
+- Supports UDDI interface on client side. See UDDI::Lite for details. 
+- Supports UDDI publishing API. Examples and documentation provided. 
+- Supports WSDL schema with stub and run-time access. 
+- Supports blessed object references. 
+- Supports arrays (both serialization and deserialization with autotyping). 
+- Supports custom serialization. 
+- Provides exception transport with custom exceptions 
+- Supports Base64 encoding. 
+- Supports XML entity encoding. 
+- Supports header attributes. 
+- Supports dynamic and static class/method binding. 
+- Supports objects-by-reference with simple garbage collection and activation. 
+- Provides shell for interactive SOAP sessions. 
+- Supports out parameters binding. 
+- Supports transparent SOAP calls with autodispatch feature. 
+- Provides easy services deployment. Put module in specified directory and 
+  it'll be accessible. 
+- Has tests, examples and documentation to let you be up and running in no time.
 
 PREREQUISITES
 
@@ -73,6 +72,10 @@ distributed separately from Perl. It supposes that you have the
 following distributions installed before you install SOAP::Lite:
 
   XML::Parser
+
+  You may not follow this requirement as soon as you have XML::Parser::Lite 
+  (included), which will run automatically on Perl 5.6 and later if 
+  XML::Parser is not available.
 
 Following modules will be loaded on demand only:
 
@@ -119,6 +122,8 @@ otherwise
    make test
    make install
 
+Use nmake instead of make on Windows platform.
+
 DOCUMENTATION
 
 See lib/SOAP/Lite.pm for an overview of the library. Documentation is 
@@ -127,12 +132,75 @@ pages and installed as part of the "make install" process.  You should
 also be able to use the 'perldoc' utility to extract and read 
 documentation from the module files directly.
 
+INCOMPATIBILITIES
+
+Due to extensive interoperability tests and some interface changes
+version 0.50 introduced possible incompatibilities with previous versions.
+Check this list for more information if you are upgrading to version
+0.50 or later.
+
+- compression (406 => 415, compress => deflate)
+  switched from 'compress' to 'deflate' to correctly describe used method.
+
+- no string in Fault detail, updated faultsting
+  previous versions put extended information about Fault as a string in 
+  detail element (but only qualified subelements are allowed there). Current
+  version will use faultstring for Fault description and detail for subelement
+  you may provide. Faultstrings that can be returned from server side were
+  updated to reflect these changes.
+
+- changed namespace/encodingspace behavior and dropped ~C/~V prefixes
+  dropped undocumented prefixes ~C/~V. Use encodingspace()/namespace().
+
+- prefixes check
+  current version will resolve all prefixes, so element <foo:bar/> won't
+  be allowed unless you declared 'foo' prefix somewhere in outer elements.
+
+- mustUnderstand check (DO_NOT_CHECK_MUSTUNDERSTAND)
+  SOAP server will fail message that has Header with mustUnderstand attribute
+  set to 'true' and no actor attribute or actor attribute with specific
+  "..../next" value. You may disable this check by specifying 
+  $SOAP::Constants::DO_NOT_CHECK_MUSTUNDERSTAND = 1;
+  in your server code right after 'use SOAP::Lite' directive.
+
+- 200OK handling
+  some servers return Fault message with 200OK code. Current version will
+  look into the message for Fault element and will call on_fault()
+  handler in this case also.
+
+- charset in content-type (DO_NOT_USE_CHARSET)
+  current version will specify charset in content-type header for HTTP
+  protocol. Some toolkits don't understand such headers and may fail
+  your resuest. Use:
+  $SOAP::Constants::DO_NOT_USE_CHARSET = 1;
+  in your client code to disable it. See t/21-public.t for example.
+
+- XML::Parser::Lite (DO_NOT_USE_XML_PARSER)
+  current version will try to load XML::Parser first and then load 
+  XML::Parser::Lite. If for any reason you don't want to load XML::Parser
+  you may specify it with:
+  $SOAP::Constants::DO_NOT_USE_XML_PARSER = 1;
+  in your server code right after 'use SOAP::Lite' directive on client or
+  server side.
+
+- changed order of parameters in deserializer (as_TYPE)
+
+- methods as_TYPE/as_CLASS in de/serializer do not alter case
+  using as_TYPE/as_CLASS specify names exactly as class name in deserializer 
+  and serializer.
+
+- simple arrays and hashes (not objects) are not blessed anymore during
+  deserialization. Shouldn't break any code, but let me know if it does.
+
 LIMITATIONS
 
-No support for multidimensional, partially transmitted and sparse arrays 
-(however arrays of arrays are supported, as well as any other data
-structures, and you can add your own implementation with SOAP::Data).
-Limited support for WSDL schema.
+- No support for multidimensional, partially transmitted and sparse arrays 
+  (however arrays of arrays are supported, as well as any other data structures, 
+  and you can add your own implementation with SOAP::Data). 
+- Limited support for WSDL schema. 
+- XML::Parser::Lite relies on Unicode support in Perl and doesn't do entity 
+  decoding. 
+- Limited support for mustUnderstand and Actor attributes. 
 
 SUPPORT
 
@@ -147,8 +215,8 @@ bug reports and complaints.
 AVAILABILITY
 
 You can download the latest version SOAP::Lite for Unix or SOAP::Lite for 
-Win32 from http://www.geocities.com/paulclinger/soap.html. 
-SOAP::Lite should be available also from CPAN. 
+Win32 from http://www.soaplite.com/ . 
+SOAP::Lite is also available from CPAN ( http://search.cpan.org/ ). 
 
 COPYRIGHT
 

@@ -9,12 +9,12 @@ use SOAP::Lite on_fault => sub {my($soap, $res) = @_; die ref $res ? $res->fault
 use My::Examples;
 
 my %dests = (
-  local              => ['local://localhost/cgi-bin/soap.cgi' => 'http://soaplite.com/My/Examples'],
-  mod_perl           => ['http://localhost/soap/' => 'http://soaplite.com/My/Examples'],
-  CGI                => ['http://localhost/cgi-bin/soap.cgi' => 'http://soaplite.com/My/Examples'],
-  daemon             => ['http://localhost:81/' => 'http://soaplite.com/My/Examples'],
-  'Apache::Registry' => ['http://localhost/mod_perl/soap.mod_cgi' => 'http://soaplite.com/My/Examples'],
-  tcpip              => ['tcp:localhost:82' => 'http://soaplite.com/My/Examples'],
+  local              => ['local://localhost/cgi-bin/soap.cgi' => 'http://www.soaplite.com/My/Examples'],
+  mod_perl           => ['http://localhost/soap/' => 'http://www.soaplite.com/My/Examples'],
+  CGI                => ['http://localhost/cgi-bin/soap.cgi' => 'http://www.soaplite.com/My/Examples'],
+  daemon             => ['http://localhost:81/' => 'http://www.soaplite.com/My/Examples'],
+  'Apache::Registry' => ['http://localhost/mod_perl/soap.mod_cgi' => 'http://www.soaplite.com/My/Examples'],
+  tcpip              => ['tcp:localhost:82' => 'http://www.soaplite.com/My/Examples'],
   direct             => ['' => 'My::Examples'],
 );
 

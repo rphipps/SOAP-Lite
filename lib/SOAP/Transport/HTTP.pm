@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.47 2001/02/21 17:11:12 $
+# $Id: SOAP::Transport::HTTP.pm,v 0.50 2001/04/18 11:45:14 $
 #
 # ======================================================================
 
@@ -12,16 +12,18 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.47';
+$VERSION = '0.50';
+
+use SOAP::Lite;
 
 # ======================================================================
 
 package SOAP::Transport::HTTP::Client;
 
-use vars qw(@ISA);
+use vars qw(@ISA $COMPRESS);
 @ISA = qw(SOAP::Client LWP::UserAgent);
 
-use SOAP::Lite;
+$COMPRESS = 'deflate';
 
 my(%redirect, %mpost, %nocompress);
 
@@ -30,7 +32,7 @@ my(%redirect, %mpost, %nocompress);
 # dies after timeout, but seems like we could make it work
 sub patch { 
   local $^W; 
-  { *LWP::UserAgent::redirect_ok = sub {1}; }
+  { sub LWP::UserAgent::redirect_ok; *LWP::UserAgent::redirect_ok = sub {1} }
   { package LWP::Protocol; 
     my $collect = \&collect; # store original  
     *collect = sub {          
@@ -65,10 +67,13 @@ sub new { require LWP::UserAgent; patch;
   return $self;
 }
 
+# no more warnings about "used only once"
+$SOAP::Constants::DO_NOT_USE_CHARSET if 0;
+
 sub send_receive {
   my($self, %parameters) = @_;
-  my($envelope, $endpoint, $action) = 
-    @parameters{qw(envelope endpoint action)};
+  my($envelope, $endpoint, $action, $encoding) = 
+    @parameters{qw(envelope endpoint action encoding)};
 
   $endpoint ||= $self->endpoint;
 
@@ -99,18 +104,19 @@ sub send_receive {
       if ($method eq 'M-POST') {
         my $prefix = sprintf '%04d', int(rand(1000));
         $req->header(Man => qq!"$SOAP::Constants::NS_ENV"; ns=$prefix!);
-        $req->header("$prefix-SOAPAction" => $action);  
+        $req->header("$prefix-SOAPAction" => $action) if defined $action;  
       } else {
-        $req->header(SOAPAction => $action);
+        $req->header(SOAPAction => $action) if defined $action;
       }
   
       # allow compress if present and let server know we could handle it
       $req->header(Accept => ['text/xml', 'multipart/*']);
 
-      $req->header('Accept-Encoding' => ['compress']) if $self->options->{is_compress};
-      $req->content_encoding('compress') if $compressed;
+      $req->header('Accept-Encoding' => [$COMPRESS]) if $self->options->{is_compress};
+      $req->content_encoding($COMPRESS) if $compressed;
 
-      $req->content_type('text/xml');
+      $req->content_type(join '; ', 'text/xml', 
+        !$SOAP::Constants::DO_NOT_USE_CHARSET && $encoding ? 'charset=' . lc($encoding) : ());
       $req->content_length(length($envelope));
   
       SOAP::Trace::transport($req);
@@ -126,7 +132,7 @@ sub send_receive {
       # 100 OK, continue to read?
       if (($resp->code == 510 || $resp->code == 501) && $method ne 'M-POST') { 
         $mpost{$endpoint} = 1;
-      } elsif ($resp->code == 406 && $compressed) {
+      } elsif ($resp->code == 415 && $compressed) { # 415 Unsupported Media Type
         $nocompress{$endpoint} = 1;
         $envelope = Compress::Zlib::uncompress($envelope);
         redo COMPRESS; # try again without compression
@@ -144,8 +150,11 @@ sub send_receive {
   $self->is_success($resp->is_success);
   $self->status($resp->status_line);
 
-  my $content = ($resp->content_encoding || '') =~ /\bcompress\b/ && $self->options->{is_compress} 
-    ? Compress::Zlib::uncompress($resp->content) : $resp->content;
+  my $content = ($resp->content_encoding || '') =~ /\b$COMPRESS\b/o && $self->options->{is_compress} 
+    ? Compress::Zlib::uncompress($resp->content) 
+    : ($resp->content_encoding || '') =~ /\S/ 
+      ? die "Can't understand returned Content-Encoding (@{[$resp->content_encoding]})\n"
+      : $resp->content;
   $resp->content_type =~ m!^multipart/! 
     ? join("\n", $resp->headers_as_string, $content) : $content;
 }
@@ -154,11 +163,12 @@ sub send_receive {
 
 package SOAP::Transport::HTTP::Server;
 
-use vars qw(@ISA);
+use vars qw(@ISA $COMPRESS);
 @ISA = qw(SOAP::Server);
 
-use SOAP::Lite;
 use URI;
+
+$COMPRESS = 'deflate';
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
@@ -205,17 +215,20 @@ sub handle {
     return $self->response(HTTP::Response->new(405)) # METHOD NOT ALLOWED
   }
 
-  my $compressed = ($self->request->content_encoding || '') =~ /\bcompress\b/;
+  my $compressed = ($self->request->content_encoding || '') =~ /\b$COMPRESS\b/;
   $self->options->{is_compress} ||= $compressed && eval { require Compress::Zlib };
 
-  return $self->response(HTTP::Response->new(406)) # NOT ACCEPTABLE
-    if $compressed && !$self->options->{is_compress};
+  # signal error if content-encoding is 'deflate', but we don't want it OR
+  # something else, so we don't understand it
+  return $self->response(HTTP::Response->new(415)) # UNSUPPORTED MEDIA TYPE
+    if $compressed && !$self->options->{is_compress} ||
+       !$compressed && ($self->request->content_encoding || '') =~ /\S/;
 
   my $content_type = $self->request->content_type || '';
   # in some environments (PerlEx?) content_type could be empty, so allow it also
   # anyway it'll blow up inside ::Server::handle if something wrong with message
   # TBD: but what to do with MIME encoded messages in THOSE environments?
-  return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Request' => "Content-Type must be 'text/xml' instead of '$content_type'")
+  return $self->make_fault($SOAP::Constants::FAULT_CLIENT, "Content-Type must be 'text/xml' instead of '$content_type'")
     if $content_type && 
        $content_type ne 'text/xml' && 
        $content_type !~ m!^multipart/!;
@@ -245,20 +258,22 @@ sub make_response {
     exists $self->options->{compress_threshold} && eval { require Compress::Zlib };
 
   my $compressed = $self->options->{is_compress} && 
-                   grep(/\b(compress|\*)\b/, $self->request->header('Accept-Encoding')) &&
+                   grep(/\b($COMPRESS|\*)\b/, $self->request->header('Accept-Encoding')) &&
                    ($self->options->{compress_threshold} || 0) < length $response;
   $response = Compress::Zlib::compress($response) if $compressed;
 
   $self->response(HTTP::Response->new( 
      $code => undef, 
      HTTP::Headers->new(
-       'SOAPServer' => join('/', 'SOAP::Lite', 'Perl', SOAP::Transport::HTTP->VERSION),
-       $compressed ? ('Content-Encoding' => 'compress') : (),
+       'SOAPServer' => $self->product_tokens,
+       $compressed ? ('Content-Encoding' => $COMPRESS) : (),
        'Content-Type' => 'text/xml',
        'Content-Length' => length $response), 
      $response,
   ));
 }
+
+sub product_tokens { join '/', 'SOAP::Lite', 'Perl', SOAP::Transport::HTTP->VERSION }
 
 # ======================================================================
 
@@ -316,9 +331,15 @@ sub new { require HTTP::Daemon;
 
   unless (ref $self) {
     my $class = ref($self) || $self;
-    $self = $class->SUPER::new();
-    $self->{_daemon} = HTTP::Daemon->new(@_) or Carp::croak "Can't create daemon: $!";
+
+    my(@params, @methods);
+    while (@_) { $class->can($_[0]) ? push(@methods, shift() => shift) : push(@params, shift) }
+    $self = $class->SUPER::new;
+    $self->{_daemon} = HTTP::Daemon->new(@params) or Carp::croak "Can't create daemon: $!";
     $self->myuri(URI->new($self->url)->canonical->as_string);
+    while (@methods) { my($method, $params) = splice(@methods,0,2);
+      $self->$method(ref $params eq 'ARRAY' ? @$params : $params) 
+    }
     SOAP::Trace::objects('()');
   }
   return $self;
@@ -345,8 +366,6 @@ sub handle {
     undef $c;
   }
 }
-
-sub product_tokens { join '/', 'SOAP::Lite', 'Perl', SOAP::Transport::HTTP->VERSION }
 
 # ======================================================================
 
@@ -539,7 +558,7 @@ handled.
 
 You can use any proxy setting you use with LWP::UserAgent modules:
 
- SOAP::Lite->proxy('http://endpoint.server', 
+ SOAP::Lite->proxy('http://endpoint.server/', 
                    proxy => ['http' => 'http://my.proxy.server']);
 
 or
@@ -557,7 +576,7 @@ how to handle it properly.
   my $cookies = HTTP::Cookies->new(ignore_discard => 1);
     # you may also add 'file' if you want to keep them between sessions
 
-  my $soap = SOAP::Lite->proxy('http://localhost');
+  my $soap = SOAP::Lite->proxy('http://localhost/');
   $soap->transport->cookie_jar($cookies);
 
 Cookies will be taken from response and provided for request. You may
@@ -566,7 +585,7 @@ with HTTP::Cookies interface.
 
 You may also do it in one line:
 
-  $soap->proxy('http://localhost', 
+  $soap->proxy('http://localhost/', 
                cookie_jar => HTTP::Cookies->new(ignore_discard => 1));
 
 =head2 COMPRESSION
@@ -575,10 +594,10 @@ SOAP::Lite provides you option for enabling compression on wire (for HTTP
 transport only). Both server and client should support this capability, 
 but this logic should be absolutely transparent for your application. 
 Server will respond with encoded message only if client can accept it 
-(client sends Accept-Encoding with 'compress' or '*' values) and client 
+(client sends Accept-Encoding with 'deflate' or '*' values) and client 
 has fallback logic, so if server doesn't understand specified encoding 
-(Content-Encoding: compress) and returns proper error code 
-(406 NOT ACCEPTABLE) client will repeat the same request not encoded and 
+(Content-Encoding: deflate) and returns proper error code 
+(415 NOT ACCEPTABLE) client will repeat the same request not encoded and 
 will store this server in per-session cache, so all other requests will 
 go there without encoding.
 
@@ -608,7 +627,7 @@ server side.
 
 Compression will be enabled on client side IF: threshold is specified AND
 size of current message is bigger than threshold AND module Compress::Zlib
-is available. Client will send header 'Accept-Encoding' with value 'compress'
+is available. Client will send header 'Accept-Encoding' with value 'deflate'
 if threshold is specified AND module Compress::Zlib is available.
 
 Server will accept compressed message if module Compress::Zlib is available,

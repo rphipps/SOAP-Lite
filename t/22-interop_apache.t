@@ -40,10 +40,10 @@ unless (defined $r && defined $r->envelope) {
 plan tests => 15;
 
 {
-# XMethod's JavaSOAP server (http://xmethods.com/detail.html?id=11)
+# XMethod's JavaSOAP server (http://xmethods.net/detail.html?id=11)
   print "XMethod's JavaSOAP server test(s)...\n";
   $s = SOAP::Lite 
-    -> uri('urn:xmethodsInterop')
+    -> uri('http://soapinterop.org/')
     -> proxy($proxy)
   ;
 
@@ -75,12 +75,12 @@ plan tests => 15;
   $a = {varString => 'b', varInt => 2, varFloat => 95.7};
   $r = $s->echoStruct(
     SOAP::Data->type('xx:SOAPStruct' => $a)
-              ->attr({'xmlns:xx' => 'http://www.xmethods.com/services'})
+              ->attr({'xmlns:xx' => 'http://soapinterop.org/xsd'})
   )->result;
   ok(ref $r && join('', sort values %$r) eq join('', sort values %$a)); 
 
   # specify mapping to URI
-  $s->maptype({SOAPStruct => 'http://www.xmethods.com/services'});
+  $s->maptype({SOAPStruct => 'http://soapinterop.org/xsd'});
 
   $a = {varString => 'b', varInt => 2, varFloat => 95.7};
   $r = $s->echoStruct($a)->result;

@@ -3,7 +3,7 @@
 
   ' SOAP server. requires SOAP.Lite COM object (regsvr32 Lite.dll)
   ' Path to Perl modules can be specified
-  ' as '/PATH/TO/MODULES' or as 'drive:\PATH\TO\MODULES'
+  ' as '/PATH/TO/MODULES' or as 'drive:/PATH/TO/MODULES'
 
   Response.ContentType = "text/xml"
   Response.Write(Server.CreateObject("SOAP.Lite") _

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::TCP.pm,v 0.47 2001/02/21 17:11:12 $
+# $Id: SOAP::Transport::TCP.pm,v 0.50 2001/04/18 11:45:14 $
 #
 # ======================================================================
 
@@ -12,9 +12,10 @@ package SOAP::Transport::TCP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.47';
+$VERSION = '0.50';
 
 use IO::Socket;
+use SOAP::Lite;
 
 # ======================================================================
 
@@ -75,8 +76,6 @@ package SOAP::Transport::TCP::Server;
 use Carp ();
 use vars qw($AUTOLOAD @ISA);
 @ISA = qw(SOAP::Server);
-
-use SOAP::Lite;
 
 sub DESTROY { SOAP::Trace::objects('()') }
 

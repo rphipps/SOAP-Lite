@@ -1,19 +1,26 @@
 #!perl -w
 #!d:\perl\bin\perl.exe 
 
-# -- SOAP::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
+# -- UDDI::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
+
+# You may run these tests/examples for UDDI publishing API against
+# UDDI registry that was kindly provided with following disclamer:
+# "This is just a free demo registry provided by ICZ Prague, IBM Czech
+# Republic and KPNQwest Czechia. Use commercial test registries for 
+# serious work." 
+# Thanks to Petr Janata <petr.janata@i.cz> for help and support
 
 use strict;
 use UDDI::Lite 
   import => ['UDDI::Data'], 
   import => ['UDDI::Lite'],
-  proxy => "https://some.server.com/endpoint_fot_publishing_API",
+  proxy => "http://srv.trebic.cz:8080/uddi/servlet/uddi",
 ;
 
-my $name = 'Sample business';
+my $name = 'Sample business ' . $$ . time; # just to make it unique
 
 print "Authorizing...\n";
-my $auth = get_authToken({userID => 'USERID', cred => 'CRED'})->authInfo;
+my $auth = get_authToken({userID => 'wstkDemo', cred => 'wstkPwd'})->authInfo;
 my $busent = businessEntity(name($name))->operator('soaplite.com');
 
 print "Saving business '$name'...\n";

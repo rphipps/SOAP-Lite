@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 46 }
+BEGIN { plan tests => 57 }
 
 use SOAP::Lite;
 
@@ -28,7 +28,7 @@ my($a, $s, $r, $serialized, $deserialized);
   print "Deserialization of envelope with result test(s)...\n";
 
   $deserialized = SOAP::Deserializer->deserialize('<?xml version="1.0"?>
-<SOAP-ENV:Envelope  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
 	 xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
 	 xmlns:xsd="http://www.w3.org/1999/XMLSchema"
 	 xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"
@@ -70,7 +70,7 @@ my($a, $s, $r, $serialized, $deserialized);
   print "Deserialization of circular references test(s)...\n";
 
   $deserialized = SOAP::Deserializer->deserialize('<?xml version="1.0"?>
-<SOAP-ENV:Struct prefix:id="123" xmlns:prefix="aaa" id="ref-0xb61350"><a id="ref-0xb61374"><b href="#ref-0xb61350"/></a></SOAP-ENV:Struct>
+<Struct prefix:id="123" xmlns:prefix="aaa" id="ref-0xb61350"><a id="ref-0xb61374"><b href="#ref-0xb61350"/></a></Struct>
 ');
 
   ok(ref $deserialized->valueof('/Struct') eq ref $deserialized->valueof('//b'));
@@ -174,13 +174,29 @@ my($a, $s, $r, $serialized, $deserialized);
   ok($deserialized->namespaceuriof('//doublerResponse') eq 'http://simon.fell.com/calc');
 }
 
-{ # check for serialization with SOAPStruct (for interoperability with ApacheSOAP)
+{ # check for Array of Array serialization 
+  print "Array of Array serialization test(s)...\n";
+
+  $serialized = SOAP::Serializer
+    -> readable(1)
+    -> method('mymethod' => [[1, 2], [3, 4]]);
+
+  ok($serialized =~ m!SOAP-ENC:arrayType="SOAP-ENC:Array\[2\]"!);
+}
+
+{ # check for serialization with SOAPStruct
   print "Serialization w/out SOAPStruct test(s)...\n";
 
   $a = { a => 1 };
 
   ok(SOAP::Serializer->serialize($a) =~ m!SOAPStruct!);
   ok(SOAP::Serializer->autotype(0)->serialize($a) !~ m!SOAPStruct!);
+
+  $serialized = SOAP::Serializer->maptype({SOAPStruct => ""})->serialize({a => 1});
+  ok($serialized =~ m!<c-gensym(\d+)><a xsi:type="xsd:int">1</a></c-gensym\1>!);
+
+  $serialized = SOAP::Serializer->maptype({SOAPStruct => undef})->serialize({a => 1});
+  ok($serialized =~ m!<c-gensym(\d+)><a xsi:type="xsd:int">1</a></c-gensym\1>!);
 }
 
 { # check header/envelope serialization/deserialization   
@@ -188,7 +204,7 @@ my($a, $s, $r, $serialized, $deserialized);
 
   $serialized = SOAP::Serializer->method( # same as ->envelope(method =>
       'mymethod', 1, 2, 3, 
-      SOAP::Header->name(t1 => 5)->attr({'~V:mustUnderstand' => 1}),
+      SOAP::Header->name(t1 => 5)->mustUnderstand(1),
       SOAP::Header->name(t2 => 7)->mustUnderstand(2),
   );
   $deserialized = SOAP::Deserializer->deserialize($serialized);
@@ -214,14 +230,13 @@ my($a, $s, $r, $serialized, $deserialized);
   $serialized = SOAP::Serializer
     -> namespace('')
     -> method('mymethod');
-  ok($serialized =~ m!<Envelope(?: xmlns="http://schemas.xmlsoap.org/soap/envelope/"| encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:xsd="http://www.w3.org/1999/XMLSchema")+><Body><mymethod/></Body></Envelope>!);
+  ok($serialized =~ m!<Envelope(?: xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"| SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:xsd="http://www.w3.org/1999/XMLSchema")+><Body><mymethod/></Body></Envelope>!);
 
   $deserialized = SOAP::Deserializer->deserialize('<?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/1999/XMLSchema"><SOAP-ENV:Body><getStateName><c-gensym5 xsi:type="xsd:int">1</c-gensym5></getStateName></SOAP-ENV:Body></SOAP-ENV:Envelope>');
   ok(! defined $deserialized->namespaceuriof('//getStateName'));
 
   $deserialized = SOAP::Deserializer->deserialize('<?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns="a" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/1999/XMLSchema"><SOAP-ENV:Body><getStateName><c-gensym5 xsi:type="xsd:int">1</c-gensym5></getStateName></SOAP-ENV:Body></SOAP-ENV:Envelope>');
   ok($deserialized->namespaceuriof('//getStateName') eq 'a');
-
 }
 
 { # Map type serialization/deserialization
@@ -262,7 +277,7 @@ my($a, $s, $r, $serialized, $deserialized);
   print "Custom serialization of blessed reference test(s)...\n";
 
   eval q!
-    sub SOAP::Serializer::as_my__own__class {
+    sub SOAP::Serializer::as_My__Own__Class {
       my $self = shift;
       my($value, $name, $type, $attr) = @_;
       return [$name, {%{$attr || {}}, 'xsi:type' => 'xsd:string'}, join ', ', map {"$_ => $value->{$_}"} sort keys %$value];
@@ -296,6 +311,71 @@ my($a, $s, $r, $serialized, $deserialized);
   $a = { b => 2 };
 
   $serialized = SOAP::Serializer->autotype(0)->method(a => SOAP::Header->value($a), $a);
-  ok($serialized =~ m!<SOAP-ENV:Header><c-gensym(\d+) id="ref-(\d+)"><b>2</b></c-gensym\1></SOAP-ENV:Header><SOAP-ENV:Body><a><c-gensym\d+ href="#ref-\2"/></a><c-gensym\d+ href="#ref-\2"/></SOAP-ENV:Body>!);
+  ok($serialized =~ m!<SOAP-ENV:Header><c-gensym\d+ href="#ref-(\d+)"/></SOAP-ENV:Header><SOAP-ENV:Body><a><c-gensym\d+ href="#ref-\1"/></a><c-gensym(\d+) id="ref-\1"><b>2</b></c-gensym\2></SOAP-ENV:Body>!);
 }
 
+{ # Deserialization with typecast
+  print "Deserialization with typecast test(s)...\n";
+
+  my $desc = 0;
+  my $typecasts = 0;
+  eval { 
+    package MyDeserializer; 
+    @MyDeserializer::ISA = 'SOAP::Deserializer';
+    sub typecast;
+    *typecast = sub { shift; 
+      my($value, $name, $attrs, $childs, $type) = @_;
+      $desc = "$name @{[scalar @$childs]}" if $name eq 'a';
+      $typecasts++;
+      return;
+    };
+    1;
+  } or die;
+
+  $deserialized = MyDeserializer->deserialize('<a><b>1</b><c>2</c></a>');
+  ok($desc eq 'a 2');
+  ok($typecasts == 5);
+}
+
+{ # Deserialization with wrong encodingStyle
+  print "Deserialization with wrong encodingStyle test(s)...\n";
+
+  eval { $deserialized = SOAP::Deserializer->deserialize(
+'<a 
+   SOAP-ENV:encodingStyle="http://schemas.microsoft.com/soap/encoding/clr/1.0 http://schemas.xmlsoap.org/soap/encoding/"
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+>1</a>') };
+  ok(!$@ && $deserialized);
+
+  eval { $deserialized = SOAP::Deserializer->deserialize(
+'<a 
+   SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+>1</a>') };
+  ok(!$@ && $deserialized);
+
+  eval { $deserialized = SOAP::Deserializer->deserialize(
+'<a 
+   SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/something"
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+>1</a>') };
+  ok(!$@ && $deserialized);
+
+  eval { $deserialized = SOAP::Deserializer->deserialize(
+'<a>1</a>') };
+  ok(!$@ && $deserialized);
+
+  eval { $deserialized = SOAP::Deserializer->deserialize(
+'<a 
+   SOAP-ENV:encodingStyle=""
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+>1</a>') };
+  ok(!$@ && $deserialized);
+
+  eval { $deserialized = SOAP::Deserializer->deserialize(
+'<a 
+   SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding"
+   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+>1</a>') };
+  ok($@ =~ /encodingStyle/);
+}

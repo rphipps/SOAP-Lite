@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Test.pm,v 0.47 2001/02/21 17:11:12 $
+# $Id: SOAP::Test.pm,v 0.50 2001/04/18 11:45:14 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Test;
 
 use 5.004;
 use vars qw($VERSION $TIMEOUT);
-$VERSION = '0.47';
+$VERSION = '0.50';
 
 $TIMEOUT = 5;
 
@@ -58,7 +58,7 @@ sub run_for {
   }
   # ------------------------------------------------------
 
-  plan tests => 33;
+  plan tests => 46;
 
   print "Perl SOAP server test(s)...\n";
 
@@ -89,6 +89,29 @@ sub run_for {
   $a = $s->addheader(2, SOAP::Header->name(my => 123)); 
   ok(ref $a->header && $a->header->{my} eq '123123'); 
   ok($a->headers eq '123123'); 
+
+  print "mustUnderstand test(s)...\n";
+  $s->echo(SOAP::Header->name(somethingelse => 123)
+                       ->mustUnderstand(1));
+  ok($s->call->faultstring =~ /Header has mustUnderstand attribute/);
+
+  $s->echo(SOAP::Header->name(somethingelse => 123)
+                       ->mustUnderstand(1)
+                       ->actor('http://notme/'));
+  ok(!defined $s->call->fault);
+
+  print "dispatch_from test(s)...\n";
+  eval "use SOAP::Lite
+    dispatch_from => ['A', 'B'],
+    uri => 'http://my.own.site.com/My/Examples',
+    proxy => '$proxy',
+  ; 1" or die;
+
+  eval { C->c };
+  ok($@ =~ /Can't locate object method "c"/);
+
+  eval { A->a };
+  ok(!$@ && SOAP::Lite->self->call->faultstring =~ /Failed to access class \(A\)/);
 
   print "Object autobinding and SOAP:: prefix test(s)...\n";
 
@@ -127,7 +150,7 @@ sub run_for {
       -> proxy($proxy)
       -> on_fault(sub{})
     ;
-    $s->serializer->attr({%{$s->serializer->attr}, 'xmlns:~V' => 'http://schemas.xmlsoap.org/new/envelope/'});
+    $s->serializer->attr->{"xmlns:$SOAP::Constants::PREFIX_ENV"} = 'http://schemas.xmlsoap.org/new/envelope/';
     $r = $s->dosomething;
     ok(ref $r && $r->faultcode =~ /:VersionMismatch/);
   }
@@ -188,19 +211,30 @@ sub run_for {
     ;
     ok($s->getStateName(1)->result eq 'Alabama'); 
 
-    $s-> on_action(sub{'"wrong_SOAPAction_here"'});
-    ok($s->getStateName(1)->faultdetail =~ /SOAPAction shall match/); 
+    $s->on_action(sub{'"wrong_SOAPAction_here"'});
+    ok($s->getStateName(1)->faultstring =~ /SOAPAction shall match/); 
   }
 
   {
+    my $on_fault_was_called = 0;
     print "Die in server method test(s)...\n";
     my $s = SOAP::Lite
       -> uri('http://my.own.site.com/My/Parameters')                
       -> proxy($proxy)
+      -> on_fault(sub{$on_fault_was_called++;return})
     ;
-    ok($s->die_simply()->faultdetail =~ /Something bad/);
+    ok($s->die_simply()->faultstring =~ /Something bad/);
+    ok($on_fault_was_called > 0);
     my $detail = $s->die_with_object()->dataof(SOAP::SOM::faultdetail . '/[1]');
+    ok($on_fault_was_called > 1);
     ok(ref $detail && $detail->name =~ /(^|:)something$/);
+
+    # get Fault as hash of subelements
+    my $fault = $s->die_with_fault()->fault;
+    ok($fault->{faultcode} =~ ':Server.Custom');
+    ok($fault->{faultstring} eq 'Died in server method');
+    ok(ref $fault->{detail}->{BadError} eq 'BadError');
+    ok($fault->{faultactor} eq 'http://www.soaplite.com/custom');
   }
 
   print "Method with attributes test(s)...\n";
@@ -218,9 +252,19 @@ sub run_for {
     -> proxy($proxy)
   ;
 
-  ok($s->getStateName(1)->faultdetail =~ /Denied access to method \(getStateName\) in class \(main\)/);
+  ok($s->getStateName(1)->faultstring =~ /Denied access to method \(getStateName\) in class \(main\)/);
 
-  ok($s->call('a:getStateName' => 1)->faultdetail =~ /Denied access to method \(getStateName\) in class \(main\)/);
+  ok($s->call('a:getStateName' => 1)->faultstring =~ /Denied access to method \(getStateName\) in class \(main\)/);
+
+  print "Number of parameters test(s)...\n";
+
+  $s = SOAP::Lite
+    -> uri('http://my.own.site.com/My/Parameters')                
+    -> proxy($proxy)
+  ;
+  { my @all = $s->echo->paramsall; ok(@all == 0) }
+  { my @all = $s->echo(1)->paramsall; ok(@all == 1) }
+  { my @all = $s->echo((1) x 10)->paramsall; ok(@all == 10) }
 
   print "Memory refresh test(s)...\n";
 
@@ -234,7 +278,7 @@ sub run_for {
     -> proxy($proxy)
   ;
 
-  ok($s->getStateName(1)->faultdetail =~ /Denied access to method \(getStateName\) in class \(main\)/);
+  ok($s->getStateName(1)->faultstring =~ /Denied access to method \(getStateName\) in class \(main\)/);
 
   print "Different settings for method and namespace test(s)...\n";
 
@@ -273,7 +317,11 @@ sub run_for {
     sub {$_[0]->content_type('something/wrong') if UNIVERSAL::isa($_[0] => 'HTTP::Request')}
   );
 
-  ok($s->getStateName(1)->faultdetail =~ /Content-Type must be/);
+  if ($proxy =~ /^tcp:/) {
+    skip('No Content-Type checks for tcp: protocol on server side' => undef);
+  } else {
+    ok($s->getStateName(1)->faultstring =~ /Content-Type must be/);
+  }
 }
 
 # ======================================================================

@@ -3,6 +3,7 @@ MANIFEST
 Makefile.PL
 README
 bin/SOAPsh.pl			SOAP shell
+bin/XMLRPCsh.pl
 bin/stubmaker.pl		Script for creating stubs from schema description
 examples/COM/README		Examples and description for COM interface
 examples/COM/SOAP-Lite-COM-perl-required.ctrl
@@ -12,7 +13,9 @@ examples/COM/local.vbs          Example in VBScript, client for local service
 examples/COM/make-com-perl-required.bat
 examples/COM/make-com-standalone.bat
 examples/COM/remote.cs          Example in C#, client for remote service
+examples/COM/remote.vba
 examples/COM/remote.vbs         Example in VB, client for remote service
+examples/COM/remote.xls
 examples/COM/service.vbs        Example in VB, client with WSDL
 examples/COM/soap.asp           SOAP server, ASP/VBScript implementation
 examples/COM/soap.vbs           SOAP server, VB/Daemon implementation
@@ -47,6 +50,8 @@ examples/WSDL/stub1.pl		Example for WSDL stub interface
 examples/WSDL/stub2.pl		Example for WSDL stub interface
 examples/WSDL/stub3.pl		Example for WSDL stub interface
 examples/XML/customxml.pl	Example for XML processing (SOAP::Custom::XML)
+examples/XMLRPC/xmlrpc.cgi
+examples/XMLRPC/xmlrpc.daemon
 examples/allclients.pl		Different client implementations
 examples/authentication.pl	Example for Basic/Digest server authentication
 examples/autoexamples.pl	Script for My::Examples with autodispatching
@@ -88,3 +93,6 @@ lib/SOAP/Transport/MAILTO.pm	SMTP/sendmail transport, client
 lib/SOAP/Transport/POP3.pm	POP3 transport, server
 lib/SOAP/Transport/TCP.pm	TCP transport, client and server
 lib/UDDI/Lite.pm		Main UDDI::Lite module
+lib/XML/Parser/Lite.pm
+lib/XMLRPC/Lite.pm
+lib/XMLRPC/Transport/HTTP.pm

@@ -1,6 +1,6 @@
 // -- SOAP::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
 
-// Lots of thanks to Tony Hong (XMethods.com) for provided help and examples
+// Lots of thanks to Tony Hong (xmethods.net) for provided help and examples
 
 // Connect to remote SOAP server
 

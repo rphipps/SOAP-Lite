@@ -13,8 +13,8 @@ Minimal version requires Perl installation, but comes with minimal size (32k).
 Standalone version doesn't require ANYTHING (including Perl), but comes
 as one big dll (2.5M).
 
-Standalone:    http://www.soaplite.com/download/SOAP-Lite-COM-standalone-0.47.zip
-Perl required: http://www.soaplite.com/download/SOAP-Lite-COM-perl-required-0.47.zip
+Standalone:    http://www.soaplite.com/download/SOAP-Lite-COM-standalone-0.50.zip
+Perl required: http://www.soaplite.com/download/SOAP-Lite-COM-perl-required-0.50.zip
 
 You may create your own version (all source code and batch files are provided),
 but it'll require PerlCtrl utility that comes as part of Perl Development Kit

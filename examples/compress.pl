@@ -12,7 +12,7 @@ $s = SOAP::Lite
 
 use Benchmark;
 
-$s->echo; # don't give a start to the first one
+$s->echo; # ignore the first call
 
 Benchmark::cmpthese(10, {
   'nocompress' => sub { $s->transport->options({}); $s->echo(1 x 100000) },

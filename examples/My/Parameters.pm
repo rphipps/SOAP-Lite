@@ -45,4 +45,11 @@ sub die_with_object {
   die SOAP::Data->name(something => 'value')->uri('http://www.soaplite.com/');
 }
 
+sub die_with_fault {
+  die SOAP::Fault->faultcode('Server.Custom') # will be qualified
+                 ->faultstring('Died in server method')
+                 ->faultdetail(bless {code => 1} => 'BadError')
+                 ->faultactor('http://www.soaplite.com/custom');
+}
+
 1;

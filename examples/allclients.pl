@@ -4,7 +4,7 @@
 # -- SOAP::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
 
 use SOAP::Lite 
-  uri => 'http://my.own.site.com/My/Examples',
+  uri => 'http://www.soaplite.com/My/Examples',
   proxy => 'http://localhost/', 
 # proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
 # proxy => 'http://localhost/',                 # local daemon server
@@ -13,7 +13,7 @@ use SOAP::Lite
 # proxy => 'tcp:localhost:82',                  # local tcp server
 # proxy => 'http://login:password@localhost/cgi-bin/soap.cgi', # local CGI server with authentication
 
-# following proxies are one-way only, they don't return any response
+# following examples are one-way only, they don't return any response
 # proxy => 'ftp://login:password@ftp.somewhere.com/relative/path/to/file.xml', # ftp server
 # proxy => 'ftp://login:password@ftp.somewhere.com//absolute/path/to/file.xml', # ftp server
 

@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 11 }
+BEGIN { plan tests => 19 }
 
 use SOAP::Lite;
 
@@ -117,7 +117,11 @@ EOM
 my $is_mimeparser = eval { SOAP::MIMEParser->new; 1 };
 (my $reason = $@) =~ s/ at .+// unless $is_mimeparser;
 print "MIME tests will be skipped: $reason" if defined $reason;
-my $package = 'package Calculator; sub add { $_[1] + $_[2] }; 1';
+my $package = '
+  package Calculator; 
+  sub new { bless {} => ref($_[0]) || $_[0] }
+  sub add { $_[1] + $_[2] }; 
+1';
 
 { 
   print "Server handler test(s)...\n";
@@ -126,7 +130,7 @@ my $package = 'package Calculator; sub add { $_[1] + $_[2] }; 1';
 
   foreach (keys %tests) {
     my $result = SOAP::Deserializer->deserialize($server->handle($tests{$_}));
-    $_ =~ /XML/ || $is_mimeparser ? ok(($result->faultdetail || '') =~ /Failed to access class \(Calculator\)/) 
+    $_ =~ /XML/ || $is_mimeparser ? ok(($result->faultstring || '') =~ /Failed to access class \(Calculator\)/) 
                                   : skip($reason => undef);
   }
 
@@ -139,14 +143,47 @@ my $package = 'package Calculator; sub add { $_[1] + $_[2] }; 1';
   }
 }
 
+{ 
+  print "Server handler with complex dispatches test(s)...\n";
+
+  for (
+    # dispatch to class
+    SOAP::Server->dispatch_to('Calculator'),
+
+    # dispatch to object
+    SOAP::Server->dispatch_to(Calculator->new),
+
+    # dispatch to regexp
+    SOAP::Server->dispatch_to('Calc\w+'),
+
+    # dispatch URI to class
+    SOAP::Server->dispatch_with({'http://www.soaplite.com/Calculator' => 'Calculator'}),
+
+    # dispatch URI to object
+    SOAP::Server->dispatch_with({'http://www.soaplite.com/Calculator' => Calculator->new}),
+
+    # dispatch SOAPAction to class
+    SOAP::Server->action('http://action/#method')->dispatch_with({'http://action/#method' => 'Calculator'}),
+
+    # dispatch to class and BAD regexp. May fail, but shouldn't
+    SOAP::Server->dispatch_to('\protocols', 'Calculator')
+  ) {
+    my $result = SOAP::Deserializer->deserialize($_->handle($tests{'XML only'}));
+    ok(($result->result || 0) == 7);
+  }
+}
+
 {
   print "Error handling in server test(s)...\n";
 
   $a = SOAP::Server->handle('<a></a>');
-  ok($a =~ /Can't find Envelope/);
+  ok($a =~ /Can't find root/);
 
   $a = SOAP::Server->handle('<Envelope></Envelope>');
-  ok($a =~ /Bad Version/);
+  ok($a =~ /Can't find method/);
+
+  $a = SOAP::Server->handle('<Envelope><Body><Add><a>1</a><b>1</b></Add></Body></Envelope>');
+  ok($a =~ /Denied access to method/);
 
   $a = SOAP::Server->handle('<SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" 
                    SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" 

@@ -35,8 +35,8 @@ Revision history for Perl extension SOAP::Lite.
         + added more tests (47 for now)
 
 0.35 Sun Sep 17 23:57:10 2000
-        ! fixed minors (Response instead of Respond, server will map client's uri)
-        + cleaned HTTP::Server internals (will go to SOAP::Server in future)
+        ! fixed minors (Response instead of Respond, server will map client's URI)
+        + cleaned HTTP::Server internals (will go to SOAP::Server in the future)
         + test.pl won't abort on transport errors. Failed test will be skipped
         + added daemon server implementation
         + added cgi/daemon server implementation examples
@@ -110,7 +110,7 @@ Revision history for Perl extension SOAP::Lite.
         + added conversion of all objects to o-b-r in parameters
         + changed passing envelope into method
         + allowed \x0d and \x0a in strings (will not do base64 encode)
-        + added die with object that lets specify complex Fault detail
+        + added die with object that allows to specify complex Fault detail
         + optimized XML encoding
         + allowed function call with autodispatch
         + improved syntax for 'use SOAP::Lite'
@@ -199,3 +199,29 @@ Revision history for Perl extension SOAP::Lite.
         + added examples in C# and PerlScript for COM interface
         + added more documentation for COM interface
         + updated documentation and added new examples
+
+0.50 Wed Apr 18 11:45:14 2001
+        ! fixed tests on Windows platform
+        ! fixed authInfo in UDDI publishing interface
+        ! fixed mod_soap (Apache::SOAP) on Perl 5.005/5.004
+        ! fixed namespace prefix on arrays of arrays
+        ! modified Content-encoding from 'compress' to 'deflate'
+        + added XML::Parser::Lite, regexp-based XML parser
+          used automatically when XML::Parser is not available
+        + added examples of custom serialization and deserialization (XML::DOM)
+        + added XMLRPC::Lite (XMLRPC client and server interface)
+          all transports and features of SOAP::Lite should be available
+        + added XMLRPC interactive shell (XMLRPCsh.pl)
+        + added dispatching based on URI and SOAPAction (dispatch_with)
+        + added dispatching to object (in addition to class/method)
+        + added dispatch from specific class(es) (dispatch_from)
+        + added limited support for mustUnderstand and actor attributes
+        + added SOAP::Fault class for customization of returning Fault message
+        + added charset in HTTP header for requests
+        + added check for namespace and types resolving 
+        + added namespaces declarations from WSDL interface
+        + added INCOMPATIBILITY section in README file
+        + added live tests/examples for UDDI publishing interface
+        + added live tests/examples for basic authentication
+        + added XMLRPC server code that validates with Userland's validator
+        + added more examples, tests and documentation
