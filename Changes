@@ -102,3 +102,19 @@ Revision history for Perl extension SOAP::Lite.
         + added SOAP::Trace for detail logging on client/server side
         + added examples/tests for Apache::Registry implementations
         + added more examples, documentation and tests (127 for now)
+
+0.42 Tue Nov 14 23:14:18 2000
+        + added UDDI client (UDDI::Lite) with documentation
+        + added M-POST functionality in HTTP::Client
+        + added redirect (3??) functionality in HTTP::Client
+        + added session cache for both M-POSTs and redirects
+        + added conversion of all objects to o-b-r in parameters
+        + changed passing envelope into method
+        + allowed \x0d and \x0a in strings (will not base64 encode)
+        + added die with object that lets specify complex Fault detail
+        + optimized XML encoding
+        + allowed function call with autodispatch
+        + improved syntax for 'use SOAP::Lite'
+        + added soap.tcp example for TCP server implementation
+        + added tests with Microsoft implementation
+        + added documentation and tests (145 for now)

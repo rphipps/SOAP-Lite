@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::TCP.pm,v 0.41 2000/10/31 01:24:51 $
+# $Id: SOAP::Transport::TCP.pm,v 0.42 2000/11/14 23:14:18 $ 
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::TCP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.41';
+$VERSION = '0.42';
 
 use IO::Socket;
 
@@ -108,3 +108,26 @@ sub handle {
     close($sock);
   }
 }
+
+# ======================================================================
+
+1;
+
+__END__
+
+=head1 NAME
+
+SOAP::Transport::TCP - Server/Client side TCP support for SOAP::Lite
+
+=head1 COPYRIGHT
+
+Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=head1 AUTHOR
+
+Paul Kulchenko (paulclinger@yahoo.com)
+
+=cut

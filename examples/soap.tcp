@@ -1,0 +1,12 @@
+#!/bin/env perl 
+#!d:\perl\bin\perl.exe 
+
+use SOAP::Transport::TCP;
+
+my $daemon = SOAP::Transport::TCP::Server
+  -> new (LocalAddr => 'localhost', LocalPort => 82, Listen => 5, Reuse => 1)
+  -> objects_by_reference(qw(My::PersistentIterator My::SessionIterator My::Chat))
+  -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
+;
+print "Contact to SOAP server at ", join(':', $daemon->sockhost, $daemon->sockport), "\n";
+$daemon->handle;

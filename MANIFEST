@@ -9,10 +9,12 @@ lib/SOAP/Transport/MAILTO.pm  Module for SMTP/sendmail transport, client
 lib/SOAP/Transport/POP3.pm    Module for POP3 transport, server
 lib/SOAP/Transport/LOCAL.pm   Module for LOCAL transport, client and server
 lib/SOAP/Transport/TCP.pm     Module for TCP transport, client and server
+lib/UDDI/Lite.pm              Main UDDI::Lite module
 examples/SOAPsh.pl            SOAP shell
 examples/soap.cgi             SOAP server, CGI implementation
 examples/soap.daemon          SOAP server, daemon implementation
 examples/soap.pop3            SOAP server, POP3 implementation
+examples/soap.tcp             SOAP server, TCP implementation
 examples/soap.mod_cgi         SOAP server, Apache::Registry implementation
 examples/pingpong.pl          Example for local/remote access to the same object
 examples/autoeliza.pl         Script for Chatbot::Eliza with autodispatching
@@ -23,6 +25,7 @@ examples/parametersbyname.pl  Example for passing parameters-by-name
 examples/chat.pl              Client side for Chat implementation 
 examples/iterator.pl          Example for Session/Persistent iterators
 examples/soapmark.pl          Simple test for different implementations
+examples/uddi.pl              Example for UDDI interface
 examples/Apache.pm                 Module for SOAP server, mod_perl implementation
 examples/My/Chat.pm                Module with Chat server implementation 
 examples/My/Examples.pm            Module with Examples backend

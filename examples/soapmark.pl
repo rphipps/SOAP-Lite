@@ -12,7 +12,7 @@ my %dests = (
   CGI                => ['http://localhost/cgi-bin/soap.cgi' => 'http://soaplite.com/My/Examples'],
   daemon             => ['http://localhost:81/' => 'http://soaplite.com/My/Examples'],
   'Apache::Registry' => ['http://localhost/mod_perl/soap.mod_cgi' => 'http://soaplite.com/My/Examples'],
-  tcpip              => ['tcp:localhost:81' => 'http://soaplite.com/My/Examples'],
+  tcpip              => ['tcp:localhost:82' => 'http://soaplite.com/My/Examples'],
   direct             => ['' => 'My::Examples'],
 );
 
@@ -21,6 +21,7 @@ my $s;
 my %tests = (
   simple => sub {$s->getStateName(1)},
   array =>  sub {$s->getStateName((1) x 100)},
+  string =>  sub {$s->getStateName(1 x 100)},
 );
 
 my $testnum = 3;
@@ -43,7 +44,7 @@ foreach my $dest (keys %dests) {
   $s = $proxy ? SOAP::Lite->proxy($proxy)->uri($uri) : $uri;
   foreach my $test (keys %tests) {
     printf STDERR "%s [%s] ", $dest, $test;
-    eval {$tests{$test}->()}; warn('skipped due ', $@), next if $@;
+    eval {$tests{$test}->()}; warn('skipped, ', $@), next if $@;
     my($tps) = 0;
     for (1..$testnum) {
       my $r = Benchmark::runfor($tests{$test}, $testtime);
@@ -51,6 +52,6 @@ foreach my $dest (keys %dests) {
       $tps += $n / ($pu + $ps);
       print STDERR ".";
     }
-    printf STDERR " %.5s calls/s\n", $result{$dest}{$test} = $tps / $testnum;
+    printf STDERR " %.5s call/s\n", $result{$dest}{$test} = $tps / $testnum;
   }
 }

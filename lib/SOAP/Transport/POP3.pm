@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::POP3.pm,v 0.41 2000/10/31 01:24:51 $
+# $Id: SOAP::Transport::POP3.pm,v 0.42 2000/11/14 23:14:18 $ 
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::POP3;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.41';
+$VERSION = '0.42';
 
 use Net::POP3; 
 use MIME::Parser; 
@@ -71,3 +71,22 @@ sub make_fault { return }
 # ======================================================================
 
 1;
+
+__END__
+
+=head1 NAME
+
+SOAP::Transport::POP3 - Server side POP3 support for SOAP::Lite
+
+=head1 COPYRIGHT
+
+Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=head1 AUTHOR
+
+Paul Kulchenko (paulclinger@yahoo.com)
+
+=cut

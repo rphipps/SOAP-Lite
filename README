@@ -126,7 +126,6 @@ documentation from the module files directly.
 
 LIMITATIONS
 
-Library currenly supports HTTP protocol with no M-POST requests.
 No support for multidimensional, partially transmitted and sparse arrays 
 (however arrays of arrays are supported, as well as any other data
 structures, and you can add your own implementation with SOAP::Data).

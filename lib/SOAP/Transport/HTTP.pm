@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.41 2000/10/31 01:24:51 $
+# $Id: SOAP::Transport::HTTP.pm,v 0.42 2000/11/14 23:14:18 $ 
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.41';
+$VERSION = '0.42';
 
 # ======================================================================
 
@@ -21,13 +21,19 @@ package SOAP::Transport::HTTP::Client;
 use vars qw(@ISA);
 @ISA = qw(SOAP::Client LWP::UserAgent);
 
+use SOAP::Lite;
+
+my(%redirect, %mpost);
+
 # hack for HTTP conection that returns Keep-Alive 
 # miscommunication (?) between LWP::Protocol and LWP::Protocol::http
 # die after timeout
-my $patch = sub { package LWP::Protocol; local $^W;
+my $patch = sub { local $^W; 
+  eval "package LWP::UserAgent; sub redirect_ok {1}";
+  package LWP::Protocol; 
   my $collect = \&collect; # store original
   *collect = sub {          
-    if ($_[2]->header('Connection') eq 'Keep-Alive') {
+    if (defined $_[2]->header('Connection') && $_[2]->header('Connection') eq 'Keep-Alive') {
       my $data = $_[3]->(); 
       my $next = length($$data) == $_[2]->header('Content-Length') ? sub { \'' } : $_[3];
       my $done = 0; $_[3] = sub { $done++ ? &$next : $data };
@@ -47,7 +53,7 @@ sub new { eval "use LWP::UserAgent"; die if $@; $patch &&= &$patch;
     my(@params, @methods);
     while (@_) { $class->can($_[0]) ? push(@methods, shift() => shift) : push(@params, shift) }
     $self = $class->SUPER::new(@params);
-    $self->agent(join '/', 'SOAP::Transport', 'Perl', SOAP::Transport::HTTP->VERSION);
+    $self->agent(join '/', 'SOAP::Lite', 'Perl', SOAP::Transport::HTTP->VERSION);
     while (@methods) { my($method, $params) = splice(@methods,0,2);
       $self->$method(ref $params eq 'ARRAY' ? @$params : $params) 
     }
@@ -63,29 +69,50 @@ sub send_receive {
 
   $endpoint ||= $self->endpoint;
 
-  my $req = HTTP::Request->new(POST => $endpoint, HTTP::Headers->new, $envelope);
-  $req->proxy_authorization_basic($ENV{'HTTP_proxy_user'}, $ENV{'HTTP_proxy_pass'})
-    if ($ENV{'HTTP_proxy_user'} && $ENV{'HTTP_proxy_pass'});
+  my $method = 'POST';
+  my $resp;
+  while (1) { 
 
-  $req->header('SOAPAction' => $action);
-  $req->content_type('text/xml');
-  $req->content_length(length($envelope));
+    # check cache for redirect
+    $endpoint = $redirect{$endpoint} if exists $redirect{$endpoint};
+    # check cache for M-POST
+    $method = 'M-POST' if exists $mpost{$endpoint};
 
-  SOAP::Trace::transport($req);
-  SOAP::Trace::debug($req->as_string);
+    my $req = HTTP::Request->new($method => $endpoint, HTTP::Headers->new, $envelope);
+    $req->proxy_authorization_basic($ENV{'HTTP_proxy_user'}, $ENV{'HTTP_proxy_pass'})
+      if ($ENV{'HTTP_proxy_user'} && $ENV{'HTTP_proxy_pass'});
+
+    if ($method eq 'M-POST') {
+      my $prefix = sprintf '%04d', int(rand(1000));
+      $req->header(Man => qq!"$SOAP::Constants::NS_ENV"; ns=$prefix!);
+      $req->header("$prefix-SOAPAction" => $action);  
+    } else {
+      $req->header(SOAPAction => $action);
+    }
+    $req->content_type('text/xml');
+    $req->content_length(length($envelope));
+
+    SOAP::Trace::transport($req);
+    SOAP::Trace::debug($req->as_string);
     
-  $self->SUPER::env_proxy if $ENV{'HTTP_proxy'};
+    $self->SUPER::env_proxy if $ENV{'HTTP_proxy'};
 
-  my $resp = $self->SUPER::request($req);
+    $resp = $self->SUPER::request($req);
 
-  SOAP::Trace::transport($resp);
-  SOAP::Trace::debug($resp->as_string);
+    SOAP::Trace::transport($resp);
+    SOAP::Trace::debug($resp->as_string);
 
-# 200 OK
-# 204 OK, one-way method
-# 3?? Redirects, cache results
-# 405/510 POST not supported, try M-POST
-#+ 500 Server/Client side error, content can be present
+    # 100 OK, continue to read?
+    if (($resp->code == 510 || $resp->code == 501 || $resp->code == 405) && 
+        $method ne 'M-POST') { 
+      $mpost{$endpoint} = 1;
+    } else {
+      last;
+    }
+  }
+
+  $redirect{$endpoint} = $resp->request->url
+    if $resp->previous && $resp->previous->is_redirect;
 
   $self->code($resp->code);
   $self->message($resp->message);
@@ -136,32 +163,42 @@ sub BEGIN {
 sub handle {
   my $self = shift->new;
 
-  return $self->response(HTTP::Response->new(400)) # BAD_REQUEST
-    unless $self->request->method eq 'POST';
+  if ($self->request->method eq 'POST') {
+    $self->action($self->request->header('SOAPAction'));
+  } elsif ($self->request->method eq 'M-POST') {
+    return $self->response(HTTP::Response->new(510, # NOT EXTENDED
+           "Expected Mandatory header with $SOAP::Constants::NS_ENV as unique URI")) 
+      if $self->request->header('Man') !~ /^"$SOAP::Constants::NS_ENV";\s*ns\s*=\s*(\d+)/;
+    $self->action($self->request->header("$1-SOAPAction"));
+  } else {
+    return $self->response(HTTP::Response->new(405)) # METHOD NOT ALLOWED
+  }
 
   return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Request' => 'Content-Type must be text/xml')
     unless $self->request->content_type eq 'text/xml';
 
-  $self->action($self->request->header('SOAPAction'));
-
   my $response = $self->SUPER::handle($self->request->content) or return;
 
-  $self->response(HTTP::Response->new( 
-     $SOAP::Constants::HTTP_ON_SUCCESS_CODE => undef, 
-     HTTP::Headers->new('Content-Type' => 'text/xml', 'Content-Length' => length $response), 
-     $response,
-  ));
+  $self->make_response($SOAP::Constants::HTTP_ON_SUCCESS_CODE, $response);
 }
 
 sub make_fault {
   my $self = shift;
-  my $response = $self->SUPER::make_fault(@_);
-  $self->response(HTTP::Response->new(
-     $SOAP::Constants::HTTP_ON_FAULT_CODE => undef,
-     HTTP::Headers->new('Content-Type' => 'text/xml', 'Content-Length' => length $response),
+  $self->make_response($SOAP::Constants::HTTP_ON_FAULT_CODE => $self->SUPER::make_fault(@_));
+  return;
+}
+
+sub make_response {
+  my $self = shift;
+  my($code, $response) = @_;
+  $self->response(HTTP::Response->new( 
+     $code => undef, 
+     HTTP::Headers->new(
+       'SOAPServer' => join('/', 'SOAP::Lite', 'Perl', SOAP::Transport::HTTP->VERSION),
+       'Content-Type' => 'text/xml', 
+       'Content-Length' => length $response), 
      $response,
   ));
-  return;
 }
 
 # ======================================================================
@@ -190,10 +227,7 @@ sub handle {
   my $content; read(STDIN,$content,$ENV{'CONTENT_LENGTH'});  
   $self->request(HTTP::Request->new( 
     $ENV{'REQUEST_METHOD'} => $ENV{'SCRIPT_NAME'},
-    HTTP::Headers->new(
-      map { (my $http = uc $_) =~ s/-/_/g; $_ => $ENV{"HTTP_$http"} || $ENV{$http};
-          } qw(Content-Type SOAPAction),
-    ),
+    HTTP::Headers->new(map {(/^HTTP_(.+)/i ? $1 : $_) => $ENV{$_}} keys %ENV),
     $content,
   ));
   $self->SUPER::handle;
@@ -275,10 +309,7 @@ sub handler {
 
   $self->request(HTTP::Request->new( 
     $r->method => $r->uri,
-    HTTP::Headers->new(
-      'Content-Type' => $r->header_in('Content-type'),
-      'SOAPAction' => $r->header_in('SOAPAction'),
-    ),
+    HTTP::Headers->new($r->headers_in),
     do { my $buf; $r->read($buf, $r->header_in('Content-length')); $buf; } 
   ));
   $self->SUPER::handle;
@@ -303,7 +334,7 @@ __END__
 
 =head1 NAME
 
-SOAP::Transport::HTTP - Server/Client side HTTP support for SOAP::Lite for Perl
+SOAP::Transport::HTTP - Server/Client side HTTP support for SOAP::Lite
 
 =head1 SYNOPSIS
 
@@ -400,7 +431,7 @@ or
  $soap->transport->proxy('http' => 'http://my.proxy.server');
 
 should specify proxy server for you. And if you use C<HTTP_proxy_user> 
-and C<HTTP_proxy_pass> for peoxy authorization SOAP::Lite should know 
+and C<HTTP_proxy_pass> for proxy authorization SOAP::Lite should know 
 what to do with it. If not, let me know.
 
 =head1 EXAMPLES
@@ -463,7 +494,7 @@ httpd.conf:
    Options +ExecCGI
   </Location>
 
-soap.cgi (put it in /Apache/mod_perl directory mentioned above)
+soap.mod_cgi (put it in /Apache/mod_perl/ directory mentioned above)
 
   use SOAP::Transport::HTTP;
 
@@ -474,9 +505,16 @@ soap.cgi (put it in /Apache/mod_perl directory mentioned above)
 
 =back
 
+WARNING: dynamic deployment with Apache::Registry will fail, because 
+module will be loaded dynamically only for the first time. After that 
+it is already in the memory, that will bypass dynamic deployment and 
+produces error about denied access. Specify both PATH/ and MODULE name 
+in dispatch_to() and module will be loaded dynamically and then will work 
+as under static deployment. See examples/soap.mod_cgi for example.
+
 =head1 TROUBLESHOOTING
 
-If you'll see something like this in your webserver's log file: 
+If you see something like this in your webserver's log file: 
 Can't load '/usr/local/lib/perl5/site_perl/.../XML/Parser/Expat/Expat.so' 
 for module XML::Parser::Expat: dynamic linker: /usr/local/bin/perl:
  libexpat.so.0 is NEEDED, but object does not exist at
