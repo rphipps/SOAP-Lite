@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::MAILTO.pm,v 0.40 2000/10/15 18:20:55 $
+# $Id: SOAP::Transport::MAILTO.pm,v 0.41 2000/10/31 01:24:51 $
 #
 # ======================================================================
 
@@ -12,39 +12,29 @@ package SOAP::Transport::MAILTO;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.40';
+$VERSION = '0.41';
+
+use MIME::Lite; 
+use URI;
 
 # ======================================================================
 
 package SOAP::Transport::MAILTO::Client;
 
-sub new { eval "use MIME::Lite; use URI"; die if $@;
+use vars qw(@ISA);
+@ISA = qw(SOAP::Client);
+
+sub DESTROY { SOAP::Trace::objects('()') }
+
+sub new { 
   my $self = shift;
   my $class = ref($self) || $self;
 
   unless (ref $self) {
-    $self = bless {} => $class;
-    $self->on_debug(sub {});
-  }
-
-  if (@_) {
-    my %parameters = @_;
-    foreach (grep {defined $parameters{$_}} keys %parameters) {
-      $self->$_($parameters{$_}) if $self->can($_);
-    }
+    $self = bless {@_} => $class;
+    SOAP::Trace::objects('()');
   }
   return $self;
-}
-
-sub BEGIN {
-  no strict 'refs';
-  for my $method (qw(endpoint code message is_success status on_debug parameters)) {
-    my $field = '_' . $method;
-    *$method = sub {
-      my $self = shift->new;
-      @_ ? ($self->{$field} = shift, return $self) : return $self->{$field};
-    }
-  }
 }
 
 sub send_receive {
@@ -54,8 +44,7 @@ sub send_receive {
 
   $endpoint ||= $self->endpoint;
   my $uri = URI->new($endpoint);
-  %parameters = ((map {URI::Escape::uri_unescape($_)} map {split/=/,$_,2} split /[&;]/, $uri->query), 
-                 %{$self->parameters});
+  %parameters = (%$self, map {URI::Escape::uri_unescape($_)} map {split/=/,$_,2} split /[&;]/, $uri->query);
 
   my $msg = MIME::Lite->new(
     From       => $parameters{From},
@@ -68,7 +57,8 @@ sub send_receive {
   );
   $msg->add(SOAPAction => $action);
 
-  $self->on_debug->($msg->as_string);
+  SOAP::Trace::transport($msg);
+  SOAP::Trace::debug($msg->as_string);
     
   MIME::Lite->send(map {exists $parameters{$_} ? ($_ => $parameters{$_}) : ()} 'smtp', 'sendmail');
   eval { local $SIG{__DIE__}; $msg->send };

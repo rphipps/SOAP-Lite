@@ -90,3 +90,15 @@ Revision history for Perl extension SOAP::Lite.
         + added local: protocol for local binding without any transport
         + added examples for objects-by-reference: persistent/session
           iterators and chat (40 lines on server and 25 lines on client side)
+
+0.41 Tue Oct 31 01:24:51 2000
+        ! fixed memory leak on server side
+        ! fixed die on absence of HTTP::* modules on server side
+        ! fixed working with keepalive connections (added test with Xmethods)
+        + changed autotyping from double to float
+        + added support for proxy authorization (thanks to Murray Nesbitt)
+        + added TCP client/server implementation
+        + added benchmark for all implementations except smtp/pop3
+        + added SOAP::Trace for detail logging on client/server side
+        + added examples/tests for Apache::Registry implementations
+        + added more examples, documentation and tests (127 for now)

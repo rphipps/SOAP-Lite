@@ -6,7 +6,7 @@
 # Change 1..1 below to 1..last_test_to_print .
 # (It may become useful if the test is moved to ./t subdirectory.)
 
-BEGIN { $| = 1; print "1..103\n"; }
+BEGIN { $| = 1; print "1..127\n"; }
 END {print "not ok 1\n" unless $loaded;}
 use SOAP::Lite;
 $loaded = 1;
@@ -263,6 +263,18 @@ my $test = 1;
 
 }
 
+{ # check for serialization with SOAPStruct (for interoperability with ApacheSOAP)
+  print "Serialization w/out SOAPStruct test(s)...\n";
+
+  $a = { a => 1 };
+
+  $test++; print SOAP::Serializer->serialize($a) =~ m!SOAPStruct! 
+    ? "ok $test\n" : "not ok $test\n";
+
+  $test++; print SOAP::Serializer->autotype(0)->serialize($a) !~ m!SOAPStruct! 
+    ? "ok $test\n" : "not ok $test\n";
+}
+
 { # check serialization/deserialization of simple types  
   print "Serialization/deserialization of simple types test(s)...\n";
 
@@ -329,8 +341,8 @@ EOBASE64
 { # check header serialization/deserialization   
   print "Header serialization/deserialization test(s)...\n";
 
-  $serialized = SOAP::Serializer->envelope('method'
-      => 'mymethod', 1, 2, 3, 
+  $serialized = SOAP::Serializer->method( # same as ->envelope(method =>
+      'mymethod', 1, 2, 3, 
       SOAP::Header->name(t1 => 5)->attr({'~V:mustUnderstand' => 1}),
       SOAP::Header->name(t2 => 7)->mustUnderstand(2),
   );
@@ -369,7 +381,7 @@ print "
 This test sends a live SOAP call to your local web server (CGI implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
 ";
 if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /^\s*y/i) {
-  $test+=11; print "skipped 11 test(s)\n"; 
+  $test+=13; print "skipped 13 test(s)\n"; 
 } else {
 # Local server with Perl implementation (http://www.geocities.com/paulclinger/soap.html)
   print "Perl SOAP server test(s)...\n";
@@ -433,7 +445,7 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
   print "You can see warning about AUTOLOAD for non-method...\n" if $^W;
 
   eval "use SOAP::Lite +autodispatch 
-    => (uri => 'http://my.own.site.com/My/ParametersByName', 
+    => (uri => 'http://my.own.site.com/My/Parameters', 
         proxy => 'http://localhost/cgi-bin/soap.cgi')";
 
   my @parameters = (
@@ -443,13 +455,28 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
   );
 
   $test++; print byname(@parameters) eq "a=111, b=222, c=333" ? "ok $test\n" : "not ok $test\n";
+
+  print "SOAPAction test(s)...\n";
+  {
+    my $s = SOAP::Lite
+      -> uri('http://my.own.site.com/My/Examples')                
+      -> proxy('http://localhost/cgi-bin/soap.cgi')
+      -> on_action(sub{'""'})
+    ;
+    $test++; print $s->getStateName(1)->result eq 'Alabama' ? "ok $test\n" : "not ok $test\n"; 
+
+    $s-> on_action(sub{'"wrong_SOAPAction_here"'})
+      -> on_fault(sub{});
+
+    $test++; print $s->getStateName(1)->faultdetail =~ /SOAPAction shall match/ ? "ok $test\n" : "not ok $test\n"; 
+  }
 }
 
 print "
 This test sends a live SOAP call to your local web server (daemon implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
 ";
 if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /^\s*y/i) {
-  $test+=13; print "skipped 13 test(s)\n"; 
+  $test+=15; print "skipped 15 test(s)\n"; 
 } else {
 # Local server with Perl implementation (http://www.geocities.com/paulclinger/soap.html)
   print "Perl SOAP server test(s)...\n";
@@ -529,7 +556,7 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
   print "You can see warning about AUTOLOAD for non-method...\n" if $^W;
 
   eval "use SOAP::Lite +autodispatch 
-    => (uri => 'http://my.own.site.com/My/ParametersByName', 
+    => (uri => 'http://my.own.site.com/My/Parameters', 
         proxy => 'http://localhost/')";
 
   my @parameters = (
@@ -539,13 +566,28 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
   );
 
   $test++; print byname(@parameters) eq "a=111, b=222, c=333" ? "ok $test\n" : "not ok $test\n";
+
+  print "SOAPAction test(s)...\n";
+  {
+    my $s = SOAP::Lite
+      -> uri('http://my.own.site.com/My/Examples')                
+      -> proxy('http://localhost/')
+      -> on_action(sub{'""'})
+    ;
+    $test++; print $s->getStateName(1)->result eq 'Alabama' ? "ok $test\n" : "not ok $test\n"; 
+
+    $s-> on_action(sub{'"wrong_SOAPAction_here"'})
+      -> on_fault(sub{});
+
+    $test++; print $s->getStateName(1)->faultdetail =~ /SOAPAction shall match/ ? "ok $test\n" : "not ok $test\n"; 
+  }
 }
 
 print "
 This test sends a live SOAP call to your local Apache server (mod_perl implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
 ";
 if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /^\s*y/i) {
-  $test+=13; print "skipped 13 test(s)\n"; 
+  $test+=15; print "skipped 15 test(s)\n"; 
 } else {
 # Local server with Perl implementation (http://www.geocities.com/paulclinger/soap.html)
   print "Perl SOAP server test(s)...\n";
@@ -625,7 +667,7 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
   print "You can see warning about AUTOLOAD for non-method...\n" if $^W;
 
   eval "use SOAP::Lite +autodispatch 
-    => (uri => 'http://my.own.site.com/My/ParametersByName', 
+    => (uri => 'http://my.own.site.com/My/Parameters', 
         proxy => 'http://localhost/soap')";
 
   my @parameters = (
@@ -635,6 +677,132 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
   );
 
   $test++; print byname(@parameters) eq "a=111, b=222, c=333" ? "ok $test\n" : "not ok $test\n";
+
+  print "SOAPAction test(s)...\n";
+  {
+    my $s = SOAP::Lite
+      -> uri('http://my.own.site.com/My/Examples')                
+      -> proxy('http://localhost/soap')
+      -> on_action(sub{'""'})
+    ;
+    $test++; print $s->getStateName(1)->result eq 'Alabama' ? "ok $test\n" : "not ok $test\n"; 
+
+    $s-> on_action(sub{'"wrong_SOAPAction_here"'})
+      -> on_fault(sub{});
+
+    $test++; print $s->getStateName(1)->faultdetail =~ /SOAPAction shall match/ ? "ok $test\n" : "not ok $test\n"; 
+  }
+}
+
+print "
+This test sends a live SOAP call to your local Apache server (Apache::Registry implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
+";
+if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /^\s*y/i) {
+  $test+=15; print "skipped 15 test(s)\n"; 
+} else {
+# Local server with Perl implementation (http://www.geocities.com/paulclinger/soap.html)
+  print "Perl SOAP server test(s)...\n";
+
+  $s = SOAP::Lite
+    -> uri('urn:/My/Examples')                
+    -> proxy('http://localhost/mod_perl/soap.mod_cgi')
+  ;
+
+  $test++; print $s->getStateName(1)->result eq 'Alabama' ? "ok $test\n" : "not ok $test\n"; 
+  $test++; print $s->getStateNames(1,4,6,13)->result =~ /^Alabama\s+Arkansas\s+Colorado\s+Illinois\s*$/ ? "ok $test\n" : "not ok $test\n"; 
+  $r = $s->getStateList([1,2,3,4])->result;
+  $test++; print ref $r && $r->[0] eq 'Alabama' ? "ok $test\n" : "not ok $test\n"; 
+  $r = $s->getStateStruct({item1 => 1, item2 => 4})->result;
+  $test++; print ref $r && $r->{item2} eq 'Arkansas' ? "ok $test\n" : "not ok $test\n"; 
+
+  print "Autobinding of output parameters test(s)...\n";
+
+  $s->uri('urn:/My/Parameters');
+  my $param1 = 10;
+  my $param2 = SOAP::Data->name('myparam' => 12);
+  my $result = $s->autobind($param1, $param2)->result;
+  $test++; print $result == $param1 && $param2->value == 24 ? "ok $test\n" : "not ok $test\n"; 
+
+  print "Header manipulating test(s)...\n";
+
+  $a = $s->addheader(2, SOAP::Header->name(my => 123)); 
+  $test++; print $a->header->{my} eq '123123' ? "ok $test\n" : "not ok $test\n"; 
+  $test++; print $a->headers eq '123123' ? "ok $test\n" : "not ok $test\n"; 
+
+  print "Object autobinding and SOAP:: prefix test(s)...\n";
+
+  eval "use SOAP::Lite +autodispatch 
+    => (uri => 'urn:', proxy => 'http://localhost/mod_perl/soap.mod_cgi')";
+
+  eval { SOAP->new(1) };
+  $test++; print $@ =~ /^URI is not specified/ ? "ok $test\n" : "not ok $test\n";
+
+  eval "use SOAP::Lite +autodispatch 
+    => (uri => 'urn:/A/B', proxy => 'http://localhost/mod_perl/soap.mod_cgi')";
+
+  # should call My::PingPong, not A::B
+  my $p = My::PingPong->SOAP::new(10);
+  my $next = $p->SOAP::next;
+  $test++; print $p->value == $next+1 ? "ok $test\n" : "not ok $test\n";
+
+  print "VersionMismatch test(s)...\n";
+
+  {
+    local $SOAP::Constants::NS_ENV = 'http://schemas.xmlsoap.org/new/envelope/';
+    my $s = SOAP::Lite
+      -> uri('http://my.own.site.com/My/Examples')                
+      -> proxy('http://localhost/mod_perl/soap.mod_cgi')
+      -> on_fault(sub{})
+    ;
+    $r = $s->dosomething;
+    $test++; print $r->faultcode eq 'VersionMismatch' ? "ok $test\n" : "not ok $test\n";
+  }
+
+  print "Objects-by-reference test(s)...\n";
+
+  eval "use SOAP::Lite +autodispatch 
+    => (uri => 'urn:', proxy => 'http://localhost/mod_perl/soap.mod_cgi')";
+
+  print "Session iterator\n";
+  my $r = My::SessionIterator->new(10); $r->next;  
+  $test++; print $r->next == 11 ? "ok $test\n" : "not ok $test\n";
+
+  print "Persistent iterator\n";
+  $r = My::PersistentIterator->new(10); $r->next; 
+  my $first = $r->next;   
+
+  $r = My::PersistentIterator->new(10); $r->next; 
+  $test++; print $r->next == $first+2 ? "ok $test\n" : "not ok $test\n";
+
+  print "Parameters-by-name test(s)...\n";
+  print "You can see warning about AUTOLOAD for non-method...\n" if $^W;
+
+  eval "use SOAP::Lite +autodispatch 
+    => (uri => 'http://my.own.site.com/My/Parameters', 
+        proxy => 'http://localhost/mod_perl/soap.mod_cgi')";
+
+  my @parameters = (
+    SOAP::Data->name(b => 222), 
+    SOAP::Data->name(c => 333), 
+    SOAP::Data->name(a => 111)
+  );
+
+  $test++; print byname(@parameters) eq "a=111, b=222, c=333" ? "ok $test\n" : "not ok $test\n";
+
+  print "SOAPAction test(s)...\n";
+  {
+    my $s = SOAP::Lite
+      -> uri('http://my.own.site.com/My/Examples')                
+      -> proxy('http://localhost/mod_perl/soap.mod_cgi')
+      -> on_action(sub{'""'})
+    ;
+    $test++; print $s->getStateName(1)->result eq 'Alabama' ? "ok $test\n" : "not ok $test\n"; 
+
+    $s-> on_action(sub{'"wrong_SOAPAction_here"'})
+      -> on_fault(sub{});
+
+    $test++; print $s->getStateName(1)->faultdetail =~ /SOAPAction shall match/ ? "ok $test\n" : "not ok $test\n"; 
+  }
 }
 
 print "
@@ -786,6 +954,14 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'no') =~ /^
 
   $r = $s->getQuote('MSFT')->result;
   print "Quote for MSFT symbol is $r\n";
+  $test++; print $r > 1 ? "ok $test\n" : "not ok $test\n";
+
+  $s = SOAP::Lite                             
+    -> uri('urn:xmethods-delayed-quotes')                
+    -> proxy('http://services.xmethods.com:9090/soap');
+
+  print "Connect to server with keep-alive\n";
+  $r = $s->getQuote('MSFT')->result;
   $test++; print $r > 1 ? "ok $test\n" : "not ok $test\n";
 
   $test++; print SOAP::Lite

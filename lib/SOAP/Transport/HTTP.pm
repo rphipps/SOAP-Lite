@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.40 2000/10/15 18:20:55 $
+# $Id: SOAP::Transport::HTTP.pm,v 0.41 2000/10/31 01:24:51 $
 #
 # ======================================================================
 
@@ -12,43 +12,48 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.40';
+$VERSION = '0.41';
 
 # ======================================================================
 
 package SOAP::Transport::HTTP::Client;
 
 use vars qw(@ISA);
-@ISA = qw(LWP::UserAgent);
+@ISA = qw(SOAP::Client LWP::UserAgent);
 
-sub new { eval "use LWP::UserAgent; use URI"; die if $@;
+# hack for HTTP conection that returns Keep-Alive 
+# miscommunication (?) between LWP::Protocol and LWP::Protocol::http
+# die after timeout
+my $patch = sub { package LWP::Protocol; local $^W;
+  my $collect = \&collect; # store original
+  *collect = sub {          
+    if ($_[2]->header('Connection') eq 'Keep-Alive') {
+      my $data = $_[3]->(); 
+      my $next = length($$data) == $_[2]->header('Content-Length') ? sub { \'' } : $_[3];
+      my $done = 0; $_[3] = sub { $done++ ? &$next : $data };
+    }
+    goto &$collect;
+  };
+  return;
+};
+
+sub DESTROY { SOAP::Trace::objects('()') }
+
+sub new { eval "use LWP::UserAgent"; die if $@; $patch &&= &$patch;
   my $self = shift;
   my $class = ref($self) || $self;
 
   unless (ref $self) {
-    $self = bless $class->SUPER::new() => $class;
+    my(@params, @methods);
+    while (@_) { $class->can($_[0]) ? push(@methods, shift() => shift) : push(@params, shift) }
+    $self = $class->SUPER::new(@params);
     $self->agent(join '/', 'SOAP::Transport', 'Perl', SOAP::Transport::HTTP->VERSION);
-    $self->on_debug(sub {});
-  }
-
-  if (@_) {
-    my %parameters = @_;
-    foreach (grep {defined $parameters{$_}} keys %parameters) {
-      $self->$_($parameters{$_}) if $self->can($_);
+    while (@methods) { my($method, $params) = splice(@methods,0,2);
+      $self->$method(ref $params eq 'ARRAY' ? @$params : $params) 
     }
+    SOAP::Trace::objects('()');
   }
   return $self;
-}
-
-sub BEGIN {
-  no strict 'refs';
-  for my $method (qw(endpoint code message is_success status on_debug parameters)) {
-    my $field = '_' . $method;
-    *$method = sub {
-      my $self = shift->new;
-      @_ ? ($self->{$field} = shift, return $self) : return $self->{$field};
-    }
-  }
 }
 
 sub send_receive {
@@ -59,17 +64,22 @@ sub send_receive {
   $endpoint ||= $self->endpoint;
 
   my $req = HTTP::Request->new(POST => $endpoint, HTTP::Headers->new, $envelope);
+  $req->proxy_authorization_basic($ENV{'HTTP_proxy_user'}, $ENV{'HTTP_proxy_pass'})
+    if ($ENV{'HTTP_proxy_user'} && $ENV{'HTTP_proxy_pass'});
 
   $req->header('SOAPAction' => $action);
-  $req->header(Host => URI->new($self->endpoint)->host_port);
   $req->content_type('text/xml');
   $req->content_length(length($envelope));
 
-  $self->on_debug->($req->as_string);
+  SOAP::Trace::transport($req);
+  SOAP::Trace::debug($req->as_string);
     
+  $self->SUPER::env_proxy if $ENV{'HTTP_proxy'};
+
   my $resp = $self->SUPER::request($req);
 
-  $self->on_debug->($resp->as_string);
+  SOAP::Trace::transport($resp);
+  SOAP::Trace::debug($resp->as_string);
 
 # 200 OK
 # 204 OK, one-way method
@@ -89,28 +99,25 @@ sub send_receive {
 
 package SOAP::Transport::HTTP::Server;
 
-use SOAP::Lite;
 use vars qw(@ISA);
 @ISA = qw(SOAP::Server);
 
-sub new { 
+use SOAP::Lite;
+
+sub DESTROY { SOAP::Trace::objects('()') }
+
+sub new { eval "use LWP::UserAgent"; die if $@;
   my $self = shift;
   my $class = ref($self) || $self;
 
   unless (ref $self) {
-    $self = bless $class->SUPER::new() => $class;
+    $self = $class->SUPER::new(@_);
     $self->on_action(sub {
-      (my $action = shift) =~ s/^("?)(.+)\1$/$2/;
+      (my $action = shift) =~ s/^("?)(.*)\1$/$2/;
       die "SOAPAction shall match 'uri#method' if present\n" 
-        if $action && $action ne join '#', @_;
+        if $action && $action ne join('#', @_) && $action ne join('/', @_);
     });
-  }
-
-  if (@_) {
-    my %parameters = @_;
-    foreach (grep {defined $parameters{$_}} keys %parameters) {
-      $self->$_($parameters{$_}) if $self->can($_);
-    }
+    SOAP::Trace::objects('()');
   }
   return $self;
 }
@@ -164,11 +171,15 @@ package SOAP::Transport::HTTP::CGI;
 use vars qw(@ISA);
 @ISA = qw(SOAP::Transport::HTTP::Server);
 
+sub DESTROY { SOAP::Trace::objects('()') }
+
 sub new { 
   my $self = shift;
   my $class = ref($self) || $self;
+
   unless (ref $self) {
-    $self = bless $class->SUPER::new() => $class;
+    $self = $class->SUPER::new(@_);
+    SOAP::Trace::objects('()');
   }
   return $self;
 }
@@ -198,15 +209,20 @@ sub handle {
 
 package SOAP::Transport::HTTP::Daemon;
 
+use Carp;
 use vars qw($AUTOLOAD @ISA);
 @ISA = qw(SOAP::Transport::HTTP::Server);
+
+sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { eval "use HTTP::Daemon"; die if $@;
   my $self = shift;
   my $class = ref($self) || $self;
+
   unless (ref $self) {
-    $self = bless $class->SUPER::new() => $class;
-    $self->{_daemon} = HTTP::Daemon->new(@_);
+    $self = $class->SUPER::new();
+    $self->{_daemon} = HTTP::Daemon->new(@_) or croak "Can't create daemon: $!";
+    SOAP::Trace::objects('()');
   }
   return $self;
 }
@@ -223,13 +239,13 @@ sub AUTOLOAD {
 sub handle {
   my $self = shift->new;
   while (my $c = $self->accept) {
-      while (my $r = $c->get_request) {
-          $self->request($r);
-          $self->SUPER::handle;
-          $c->send_response($self->response)
-      }
-      $c->close;
-      undef $c;
+    while (my $r = $c->get_request) {
+      $self->request($r);
+      $self->SUPER::handle;
+      $c->send_response($self->response)
+    }
+    $c->close;
+    undef $c;
   }
 }
 
@@ -240,16 +256,20 @@ package SOAP::Transport::HTTP::Apache;
 use vars qw(@ISA);
 @ISA = qw(SOAP::Transport::HTTP::Server);
 
-sub new { 
+sub DESTROY { SOAP::Trace::objects('()') }
+
+sub new { eval "use Apache; use Apache::Constants qw(OK)"; die if $@;
   my $self = shift;
   my $class = ref($self) || $self;
+
   unless (ref $self) {
-    $self = bless $class->SUPER::new() => $class;
+    $self = $class->SUPER::new(@_);
+    SOAP::Trace::objects('()');
   }
   return $self;
 }
 
-sub handler { eval "use Apache; use Apache::Constants qw(OK)"; die if $@;
+sub handler { 
   my $self = shift->new; 
   my $r = shift || Apache->request; 
 
@@ -368,85 +388,20 @@ handled.
 
 =back
 
-=head2 SERVICE DEPLOYMENT. STATIC AND DYNAMIC
+=head2 PROXY SETTINGS
 
-Let us scrutinize deployment process. Designing your SOAP server you 
-can consider two kind of deployment: B<static> and B<dynamic>.
-For both static and dynamic deployment you should specify C<MODULE>, 
-C<MODULE::method>, C<method> or C<PATH/>. Difference between static and dynamic
-deployment is that if module is not present it'll be loaded on
-demand. See L</SECURITY> section for detailed description.
+You can use any proxy setting you use with LWP::UserAgent modules:
 
-Example for B<static> deployment:
+ SOAP::Lite->proxy('http://endpoint.server', 
+                   proxy => ['http' => 'http://my.proxy.server']);
 
-  use SOAP::Transport::HTTP;
-  use My::Examples;           # module is preloaded 
+or
 
-  SOAP::Transport::HTTP::CGI
-    # deployed module should be present here or client will get 'access denied'
-    -> dispatch_to('My::Examples') 
-    -> handle;
+ $soap->transport->proxy('http' => 'http://my.proxy.server');
 
-Example for B<dynamic> deployment:
-
-  use SOAP::Transport::HTTP;
-  # name is unknown, module will be loaded on demand
-
-  SOAP::Transport::HTTP::CGI
-    # deployed module should be present here or client will get 'access denied'
-    -> dispatch_to('/Your/Path/To/Deployed/Modules', 'My::Examples') 
-    -> handle;
-
-For static deployment you should specify MODULE name directly. 
-For dynamic deployment you can specify name either directly (in that 
-case it'll be required with no restriction) or indirectly, with PATH
-(in that case ONLY path that'll be available will be PATH from 
-dispatch_to() parameters). For information how to handle this situation
-see L</SECURITY> section.
-
-=head2 SECURITY
-
-Due to security reasons if you choose dynamic deployment and specified 
-C<PATH/>, current path for perl modules (C<@INC>) will be disabled. 
-If you want to access other modules in your included package you have 
-several options:
-
-=over 4
-
-=item 1
-
-Switch to static linking:
-
-   use MODULE;
-   $server->dispatch_to('MODULE');
-
-It can be usable also when you want to import something specific
-from deployed modules: 
-
-   use MODULE qw(import_list);
-
-=item 2
-
-Change C<use> to C<require>. Path is unavailable only during 
-initialization part, and it's available again during execution. 
-So, if you do C<require> somewhere in your package it'll work.
-
-=item 3
-
-Same thing, but you can do: 
-
-   eval 'use MODULE qw(import_list)'; die if $@;
-
-=item 4
-
-Assign C<@INC> directory in your package and then make C<use>.
-Don't forget to put C<@INC> in C<BEGIN{}> block or it won't work:
-
-   BEGIN { @INC = qw(my_directory); use MODULE }
-
-Personally I don't like this method, better options are available.
-
-=back
+should specify proxy server for you. And if you use C<HTTP_proxy_user> 
+and C<HTTP_proxy_pass> for peoxy authorization SOAP::Lite should know 
+what to do with it. If not, let me know.
 
 =head1 EXAMPLES
 
@@ -496,7 +451,42 @@ Apache.pm:
 
   1;
 
+=item Apache::Registry:
+
+httpd.conf:
+
+  Alias /mod_perl/ "/Apache/mod_perl/"
+  <Location /mod_perl>
+   SetHandler perl-script
+   PerlHandler Apache::Registry
+   PerlSendHeader On
+   Options +ExecCGI
+  </Location>
+
+soap.cgi (put it in /Apache/mod_perl directory mentioned above)
+
+  use SOAP::Transport::HTTP;
+
+  SOAP::Transport::HTTP::CGI
+    -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
+    -> handle
+  ;
+
 =back
+
+=head1 TROUBLESHOOTING
+
+If you'll see something like this in your webserver's log file: 
+Can't load '/usr/local/lib/perl5/site_perl/.../XML/Parser/Expat/Expat.so' 
+for module XML::Parser::Expat: dynamic linker: /usr/local/bin/perl:
+ libexpat.so.0 is NEEDED, but object does not exist at
+/usr/local/lib/perl5/.../DynaLoader.pm line 200.
+
+and you are using Apache web server, try to add to your httpd.conf
+
+ <IfModule mod_env.c>
+     PassEnv LD_LIBRARY_PATH
+ </IfModule>
 
 =head1 DEPENDENCIES
 

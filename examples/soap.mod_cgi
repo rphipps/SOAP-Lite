@@ -1,0 +1,16 @@
+#!c:\perl\5.6.0\bin\MSWin32-x86\perl.exe 
+#!/bin/env perl 
+
+# you'd better don't try to use dynamic deployment with Apache::Registry
+# because it won't work anyway, however you can specify path to your
+# modules either in dispatch_to or in 'use lib qw(path_to_modules)'
+
+use SOAP::Transport::HTTP;
+
+SOAP::Transport::HTTP::CGI
+  -> objects_by_reference(qw(My::PersistentIterator My::SessionIterator My::Chat))
+  -> dispatch_to('/Your/Path/To/Deployed/Modules',
+                 qw(My::PersistentIterator My::SessionIterator My::Chat 
+                    My::Examples My::Parameters My::PingPong)) 
+  -> handle
+;

@@ -7,11 +7,13 @@ lib/SOAP/Lite.pm              Main SOAP::Lite module
 lib/SOAP/Transport/HTTP.pm    Module for HTTP transport, client and server
 lib/SOAP/Transport/MAILTO.pm  Module for SMTP/sendmail transport, client
 lib/SOAP/Transport/POP3.pm    Module for POP3 transport, server
-lib/SOAP/Transport/LOCAL.pm   Module for LOCAL transport, server
+lib/SOAP/Transport/LOCAL.pm   Module for LOCAL transport, client and server
+lib/SOAP/Transport/TCP.pm     Module for TCP transport, client and server
 examples/SOAPsh.pl            SOAP shell
 examples/soap.cgi             SOAP server, CGI implementation
 examples/soap.daemon          SOAP server, daemon implementation
 examples/soap.pop3            SOAP server, POP3 implementation
+examples/soap.mod_cgi         SOAP server, Apache::Registry implementation
 examples/pingpong.pl          Example for local/remote access to the same object
 examples/autoeliza.pl         Script for Chatbot::Eliza with autodispatching
 examples/autoexamples.pl      Script for My::Examples with autodispatching
@@ -20,12 +22,11 @@ examples/soapsmtp.pl          Example for SMTP/sendmail message sending
 examples/parametersbyname.pl  Example for passing parameters-by-name 
 examples/chat.pl              Client side for Chat implementation 
 examples/iterator.pl          Example for Session/Persistent iterators
+examples/soapmark.pl          Simple test for different implementations
 examples/Apache.pm                 Module for SOAP server, mod_perl implementation
 examples/My/Chat.pm                Module with Chat server implementation 
 examples/My/Examples.pm            Module with Examples backend
 examples/My/PingPong.pm            Module with PingPong backend
 examples/My/Parameters.pm          Module with Paramaters backend
-examples/My/ParametersByName.pm    Module with ParametersByName backend
 examples/My/SessionIterator.pm     Module with Iterator backend
 examples/My/PersistentIterator.pm  Module with Iterator backend
-examples/My/Chatbot/Eliza.pm  Chatbot::Eliza, fixed for serialization
