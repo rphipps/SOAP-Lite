@@ -7,8 +7,8 @@ use SOAP::Lite;
 
 print "Accessing...\n";
 my $schema = SOAP::Schema
-  -> schema(shift or die "Usage: $0 <URL with schema description>\n")
-  -> parse;
+  -> schema(shift or die "Usage: $0 <URL with schema description> [<service> [<port>]]\n")
+  -> parse(@ARGV);
 
 print "Writing...\n";
 foreach (keys %{$schema->services}) {

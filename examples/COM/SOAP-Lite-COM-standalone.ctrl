@@ -16,6 +16,7 @@ use LWP::Authen::Basic;
 use LWP::Authen::Digest;
 use HTTP::Daemon; 
 use Compress::Zlib;
+use XML::Parser;
 use SOAP::Transport::HTTP;
 
 __END__

@@ -84,7 +84,7 @@ EOX
   ok(ref $a && $a->valueof('//theCrashPhoto') =~ /Raw JPEG image/);
   ok(ref $a && $a->valueof('//theSignedForm') eq "\0\1\2\3   \4\5\6");
   ok(ref $a && $a->valueof('//somexml') =~ m!<a><b>c</b></a>!);
-  ok(ref $a && ref $a->valueof('//realxml') eq 'a');
+  ok(ref $a && $a->valueof('//realxml')->{b} eq 'c');
 
   print "Attachment deserialization (Content-ID and Content-Location) test(s)...\n";
 

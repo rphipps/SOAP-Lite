@@ -10,6 +10,16 @@ sub echo {
   @_;
 }
 
+sub echodata {
+  my $self = shift;
+  my @parameters = pop->dataof(SOAP::SOM::paramsin);
+  @parameters;
+}
+
+sub echotwo {
+  SOAP::Data->type(xml => "<a>$_[1]</a><b>$_[2]</b>");
+}
+
 sub autobind {
   my $self = shift;
   my $param1 = shift;

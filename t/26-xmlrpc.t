@@ -29,24 +29,43 @@ unless (defined $r && defined $r->envelope) {
 }
 # ------------------------------------------------------
 
-plan tests => 4;
+plan tests => 10;
 
-ok((XMLRPC::Lite
-      -> proxy($proxy)
-      -> call('examples.getStateStruct', {state1 => 12, state2 => 28})
-      -> result or '') eq 'Idaho,Nevada');
+{
+  ok((XMLRPC::Lite
+        -> proxy($proxy)
+        -> call('examples.getStateStruct', {state1 => 12, state2 => 28})
+        -> result or '') eq 'Idaho,Nevada');
 
-ok((XMLRPC::Lite
-      -> proxy($proxy)
-      -> call('examples.getStateName', 21)
-      -> result or '') eq 'Massachusetts');
+  ok((XMLRPC::Lite
+        -> proxy($proxy)
+        -> call('examples.getStateName', 21)
+        -> result or '') eq 'Massachusetts');
 
-ok((XMLRPC::Lite
-      -> proxy($proxy)
-      -> call('examples.getStateNames', 21,22,23,24)
-      -> result or '') =~ /Massachusetts\s+Michigan\s+Minnesota\s+Mississippi/);
+  ok((XMLRPC::Lite
+        -> proxy($proxy)
+        -> call('examples.getStateNames', 21,22,23,24)
+        -> result or '') =~ /Massachusetts\s+Michigan\s+Minnesota\s+Mississippi/);
 
-ok((XMLRPC::Lite
-      -> proxy($proxy)
-      -> call('examples.getStateList', [21,22])
-      -> result or '') eq 'Massachusetts,Michigan');
+  $s = XMLRPC::Lite
+        -> proxy($proxy)
+        -> call('examples.getStateList', [21,22]);
+  ok(($s->result or '') eq 'Massachusetts,Michigan');
+  ok(! defined $s->fault);
+  ok(! defined $s->faultcode);
+
+  print "XMLRPC autodispatch and fault check test(s)...\n";
+
+  eval "use XMLRPC::Lite +autodispatch =>
+    proxy => '$proxy',
+  ; 1" or die;
+
+  XMLRPC->getStateName(21);
+
+  $r = XMLRPC::Lite->self->call;
+
+  ok(ref $r->fault eq 'HASH');
+  ok($r->fault->{faultString} =~ /Can't evaluate/);
+  ok($r->faultstring =~ /Can't evaluate/);
+  ok($r->faultcode == 7);
+}

@@ -5,7 +5,7 @@
 
 use SOAP::Lite +autodispatch => 
   uri => 'http://www.soaplite.com/My/Examples', 
-  proxy => 'tcp:localhost:82',                  # local tcp server
+  proxy => 'tcp://localhost:82',                  # local tcp server
   on_fault => sub { my($soap, $res) = @_; 
     die ref $res ? $res->faultdetail : $soap->transport->status, "\n";
   }

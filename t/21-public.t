@@ -14,7 +14,7 @@ use SOAP::Lite
   on_fault => sub {
     my $soap = shift;
     my $res = shift;
-    ref $res ? warn(join " ", "SOAP FAULT:", $res->faultdetail, "\n") 
+    ref $res ? warn(join " ", "SOAP FAULT:", $res->faultstring, "\n") 
              : warn(join " ", "TRANSPORT ERROR:", $soap->transport->status, "\n");
     return new SOAP::SOM;
   },
@@ -37,7 +37,7 @@ unless (defined $r && defined $r->envelope) {
 }
 # ------------------------------------------------------
 
-plan tests => 23;
+plan tests => 21;
 
 {
 # Public test server with Frontier implementation (http://soap.weblogs.com/)
@@ -110,14 +110,14 @@ if (0) { # doesn't seem to be working on 2001/01/31
     -> uri('http://tempuri.org/')
     -> proxy('http://beta.search.microsoft.com/search/MSComSearchService.asmx', timeout => $SOAP::Test::TIMEOUT)
     -> on_action(sub{join'',@_})
-    -> GetVocabulary(SOAP::Data->name('~:Query' => 'something_very_unusual'))
+    -> GetVocabulary(SOAP::Data->name('{http://tempuri.org/}Query' => 'something_very_unusual'))
     -> valueof('//Found') || '') eq 'false');
 
   $r = SOAP::Lite 
     -> uri('http://tempuri.org/')
     -> proxy('http://beta.search.microsoft.com/search/MSComSearchService.asmx', timeout => $SOAP::Test::TIMEOUT)
     -> on_action(sub{join'',@_})
-    -> GetBestBets(SOAP::Data->name('~:Query' => 'data'))
+    -> GetBestBets(SOAP::Data->name('{http://tempuri.org/}Query' => 'data'))
     -> result;
   ok(ref $r && $r->{VocabularyLastcache} =~ /T/);
 
@@ -190,7 +190,7 @@ if (0) { # seems to be down as of 2001/04/18
     -> proxy('http://services.xmethods.net/soap', timeout => $SOAP::Test::TIMEOUT);
 
   $r = ($s->getRate(SOAP::Data->name(country1 => 'England'), 
-                   SOAP::Data->name(country2 => 'Japan'))
+                    SOAP::Data->name(country2 => 'Japan'))
           ->result) || 0;
   print "Currency rate for England/Japan is $r\n";
   ok($r > 1);
@@ -223,7 +223,7 @@ if (0) { # should work, but server wasn't ready as of 2001/04/18
         -> uri('urn:xmethods-CATraffic')                
         -> proxy('http://services.xmethods.net/soap/servlet/rpcrouter', timeout => $SOAP::Test::TIMEOUT)
         -> getTraffic(type SOAP::Data string => 101)
-        -> result or '') =~ /US 101/);
+        -> result or '') =~ /reported/);
 
   ok((SOAP::Lite
         -> uri('urn:xmethods-Temperature')                
@@ -231,11 +231,13 @@ if (0) { # should work, but server wasn't ready as of 2001/04/18
         -> getTemp(type SOAP::Data string => 64151)
         -> result or '') =~ /\./);
 
+if (0) { # Tony brought it down as of 2001/06/11
   ok((SOAP::Lite
         -> uri('urn:xmethodsSoapPing')                
         -> proxy('http://services.xmethods.net/perl/soaplite.cgi', timeout => $SOAP::Test::TIMEOUT)
         -> pingHost(name SOAP::Data hostname => 'www.yahoo.com')
         -> result or 0) == 1);
+}
 
   print "BabelFish translator server test(s)...\n";
   ok((SOAP::Lite                             
@@ -244,7 +246,9 @@ if (0) { # should work, but server wasn't ready as of 2001/04/18
         -> BabelFish(SOAP::Data->name(translationmode => 'en_it'), 
                      SOAP::Data->name(sourcedata => 'I want to work'))
         -> result or '') =~ /^Desidero lavorare$/);
+}
 
+if (0) { # Kafka response has xsi:type="string" response which is invalid
   print "Kafka (http://www.vbxml.com/soapworkshop/utilities/kafka/) server test(s)...\n";
   ok((SOAP::Lite
         -> service('http://www.vbxml.com/soapworkshop/services/id/id.xml')

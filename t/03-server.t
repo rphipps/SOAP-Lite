@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 19 }
+BEGIN { plan tests => 26 }
 
 use SOAP::Lite;
 
@@ -192,4 +192,63 @@ my $package = '
                    xmlns:xsd="http://www.w3.org/1999/XMLSchema">
 <SOAP-ENV:Body></SOAP-ENV:Body></SOAP-ENV:Envelope>');
   ok($a =~ /Can't find method/);
+}
+
+{
+  print "Envelope with no namespaces test(s)...\n";
+
+  eval 'sub add { $_[1] + $_[2] }; 1' or die;
+
+  my $result = SOAP::Deserializer->deserialize(SOAP::Server->dispatch_to('add')->handle('<Envelope><Body><add><a>3</a><b>4</b></add></Body></Envelope>'));
+  ok(($result->result || 0) == 7);
+}
+
+{
+  print "Different XML Schemas test(s)...\n";
+
+  my $server = SOAP::Server->dispatch_to('Calculator');
+  $a = $server->handle('<SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" 
+                   SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" 
+                   xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" 
+                   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" 
+                   xmlns:xsd="http://www.w3.org/1999/XMLSchema">
+<SOAP-ENV:Body>
+<namesp1:add xmlns:namesp1="http://www.soaplite.com/Calculator">
+  <c-gensym5 xsi:type="xsd:int">2</c-gensym5>
+  <c-gensym7 xsi:type="xsd:int">5</c-gensym7>
+</namesp1:add>
+</SOAP-ENV:Body></SOAP-ENV:Envelope>');
+
+  ok($a =~ m!xsi="http://www.w3.org/1999/XMLSchema-instance"!);
+  ok($a =~ m!xsd="http://www.w3.org/1999/XMLSchema"!);
+
+  $a = $server->handle('<SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" 
+                   SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" 
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" 
+                   xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<SOAP-ENV:Body>
+<namesp1:add xmlns:namesp1="http://www.soaplite.com/Calculator">
+  <c-gensym5 xsi:type="xsd:int">2</c-gensym5>
+  <c-gensym7 xsi:type="xsd:int">5</c-gensym7>
+</namesp1:add>
+</SOAP-ENV:Body></SOAP-ENV:Envelope>');
+
+  ok($a =~ m!xsi="http://www.w3.org/2001/XMLSchema-instance"!);
+  ok($a =~ m!xsd="http://www.w3.org/2001/XMLSchema"!);
+
+  $a = $server->handle('<SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" 
+                   SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" 
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" 
+                   xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<SOAP-ENV:Body>
+<namesp1:add xmlns:namesp1="http://www.soaplite.com/Calculator">
+  <c-gensym5 xsi:type="xsd:int">2</c-gensym5>
+  <c-gensym7 xsi:type="SOAP-ENC:int">5</c-gensym7>
+</namesp1:add>
+</SOAP-ENV:Body></SOAP-ENV:Envelope>');
+
+  ok($a =~ m!xsi="http://www.w3.org/2001/XMLSchema-instance"!);
+  ok($a =~ m!xsd="http://www.w3.org/2001/XMLSchema"!);
 }

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: XMLRPC::Lite.pm,v 0.50 2001/04/18 11:45:14 $
+# $Id: XMLRPC::Lite.pm,v 0.51 2001/07/18 15:15:14 $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package XMLRPC::Lite;
 use SOAP::Lite;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.50';
+$VERSION = '0.51';
 
 # ======================================================================
 
@@ -55,7 +55,9 @@ sub new {
         dateTime => [35, sub {$_[0] =~ /^\d{8}T\d\d:\d\d:\d\d$/}, 'as_dateTime'],
         string => [40, sub {1}, 'as_string'],
       },
-      @_
+      attr => {},
+      namespaces => {},
+      @_,
     );
   }
   return $self;
@@ -66,16 +68,16 @@ sub envelope {
   my $type = shift;
 
   my($body);
-  if ($type eq 'method') {
+  if ($type eq 'method' || $type eq 'response') {
     my $method = shift or die "Unspecified method for XMLRPC call\n";
-    if ($method eq 'methodNameResponse') {
+    if ($type eq 'response') {
       $body = XMLRPC::Data->name(methodResponse => \XMLRPC::Data->value(
-        XMLRPC::Data->type(params => [@_])->attr({_preserve => 1})
+        XMLRPC::Data->type(params => [@_])
       ));
     } else {
       $body = XMLRPC::Data->name(methodCall => \XMLRPC::Data->value(
         XMLRPC::Data->type(methodName => UNIVERSAL::isa($method => 'XMLRPC::Data') ? $method->name : $method),
-        XMLRPC::Data->type(params => [@_])->attr({_preserve => 1})
+        XMLRPC::Data->type(params => [@_])
       ));
     }
   } elsif ($type eq 'fault') {
@@ -86,9 +88,7 @@ sub envelope {
     die "Wrong type of envelope ($type) for XMLRPC call\n";
   }
 
-  my($encoded) = $self->encode_object($body);
-  return join '', qq!<?xml version="1.0" encoding="@{[$self->encoding]}"?>!,
-                  $self->xmlize($encoded);
+  $self->xmlize($self->encode_object($body));
 }
 
 sub encode_object { 
@@ -96,6 +96,12 @@ sub encode_object {
   my @encoded = $self->SUPER::encode_object(@_);
   return $encoded[0]->[0] =~ /^(?:array|struct|i4|int|boolean|string|double|dateTime\.iso8601|base64)$/o 
     ? ['value', {}, [@encoded]] : @encoded;
+}
+
+sub encode_scalar {
+  my $self = shift;
+  return ['value', {}] unless defined $_[0];
+  return $self->SUPER::encode_scalar(@_);
 }
 
 sub encode_array {
@@ -160,7 +166,7 @@ sub as_base64 {
 sub as_string {
   my $self = shift;
   my $value = shift;
-  return ['string', {}, $self->SUPER::can('encode_data')->($value)];
+  return ['string', {}, SOAP::Utils::encode_data($value)];
 }
 
 sub as_dateTime {
@@ -197,6 +203,18 @@ sub BEGIN {
       $self->valueof($path{$method});
     };
   }
+  my %fault = (
+    faultcode => 'faultCode',
+    faultstring => 'faultString',
+  );
+  for my $method (keys %fault) {
+    *$method = sub { 
+      my $self = shift;
+      ref $self or Carp::croak "Method '$method' doesn't have shortcut";
+      Carp::croak "Method '$method' is readonly and doesn't accept any parameters" if @_;
+      defined $self->fault ? $self->fault->{$fault{$method}} : undef;
+    };
+  }
   my %results = (
     result    => '/methodResponse/params/[1]',
     paramsin  => '/methodCall/params/param',
@@ -230,11 +248,12 @@ sub decode_value {
   if ($name eq 'value') {
     $childs ? $self->decode_value($childs->[0]) : $value;
   } elsif ($name eq 'array') {
-    return [map {($self->decode_object($_))[1]} @{$childs->[0]->[2] || []}];
+    return [map {scalar(($self->decode_object($_))[1])} @{$childs->[0]->[2] || []}];
   } elsif ($name eq 'struct') { 
     return {map {
-      my %hash = map {$_->[0] => $_->[2] || $_->[3]} @{$_->[2] || []};
-      ($hash{name} => ($self->decode_object($hash{value}->[0]))[1]);
+      my %hash = map {$_->[0] => $_} @{$_->[2] || []};
+                         # v----- scalar is required here, because 5.005 evaluates 'undef' in list context as empty array
+      ($hash{name}->[3] => scalar(($self->decode_object($hash{value}))[1]));
     } @{$childs || []}};
   } elsif ($name eq 'base64') {
     require MIME::Base64; 
@@ -242,11 +261,11 @@ sub decode_value {
   } elsif ($name =~ /^(?:int|i4|boolean|string|double|dateTime\.iso8601|methodName)$/) {
     return $value;
   } elsif ($name =~ /^(?:params)$/) {
-    return [map {($self->decode_object($_))[1]} @{$childs || []}];
+    return [map {scalar(($self->decode_object($_))[1])} @{$childs || []}];
   } elsif ($name =~ /^(?:methodResponse|methodCall)$/) {
     return +{map {$self->decode_object($_)} @{$childs || []}};
   } elsif ($name =~ /^(?:param|fault)$/) {
-    return ($self->decode_object($childs->[0]))[1];
+    return scalar(($self->decode_object($childs->[0]))[1]);
   } else {
     die "wrong element '$name'\n";
   }
@@ -254,9 +273,30 @@ sub decode_value {
 
 # ======================================================================
 
+package XMLRPC::Server;
+
+@XMLRPC::Server::ISA = qw(SOAP::Server);
+
+sub initialize {
+  return (
+    deserializer => XMLRPC::Deserializer->new,
+    serializer => XMLRPC::Serializer->new,
+    on_action => sub {},
+    on_dispatch => sub { return map {s!\.!/!; $_} shift->method =~ /^(?:(.*)\.)?(\w+)$/ },
+  );
+}
+
+# ======================================================================
+
 package XMLRPC::Server::Parameters;
 
 @XMLRPC::Server::Parameters::ISA = qw(SOAP::Server::Parameters);
+
+# ======================================================================
+
+package XMLRPC;
+
+@XMLRPC::ISA = qw(SOAP);
 
 # ======================================================================
 
@@ -273,6 +313,7 @@ sub new {
       serializer => XMLRPC::Serializer->new,
       deserializer => XMLRPC::Deserializer->new,
       on_action => sub {return},
+      uri => 'http://unspecified/',
       @_
     );
   }
@@ -339,6 +380,12 @@ implementations.
 =head1 SEE ALSO
 
  SOAP::Lite
+
+=head1 CREDITS
+
+The B<XML-RPC> standard is Copyright (c) 1998-2001, UserLand Software, Inc.
+See <http://www.xmlrpc.com> for more information about the B<XML-RPC> 
+specification.
 
 =head1 COPYRIGHT
 

@@ -29,18 +29,16 @@ my($a, $s, $r, $serialized, $deserialized);
 
   $serialized = SOAP::Serializer->serialize(
     SOAP::Data->name(test => \SOAP::Data->value(1, [1,2], {a=>3}, \4))
-              ->attr({'xmlns:xsi' => "http://www.w3.org/1999/XMLSchema-instance",
-                      'xmlns:SOAP-ENC' => "http://schemas.xmlsoap.org/soap/encoding/"})
   );
 
-  ok($serialized =~ m!<test(?: xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"){2}><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENC:Array(?: xsi:type="SOAP-ENC:Array"| SOAP-ENC:arrayType="xsd:int\[2\]"){2}><item xsi:type="xsd:int">1</item><item xsi:type="xsd:int">2</item></SOAP-ENC:Array><c-gensym(\d+) xsi:type="namesp\d+:SOAPStruct"><a xsi:type="xsd:int">3</a></c-gensym\2><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\4></c-gensym\3></test>!);
+  ok($serialized =~ m!<test(?: xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"| xmlns:xsd="http://www.w3.org/1999/XMLSchema"| xmlns:namesp\d+="http://xml.apache.org/xml-soap"){5}><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENC:Array(?: xsi:type="SOAP-ENC:Array"| SOAP-ENC:arrayType="xsd:int\[2\]"){2}><item xsi:type="xsd:int">1</item><item xsi:type="xsd:int">2</item></SOAP-ENC:Array><c-gensym(\d+) xsi:type="namesp\d+:SOAPStruct"><a xsi:type="xsd:int">3</a></c-gensym\2><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\4></c-gensym\3></test>!);
 }  
 
 { # check simple circular references
   print "Simple circular references (\$a=\\\$a) serialization test(s)...\n";
 
   $a = \$a;
-  $serialized = SOAP::Serializer->serialize($a);
+  $serialized = SOAP::Serializer->namespaces({})->serialize($a);
 
   ok($serialized =~ m!<c-gensym(\d+) id="ref-(\w+)"><c-gensym(\d+) href="#ref-\2"/></c-gensym\1>!);
 
@@ -48,7 +46,7 @@ my($a, $s, $r, $serialized, $deserialized);
   ok(0+$a == 0+(values%$a)[0]);
 }
 
-{ # check complex circlular references
+{ # check complex circular references
   print "Complex circlular references serialization test(s)...\n";
 
   $a = SOAP::Deserializer->deserialize(<<'EOX')->root;
@@ -71,7 +69,7 @@ EOX
      $a->{a}->{next}->{x});
 
   $a = { a => 1 }; my $b = { b => $a }; $a->{a} = $b;
-  $serialized = SOAP::Serializer->autotype(0)->serialize($a);
+  $serialized = SOAP::Serializer->autotype(0)->namespaces({})->serialize($a);
 
   ok($serialized =~ m!<c-gensym(\d+) id="ref-(\w+)"><a id="ref-\w+"><b href="#ref-\2"/></a></c-gensym\1>!);
 }
@@ -83,12 +81,13 @@ EOX
 
   $serialized = SOAP::Serializer->new(multirefinplace=>1)->serialize(
     SOAP::Data->name(test => \SOAP::Data->value($b, $b))
-              ->attr({'xmlns:xsi' => "http://www.w3.org/1999/XMLSchema-instance"})
   );
 
-  ok($serialized =~ m!<test xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"><c-gensym(\d+) id="ref-(\w+)"><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\3></c-gensym\1><c-gensym\d+ href="#ref-\2"/></test>!);
+  ok($serialized =~ m!<test(?: xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"| xmlns:xsd="http://www.w3.org/1999/XMLSchema"){4}><c-gensym(\d+) id="ref-(\w+)"><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\3></c-gensym\1><c-gensym\d+ href="#ref-\2"/></test>!);
 
-  $serialized = join '', SOAP::Serializer->serialize($b, $b);
+  $serialized = SOAP::Serializer->namespaces({})->serialize(
+    SOAP::Data->name(test => \SOAP::Data->value($b, $b))
+  );
 
   ok($serialized =~ m!<c-gensym\d+ href="#ref-(\w+)"/><c-gensym\d+ href="#ref-\1"/><c-gensym(\d+) id="ref-\1"><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\3></c-gensym\2>!);
 }
@@ -96,15 +95,17 @@ EOX
 { # check base64, XML encoding of elements and attributes 
   print "base64, XML encoding of elements and attributes test(s)...\n";
 
-  $serialized = join '', SOAP::Serializer->serialize("\0\1\2\3   \4\5\6", '<123>&amp</123>');
+  $serialized = SOAP::Serializer->serialize(
+    SOAP::Data->name(test => \SOAP::Data->value("\0\1\2\3   \4\5\6", '<123>&amp</123>'))
+  );
 
   ok($serialized =~ m!<c-gensym(\d+) xsi:type="SOAP-ENC:base64">AAECAyAgIAQFBg==</c-gensym\1><c-gensym(\d+) xsi:type="xsd:string">&lt;123>&amp;amp&lt;/123></c-gensym\2>!);
 
-  $serialized = join '', SOAP::Serializer->serialize(
+  $serialized = SOAP::Serializer->namespaces({})->serialize(
     SOAP::Data->name(name=>'value')->attr({attr => '<123>"&amp"</123>'})
   );
 
-  ok($serialized =~ m!^<name(?: xsi:type="xsd:string"| attr="&lt;123>&quot;&amp;amp&quot;&lt;/123>"){2}>value</name>$!);
+  ok($serialized =~ m!^<\?xml version="1.0" encoding="UTF-8"\?><name(?: xsi:type="xsd:string"| attr="&lt;123>&quot;&amp;amp&quot;&lt;/123>"){2}>value</name>$!);
 }
 
 { # check objects and SOAP::Data 
@@ -112,7 +113,7 @@ EOX
 
   $serialized = SOAP::Serializer->serialize(SOAP::Data->uri('some_urn' => bless {a => 1} => 'ObjectType'));
 
-  ok($serialized =~ m!<namesp(\d+):ObjectType(:? xsi:type="SOAP-ENC:ObjectType"| xmlns:namesp\1="some_urn"){2}><a xsi:type="xsd:int">1</a></namesp\1:ObjectType>!);
+  ok($serialized =~ m!<namesp(\d+):ObjectType(:? xsi:type="SOAP-ENC:ObjectType"| xmlns:namesp\1="some_urn"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"| xmlns:xsd="http://www.w3.org/1999/XMLSchema"){6}><a xsi:type="xsd:int">1</a></namesp\1:ObjectType>!);
 }
 
 { # check for serialization with SOAPStruct (for interoperability with ApacheSOAP)
@@ -129,21 +130,16 @@ EOX
 
   $a = 'abc234xyz';
 
-  $serialized = SOAP::Serializer->serialize(
-    SOAP::Data->type(hex => $a)
-              ->attr({'xmlns:xsi' => "http://www.w3.org/1999/XMLSchema-instance"})
-  );
+  $serialized = SOAP::Serializer->serialize(SOAP::Data->type(hex => $a));
 
-  ok($serialized =~ m!<c-gensym(\d+)(?: xsi:type="xsd:hex"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"){2}>61626332333478797a</c-gensym(\d+)>!);
+  ok($serialized =~ m!<c-gensym(\d+)(?: xsi:type="xsd:hex"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"| xmlns:xsd="http://www.w3.org/1999/XMLSchema"){5}>61626332333478797a</c-gensym(\d+)>!);
   ok(SOAP::Deserializer->deserialize($serialized)->root eq $a); 
 
   $a = <<"EOBASE64";
 qwertyuiop[]asdfghjkl;'zxcvbnm,./QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM<>?`1234567890-=\~!@#$%^&*()_+|
 EOBASE64
 
-  $serialized = SOAP::Serializer->serialize(
-    SOAP::Data->attr({'xmlns:xsi' => "http://www.w3.org/1999/XMLSchema-instance"} => $a)
-  );
+  $serialized = SOAP::Serializer->serialize($a);
 
   ok(index($serialized, quotemeta(q!qwertyuiop[]asdfghjkl;'zxcvbnm,./QWERTYUIOP{}ASDFGHJKL:"ZXCVBNM&lt;>?`1234567890-=~\!@#0^&amp;*()_+|!)));
   UNIVERSAL::isa(SOAP::Deserializer->parser->parser => 'XML::Parser::Lite') ?
@@ -166,17 +162,13 @@ EOBASE64
 { # check serialization/deserialization of blessed reference  
   print "Serialization/deserialization of blessed reference test(s)...\n";
 
-  $a = SOAP::Deserializer->deserialize(
-    SOAP::Serializer->serialize(SOAP::Data->attr({'xmlns:xsi' => "http://www.w3.org/1999/XMLSchema-instance"} 
-                                => bless {a => 1} => 'SOAP::Lite'))
-  )->root;
+  $serialized = SOAP::Serializer->serialize(bless {a => 1} => 'SOAP::Lite');
+  $a = SOAP::Deserializer->deserialize($serialized)->root;
 
   ok(ref $a eq 'SOAP::Lite' && UNIVERSAL::isa($a => 'HASH'));
 
   $a = SOAP::Deserializer->deserialize(
-    SOAP::Serializer->serialize(SOAP::Data->attr({'xmlns:xsi' => "http://www.w3.org/1999/XMLSchema-instance", 
-                                                  'xmlns:SOAP-ENC' => "http://schemas.xmlsoap.org/soap/encoding/"} 
-                                => bless [a => 1] => 'SOAP::Lite'))
+    SOAP::Serializer->serialize(bless [a => 1] => 'SOAP::Lite')
   )->root;
 
   ok(ref $a eq 'SOAP::Lite' && UNIVERSAL::isa($a => 'ARRAY'));
@@ -189,7 +181,6 @@ EOBASE64
     $a = undef;
     $serialized = SOAP::Serializer->serialize(
       SOAP::Data->type(negativeInteger => $a)
-                ->attr({'xmlns:xsi' => "http://www.w3.org/1999/XMLSchema-instance"})
     );
 
     ok(SOAP::Deserializer->deserialize($serialized)->root == $a);
@@ -197,7 +188,6 @@ EOBASE64
     my $type = 'nonstandardtype';
     $serialized = SOAP::Serializer->serialize(
       SOAP::Data->type($type => $a)
-                ->attr({'xmlns:xsi' => "http://www.w3.org/1999/XMLSchema-instance"})
     );
 
     ok(ref SOAP::Deserializer->deserialize($serialized)->root eq $type);

@@ -11,19 +11,20 @@ use Data::Dumper; $Data::Dumper::Terse = 1; $Data::Dumper::Indent = 1;
 my $proxy = shift;
 my %can;
 my $xmlrpc = XMLRPC::Lite->proxy($proxy)->on_fault(sub{});
-print "Usage: method[(parameters)]\n> ";
+print STDERR "Usage: method[(parameters)]\n> ";
 while (defined($_ = shift || <>)) {
+  next unless /\w/;
   my($method, $parameters) = /^\s*([.\w]+)(.*)/;
   $can{$method} = $xmlrpc->can($method) unless exists $can{$method};
   my $res = $method =~ /\./ ? eval "\$xmlrpc->call(\$method, $parameters)" : eval "\$xmlrpc->$_";
-  $@                               ? warn(join "\n", "--- SYNTAX ERROR ---", $@, '') :
+  $@                               ? print(STDERR join "\n", "--- SYNTAX ERROR ---", $@, '') :
   $can{$method} && !UNIVERSAL::isa($res => 'XMLRPC::SOM')
-                                   ? warn(join "\n", "--- METHOD RESULT ---", $res || '', '') :
-  defined($res) && $res->fault     ? warn(join "\n", "--- XMLRPC FAULT ---", @{$res->fault}{'faultCode', 'faultString'}, '') :
-  !$xmlrpc->transport->is_success  ? warn(join "\n", "--- TRANSPORT ERROR ---", $xmlrpc->transport->status, '') :
-                                     warn(join "\n", "--- XMLRPC RESULT ---", Dumper($res->result), '')
+                                   ? print(STDERR join "\n", "--- METHOD RESULT ---", $res || '', '') :
+  defined($res) && $res->fault     ? print(STDERR join "\n", "--- XMLRPC FAULT ---", @{$res->fault}{'faultCode', 'faultString'}, '') :
+  !$xmlrpc->transport->is_success  ? print(STDERR join "\n", "--- TRANSPORT ERROR ---", $xmlrpc->transport->status, '') :
+                                     print(STDERR join "\n", "--- XMLRPC RESULT ---", Dumper($res->paramsall), '')
 } continue {
-  print "\n> ";
+  print STDERR "\n> ";
 }
 
 __END__

@@ -14,7 +14,7 @@ use SOAP::Lite
   on_fault => sub {
     my $soap = shift;
     my $res = shift;
-    ref $res ? warn(join " ", "SOAP FAULT:", $res->faultdetail, "\n") 
+    ref $res ? warn(join " ", "SOAP FAULT:", $res->faultstring, "\n") 
              : warn(join " ", "TRANSPORT ERROR:", $soap->transport->status, "\n");
     return new SOAP::SOM;
   }
@@ -22,10 +22,12 @@ use SOAP::Lite
 
 my($a, $s, $r);
 
+my $proxy = 'http://ppm.activestate.com/cgibin/PPM/ppmserver.pl';
+
 # ------------------------------------------------------
 use SOAP::Test;
 
-$s = SOAP::Lite->uri('http://something/somewhere')->proxy('http://ppm.activestate.com/cgibin/PPM/ppmserver.pl')->on_fault(sub{});
+$s = SOAP::Lite->uri('urn:/PPMServer')->proxy($proxy)->on_fault(sub{});
 eval { $s->transport->timeout($SOAP::Test::TIMEOUT = $SOAP::Test::TIMEOUT) };
 $r = $s->test_connection;
 
@@ -42,7 +44,7 @@ plan tests => 3;
   print "ActiveState's PPM server test(s)...\n";
   $s = SOAP::Lite 
     -> uri('urn:/PPMServer')
-    -> proxy('http://ppm.activestate.com/cgibin/PPM/ppmserver.pl')
+    -> proxy($proxy)
   ;
 
   $r = $s->fetch_ppd('SOAP-Lite')->result;

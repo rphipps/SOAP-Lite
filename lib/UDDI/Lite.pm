@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: UDDI::Lite.pm,v 0.50 2001/04/18 11:45:14 $
+# $Id: UDDI::Lite.pm,v 0.51 2001/07/18 15:15:14 $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package UDDI::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.50';
+$VERSION = '0.51';
 
 use SOAP::Lite;
 
@@ -143,8 +143,9 @@ sub new {
 
   unless (ref $self) {
     $self = $class->SUPER::new(
-      attr => {
-        $SOAP::Constants::PREFIX_ENV ? (SOAP::Utils::qualify(xmlns => $SOAP::Constants::PREFIX_ENV) => $SOAP::Constants::NS_ENV) : (),
+      attr => {},
+      namespaces => {
+        $SOAP::Constants::PREFIX_ENV ? ($SOAP::Constants::NS_ENV => $SOAP::Constants::PREFIX_ENV) : (),
       },
       autotype => 0,
       @_,
@@ -167,7 +168,7 @@ sub as_uddi {
 sub encode_array {
   my $self = shift;
   my $encoded = $self->SUPER::encode_array(@_);
-  delete $encoded->[1]->{SOAP::Utils::qualify($self->encodingspace => 'arrayType')};
+  delete $encoded->[1]->{SOAP::Utils::qualify($self->encprefix => 'arrayType')};
   return $encoded;
 }
 
@@ -186,12 +187,12 @@ sub decode_value {
   # base class knows what to do with elements in SOAP namespace
   return $self->SUPER::decode_value($ref) 
     if exists $attrs->{href} || 
-       defined $attrs->{'xmlns:~'} && $attrs->{'xmlns:~'} eq $SOAP::Constants::NS_ENV;
+       (SOAP::Utils::splitlongname($name))[0] eq $SOAP::Constants::NS_ENV;
 
   UDDI::Data
     -> SOAP::Data::name($name)
     -> attr($attrs)
-    -> set_value(ref $childs && @$childs ? map(($self->decode_object($_))[1], @$childs) : $value);
+    -> set_value(ref $childs && @$childs ? map(scalar(($self->decode_object($_))[1]), @$childs) : $value);
 }
 
 sub deserialize {
@@ -262,12 +263,15 @@ sub call { SOAP::Trace::trace('()');
   my $message = SOAP::Data
     -> name($method => \SOAP::Data->value(@parameters))
     -> attr({xmlns=>'urn:uddi-org:api', generic => '1.0', %$attr});
-  $self->serializer->on_nonserialized($self->on_nonserialized);
+
+  my $serializer = $self->serializer;
+  $serializer->on_nonserialized($self->on_nonserialized);
 
   my $respond = $self->transport->send_receive(
-    endpoint    => $self->endpoint, 
-    action      => $self->on_action->($self->uri),
-    envelope    => $self->serializer->envelope(freeform => $message), 
+    endpoint => $self->endpoint, 
+    action   => $self->on_action->($self->uri),
+    envelope => $serializer->envelope(freeform => $message), 
+    encoding => $serializer->encoding,
   );
 
   return $respond if $self->outputxml;
@@ -433,11 +437,6 @@ Shortcut for C<transport-E<gt>proxy()>. This lets you specify an endpoint and
 also loads the required module at the same time. It is required for dispatching SOAP 
 calls. The name of the module will be defined depending on the protocol 
 specific for the endpoint. SOAP::Lite will do the rest work.
-
-=item namespace()
-
-Shortcut for C<serializer-E<gt>namespace()>. Lets you specify default
-namespace for generated envelope. 'SOAP-ENV' by default.
 
 =item on_fault()
 

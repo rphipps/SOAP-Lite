@@ -4,23 +4,12 @@
 
 use XMLRPC::Transport::HTTP;
 
-my $server = XMLRPC::Transport::HTTP::CGI
-  -> dispatch_to('methodName')
+XMLRPC::Transport::HTTP::CGI
+  -> dispatch_to('validator1')
   -> handle
 ;
 
-# -- methods are here --
-
-BEGIN { @main::ISA = 'XMLRPC::Server::Parameters' }
-
-sub methodName {
-  my $self = shift;
-  my $method = $_[-1]->method;
-  # method's name here is 'something.methodname'
-  # we'll take only methodname part of it
-  $method =~ s/\w+\.//;
-  return $self->$method(@_);
-}
+package validator1;
 
 sub whichToolkit { shift if UNIVERSAL::isa($_[0] => __PACKAGE__);
   return +{
@@ -61,7 +50,6 @@ sub echoStructTest { shift if UNIVERSAL::isa($_[0] => __PACKAGE__);
 }
 
 sub manyTypesTest { shift if UNIVERSAL::isa($_[0] => __PACKAGE__);
-  pop;
   return [@_];
 }
 

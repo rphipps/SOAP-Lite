@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Test.pm,v 0.50 2001/04/18 11:45:14 $
+# $Id: SOAP::Test.pm,v 0.51 2001/07/18 15:15:14 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Test;
 
 use 5.004;
 use vars qw($VERSION $TIMEOUT);
-$VERSION = '0.50';
+$VERSION = '0.51';
 
 $TIMEOUT = 5;
 
@@ -42,7 +42,7 @@ package SOAP::Test::Server;
 
 use strict;
 use Test;
-use SOAP::Lite on_fault => sub{ref $_[1] ? $_[1] : new SOAP::SOM};
+use SOAP::Lite;
 
 sub run_for {
   my $proxy = shift or die "Proxy/endpoint is not specified";
@@ -58,7 +58,9 @@ sub run_for {
   }
   # ------------------------------------------------------
 
-  plan tests => 46;
+  plan tests => 49;
+
+  eval q!use SOAP::Lite on_fault => sub{ref $_[1] ? $_[1] : new SOAP::SOM}; 1! or die;
 
   print "Perl SOAP server test(s)...\n";
 
@@ -76,6 +78,13 @@ sub run_for {
   $r = $s->getStateStruct({item1 => 1, item2 => 4})->result;
   ok(ref $r && $r->{item2} eq 'Arkansas'); 
 
+  {
+    my $autoresult = $s->autoresult;
+    $s->autoresult(1);
+    ok($s->getStateName(1) eq 'Alabama');
+    $s->autoresult($autoresult);
+  }
+
   print "Autobinding of output parameters test(s)...\n";
 
   $s->uri('urn:/My/Parameters');
@@ -85,10 +94,13 @@ sub run_for {
   ok($result == $param1 && $param2->value == 24); 
 
   print "Header manipulation test(s)...\n";
-
   $a = $s->addheader(2, SOAP::Header->name(my => 123)); 
   ok(ref $a->header && $a->header->{my} eq '123123'); 
   ok($a->headers eq '123123'); 
+
+  print "Echo untyped data test(s)...\n";
+  $a = $s->echotwo(11, 12);
+  ok($a->result == 11); 
 
   print "mustUnderstand test(s)...\n";
   $s->echo(SOAP::Header->name(somethingelse => 123)
@@ -102,13 +114,22 @@ sub run_for {
 
   print "dispatch_from test(s)...\n";
   eval "use SOAP::Lite
-    dispatch_from => ['A', 'B'],
     uri => 'http://my.own.site.com/My/Examples',
+    dispatch_from => ['A', 'B'],
     proxy => '$proxy',
   ; 1" or die;
 
   eval { C->c };
   ok($@ =~ /Can't locate object method "c"/);
+
+  eval { A->a };
+  ok(!$@ && SOAP::Lite->self->call->faultstring =~ /Failed to access class \(A\)/);
+
+  eval "use SOAP::Lite
+    dispatch_from => 'A',
+    uri => 'http://my.own.site.com/My/Examples',
+    proxy => '$proxy',
+  ; 1" or die;
 
   eval { A->a };
   ok(!$@ && SOAP::Lite->self->call->faultstring =~ /Failed to access class \(A\)/);
@@ -145,12 +166,12 @@ sub run_for {
   print "VersionMismatch test(s)...\n";
 
   {
+    local $SOAP::Constants::NS_ENV = 'http://schemas.xmlsoap.org/new/envelope/';
     my $s = SOAP::Lite
       -> uri('http://my.own.site.com/My/Examples')                
       -> proxy($proxy)
       -> on_fault(sub{})
     ;
-    $s->serializer->attr->{"xmlns:$SOAP::Constants::PREFIX_ENV"} = 'http://schemas.xmlsoap.org/new/envelope/';
     $r = $s->dosomething;
     ok(ref $r && $r->faultcode =~ /:VersionMismatch/);
   }
@@ -302,7 +323,8 @@ sub run_for {
 
   ok($@ =~ /Can't find namespace for method \(a:getStateName\)/);
 
-  $s->serializer->attr->{xmlns} = 'urn:/My/Examples';
+  $s->serializer->namespaces->{'urn:/My/Examples'} = '';
+
   ok($s->getStateName(1)->result eq 'Alabama');
 
   eval "use SOAP::Lite 

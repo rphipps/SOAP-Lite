@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: XMLRPC::Transport::HTTP.pm,v 0.50 2001/04/18 11:45:14 $
+# $Id: XMLRPC::Transport::HTTP.pm,v 0.51 2001/07/18 15:15:14 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package XMLRPC::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.50';
+$VERSION = '0.51';
 
 use XMLRPC::Lite;
 use SOAP::Transport::HTTP;
@@ -23,20 +23,7 @@ package XMLRPC::Transport::HTTP::CGI;
 
 @XMLRPC::Transport::HTTP::CGI::ISA = qw(SOAP::Transport::HTTP::CGI);
 
-sub new { 
-  my $self = shift;
-
-  unless (ref $self) {
-    my $class = ref($self) || $self;
-    $self = $class->SUPER::new(
-      deserializer => XMLRPC::Deserializer->new,
-      serializer => XMLRPC::Serializer->new,
-      on_action => sub {},
-      @_,
-    );
-  }
-  return $self;
-}
+sub initialize; *initialize = \&XMLRPC::Server::initialize;
 
 # ======================================================================
 
@@ -44,20 +31,7 @@ package XMLRPC::Transport::HTTP::Daemon;
 
 @XMLRPC::Transport::HTTP::Daemon::ISA = qw(SOAP::Transport::HTTP::Daemon);
 
-sub new { 
-  my $self = shift;
-
-  unless (ref $self) {
-    my $class = ref($self) || $self;
-    $self = $class->SUPER::new(
-      deserializer => XMLRPC::Deserializer->new,
-      serializer => XMLRPC::Serializer->new,
-      on_action => sub {},
-      @_,
-    );
-  }
-  return $self;
-}
+sub initialize; *initialize = \&XMLRPC::Server::initialize;
 
 # ======================================================================
 
@@ -65,20 +39,7 @@ package XMLRPC::Transport::HTTP::Apache;
 
 @XMLRPC::Transport::HTTP::Apache::ISA = qw(SOAP::Transport::HTTP::Apache);
 
-sub new { 
-  my $self = shift;
-
-  unless (ref $self) {
-    my $class = ref($self) || $self;
-    $self = $class->SUPER::new(
-      deserializer => XMLRPC::Deserializer->new,
-      serializer => XMLRPC::Serializer->new,
-      on_action => sub {},
-      @_,
-    );
-  }
-  return $self;
-}
+sub initialize; *initialize = \&XMLRPC::Server::initialize;
 
 # ======================================================================
 

@@ -14,7 +14,7 @@ my %dests = (
   CGI                => ['http://localhost/cgi-bin/soap.cgi' => 'http://www.soaplite.com/My/Examples'],
   daemon             => ['http://localhost:81/' => 'http://www.soaplite.com/My/Examples'],
   'Apache::Registry' => ['http://localhost/mod_perl/soap.mod_cgi' => 'http://www.soaplite.com/My/Examples'],
-  tcpip              => ['tcp:localhost:82' => 'http://www.soaplite.com/My/Examples'],
+  tcpip              => ['tcp://localhost:82' => 'http://www.soaplite.com/My/Examples'],
   direct             => ['' => 'My::Examples'],
 );
 

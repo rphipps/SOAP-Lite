@@ -10,18 +10,25 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 11 }
+BEGIN { plan tests => 18 }
 
 foreach (qw(
   SOAP::Lite 
-  SOAP::Transport::HTTP SOAP::Transport::MAILTO
-  SOAP::Transport::FTP SOAP::Transport::TCP
-  SOAP::Transport::IO SOAP::Transport::LOCAL
-  SOAP::Transport::POP3
-  UDDI::Lite
-  XML::Parser::Lite
+  SOAP::Transport::HTTP   SOAP::Transport::MAILTO
+  SOAP::Transport::FTP    SOAP::Transport::TCP
+  SOAP::Transport::IO     SOAP::Transport::LOCAL
+  SOAP::Transport::POP3   SOAP::Transport::MQ
+  SOAP::Transport::JABBER
   Apache::SOAP
+  XML::Parser::Lite
+  UDDI::Lite
+  XMLRPC::Lite 
+  XMLRPC::Transport::HTTP XMLRPC::Transport::TCP
+  XMLRPC::Transport::POP3
+  Apache::XMLRPC::Lite
 )) {
   eval "require $_";
-  ok(!$@ || $@ =~ /Can't locate|XML::Parser::Lite requires/);
+  $@ =~ /Can't locate|XML::Parser::Lite requires/ 
+    ? skip($@ => undef)
+    : ok(!$@);
 }

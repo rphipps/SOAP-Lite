@@ -21,25 +21,38 @@ Client FTP support (SOAP::Transport::FTP::Client)                        [yes]
                               Net::FTP          [libnet]
                               IO::File          [IO]
 ----------------------------- ----------------- ----------------------- -------
-Standalone server (SOAP::Transport::HTTP::Daemon)                        [yes]
+Standalone HTTP server (SOAP::Transport::HTTP::Daemon)                   [yes]
                               HTTP::Daemon
 ----------------------------- ----------------- ----------------------- -------
 Apache/mod_perl server (SOAP::Transport::HTTP::Apache, require Apache)    [no]
                               Apache            [mod_perl]
 ----------------------------- ----------------- ----------------------- -------
+FastCGI server (SOAP::Transport::HTTP::FCGI, require FastCGI)             [no]
+                              FCGI
+----------------------------- ----------------- ----------------------- -------
 POP3 server (SOAP::Transport::POP3::Server)                              [yes]
                               Net::POP3         [libnet]
+                              MIME::Parser 5.22 [MIME Tools]
 ----------------------------- ----------------- ----------------------- -------
 IO server (SOAP::Transport::IO::Server)                                  [yes]
                               IO::File          [IO]
 ----------------------------- ----------------- ----------------------- -------
-MIME messages, required for POP3, optional for HTTP (SOAP::MIMEParser)    [no]
+MQ transport support (SOAP::Transport::MQ)                                [no]
+                              MQSeries
+----------------------------- ----------------- ----------------------- -------
+JABBER transport support (SOAP::Transport::JABBER)                        [no]
+                              Net::Jabber 1.0021
+----------------------------- ----------------- ----------------------- -------
+MIME messages [required for POP3, optional for HTTP] (SOAP::MIMEParser)   [no]
                               MIME::Parser 5.22 [MIME Tools]
+----------------------------- ----------------- ----------------------- -------
+SSL support for TCP transport (SOAP::Transport::TCP)                      [no]
+                              IO::Socket::SSL
 ----------------------------- ----------------- ----------------------- -------
 Compression support for HTTP transport (SOAP::Transport::HTTP)            [no]
                               Compress::Zlib    
 ----------------------------- ----------------- ----------------------- -------
-Core SOAP package (SOAP::Lite)                                            yes 
+Core package (SOAP::Lite)                                                 yes 
                               XML::Parser 2.23
                               MIME::Base64
                               URI
@@ -48,9 +61,12 @@ EOL
 
 print <<EOI, map {"$_\n"} grep {/\[(?:yes|no)\]/} split "\n", $prerequisites;
 
-We are about to install SOAP::Lite and for your convinience will provide 
+We are about to install SOAP::Lite and for your convenience will provide 
 you with list of modules and prerequisites, so you'll be able to choose 
 only modules you need for your configuration.
+
+XMLRPC::Lite, UDDI::Lite, and XML::Parser::Lite are included by default.
+Installed transports can be used for both SOAP::Lite and XMLRPC::Lite.
 
 EOI
 
@@ -79,6 +95,6 @@ WriteMakefile(
     'NAME'	   => 'SOAP::Lite',
     'VERSION_FROM' => 'lib/SOAP/Lite.pm', 
     'PREREQ_PM'    => \%prerequisites,
-    'EXE_FILES'    => ['bin/SOAPsh.pl', 'bin/stubmaker.pl'],
+    'EXE_FILES'    => ['bin/SOAPsh.pl', 'bin/XMLRPCsh.pl', 'bin/stubmaker.pl'],
     test           => {TESTS => $tests},
 );

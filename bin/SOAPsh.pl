@@ -12,19 +12,20 @@ my($proxy, $uri) = (shift, shift);
 my %can;
 my $soap = SOAP::Lite->proxy($proxy)->on_fault(sub{});
                 $soap->uri($uri) if $uri;
-print "Usage: method[(parameters)]\n> ";
+print STDERR "Usage: method[(parameters)]\n> ";
 while (defined($_ = shift || <>)) {
+  next unless /\w/;
   my($method) = /\s*(\w+)/;
   $can{$method} = $soap->can($method) unless exists $can{$method};
   my $res = eval "\$soap->$_";
-  $@                               ? warn(join "\n", "--- SYNTAX ERROR ---", $@, '') :
+  $@                               ? print(STDERR join "\n", "--- SYNTAX ERROR ---", $@, '') :
   $can{$method} && !UNIVERSAL::isa($res => 'SOAP::SOM')
-                                   ? warn(join "\n", "--- METHOD RESULT ---", $res || '', '') :
-  defined($res) && $res->fault     ? warn(join "\n", "--- SOAP FAULT ---", $res->faultcode, $res->faultstring, '') :
-  !$soap->transport->is_success    ? warn(join "\n", "--- TRANSPORT ERROR ---", $soap->transport->status, '') :
-                                     warn(join "\n", "--- SOAP RESULT ---", Dumper($res->result), '')
+                                   ? print(STDERR join "\n", "--- METHOD RESULT ---", $res || '', '') :
+  defined($res) && $res->fault     ? print(STDERR join "\n", "--- SOAP FAULT ---", $res->faultcode, $res->faultstring, '') :
+  !$soap->transport->is_success    ? print(STDERR join "\n", "--- TRANSPORT ERROR ---", $soap->transport->status, '') :
+                                     print(STDERR join "\n", "--- SOAP RESULT ---", Dumper($res->paramsall), '')
 } continue {
-  print "\n> ";
+  print STDERR "\n> ";
 }
 
 __END__

@@ -8,7 +8,8 @@ on client and server side.
 To learn about SOAP, go to http://www.soaplite.com/#LINKS for more
 information.
 
-This version of SOAP::Lite supports a subset of the SOAP 1.1 specification.
+This version of SOAP::Lite supports a subset of the SOAP 1.1 specification
+and has initial support for SOAP 1.2 specification.
 See http://www.w3.org/TR/SOAP for details. 
 
 FEATURES
@@ -74,7 +75,7 @@ following distributions installed before you install SOAP::Lite:
   XML::Parser
 
   You may not follow this requirement as soon as you have XML::Parser::Lite 
-  (included), which will run automatically on Perl 5.6 and later if 
+  (included), which will run automatically on Perl 5.00503 and later if 
   XML::Parser is not available.
 
 Following modules will be loaded on demand only:
@@ -88,6 +89,10 @@ Following modules will be loaded on demand only:
   MIME::Lite (for SMTP client implementation)
   IO::File (for FTP client and IO server)
   Net::FTP (for FTP client)
+  MQSeries (for MQSeries transport)
+  Net::Jabber (for Jabber transport)
+  FCGI (for FastCGI server implementation)
+  IO::Socket::SSL (SSL support for TCP transport)
   MIME::Parser (for MIME attachment support)
   Compress::Zlib (for compression support)
 
@@ -99,7 +104,7 @@ Following modules will be used for HTTP protocol only:
   HTTP::Status (included with libwww-perl) 
   Crypt::SSLeay (for HTTPS/SSL transfer)
 
-These modules should be available on CPAN.
+These modules should be available from CPAN (http://search.cpan.org/).
 
 INSTALLATION
 
@@ -132,73 +137,10 @@ pages and installed as part of the "make install" process.  You should
 also be able to use the 'perldoc' utility to extract and read 
 documentation from the module files directly.
 
-INCOMPATIBILITIES
-
-Due to extensive interoperability tests and some interface changes
-version 0.50 introduced possible incompatibilities with previous versions.
-Check this list for more information if you are upgrading to version
-0.50 or later.
-
-- compression (406 => 415, compress => deflate)
-  switched from 'compress' to 'deflate' to correctly describe used method.
-
-- no string in Fault detail, updated faultsting
-  previous versions put extended information about Fault as a string in 
-  detail element (but only qualified subelements are allowed there). Current
-  version will use faultstring for Fault description and detail for subelement
-  you may provide. Faultstrings that can be returned from server side were
-  updated to reflect these changes.
-
-- changed namespace/encodingspace behavior and dropped ~C/~V prefixes
-  dropped undocumented prefixes ~C/~V. Use encodingspace()/namespace().
-
-- prefixes check
-  current version will resolve all prefixes, so element <foo:bar/> won't
-  be allowed unless you declared 'foo' prefix somewhere in outer elements.
-
-- mustUnderstand check (DO_NOT_CHECK_MUSTUNDERSTAND)
-  SOAP server will fail message that has Header with mustUnderstand attribute
-  set to 'true' and no actor attribute or actor attribute with specific
-  "..../next" value. You may disable this check by specifying 
-  $SOAP::Constants::DO_NOT_CHECK_MUSTUNDERSTAND = 1;
-  in your server code right after 'use SOAP::Lite' directive.
-
-- 200OK handling
-  some servers return Fault message with 200OK code. Current version will
-  look into the message for Fault element and will call on_fault()
-  handler in this case also.
-
-- charset in content-type (DO_NOT_USE_CHARSET)
-  current version will specify charset in content-type header for HTTP
-  protocol. Some toolkits don't understand such headers and may fail
-  your resuest. Use:
-  $SOAP::Constants::DO_NOT_USE_CHARSET = 1;
-  in your client code to disable it. See t/21-public.t for example.
-
-- XML::Parser::Lite (DO_NOT_USE_XML_PARSER)
-  current version will try to load XML::Parser first and then load 
-  XML::Parser::Lite. If for any reason you don't want to load XML::Parser
-  you may specify it with:
-  $SOAP::Constants::DO_NOT_USE_XML_PARSER = 1;
-  in your server code right after 'use SOAP::Lite' directive on client or
-  server side.
-
-- changed order of parameters in deserializer (as_TYPE)
-
-- methods as_TYPE/as_CLASS in de/serializer do not alter case
-  using as_TYPE/as_CLASS specify names exactly as class name in deserializer 
-  and serializer.
-
-- simple arrays and hashes (not objects) are not blessed anymore during
-  deserialization. Shouldn't break any code, but let me know if it does.
-
 LIMITATIONS
 
-- No support for multidimensional, partially transmitted and sparse arrays 
-  (however arrays of arrays are supported, as well as any other data structures, 
-  and you can add your own implementation with SOAP::Data). 
-- Limited support for WSDL schema. 
-- XML::Parser::Lite relies on Unicode support in Perl and doesn't do entity 
+- Limited support for WSDL schema.
+- XML::Parser::Lite relies on Unicode support in Perl and doesn't do entity
   decoding. 
 - Limited support for mustUnderstand and Actor attributes. 
 
@@ -217,6 +159,106 @@ AVAILABILITY
 You can download the latest version SOAP::Lite for Unix or SOAP::Lite for 
 Win32 from http://www.soaplite.com/ . 
 SOAP::Lite is also available from CPAN ( http://search.cpan.org/ ). 
+
+INCOMPATIBILITIES
+
+Due to extensive interoperability tests and some interface changes
+versions after 0.50 introduced possible incompatibilities with previous 
+versions. Check this list for more information if you are upgrading 
+to version 0.50 or later.
+
+VERSION 0.50 INTRODUCED
+
+- compression (406 => 415, compress => deflate)
+  Switched from 'compress' to 'deflate' to correctly describe used method.
+
+- no string in Fault detail, updated faultsting
+  Previous versions put extended information about Fault as a string in 
+  detail element (but only qualified subelements are allowed there). Current
+  version will use faultstring for Fault description and detail for subelement
+  you may provide. Faultstrings that can be returned from server side were
+  updated to reflect these changes.
+
+- changed namespace/encodingspace behavior and dropped ~C/~V prefixes
+  Dropped undocumented prefixes ~C/~V. Use encodingspace() and namespace().
+
+- prefixes check
+  Current version will resolve all prefixes, so element <foo:bar/> won't
+  be allowed unless you declared 'foo' prefix somewhere in outer elements.
+
+- mustUnderstand check (DO_NOT_CHECK_MUSTUNDERSTAND)
+  SOAP server will fail message that has Header with mustUnderstand attribute
+  set to 'true' and no actor attribute or actor attribute with specific
+  "..../next" value. You may disable this check by specifying 
+  $SOAP::Constants::DO_NOT_CHECK_MUSTUNDERSTAND = 1;
+  in your server code right after 'use SOAP::Lite' directive.
+
+- 200OK handling
+  Some servers return Fault message with 200OK code. Current version will
+  look into the message for Fault element and will call on_fault()
+  handler in this case also.
+
+- charset in content-type (DO_NOT_USE_CHARSET)
+  Current version will specify charset in content-type header for HTTP
+  protocol. Some toolkits don't understand such headers and may fail
+  your resuest. Use:
+  $SOAP::Constants::DO_NOT_USE_CHARSET = 1;
+  in your client code to disable it. See t/21-public.t for example.
+
+- XML::Parser::Lite (DO_NOT_USE_XML_PARSER)
+  Current version will try to load XML::Parser first and then load 
+  XML::Parser::Lite. If for any reason you don't want to load XML::Parser
+  you may specify it with:
+  $SOAP::Constants::DO_NOT_USE_XML_PARSER = 1;
+  in your server code right after 'use SOAP::Lite' directive on client or
+  server side.
+
+- changed order of parameters in deserializer (as_TYPE)
+
+- methods as_TYPE/as_CLASS in de/serializer do not alter case
+  Using as_TYPE/as_CLASS specify names exactly as class name in deserializer 
+  and serializer.
+
+- simple arrays and hashes (not objects) are not blessed anymore during
+  deserialization. Shouldn't break any code, but let me know if it does.
+
+VERSION 0.51 INTRODUCED
+
+- changed way attributes and names of elements are look like.
+  Now attribute will contain full name, '{namespace}name', where
+  namespace is namespace of prefix on attribute wrapped into '{}'.
+  Name of element will be returned without namespace, yet namespace 
+  will be available as the result of uri() call.  
+  Internally (for deserializer handlers) names will be passed as
+  '{namespace}name' instead of 'name'.
+
+- dropped semi-documented '~' prefix (as in '~:element')
+  This prefix was a mistake. Use '{namespace}element' syntax or
+  combination of name/uri as in SOAP::Data->name(...)->uri(...).
+
+- deprecated encodingspace() and namespace() methods
+  Use encprefix() and envprefix().
+
+- updated dispatch for XML-RPC
+  Dispatch for XMLRPC servers looks exactly as for SOAP servers.
+  In case you would like to restore old behavior (with dispatch to 
+  'methodName'), use '->on_dispatch(sub{return})' method for server.
+
+- added 'response' type of envelope
+
+- deserialized structures and arrays are not blesses anymore
+
+- moved methods encode_data() and encode_attribute() to SOAP::Utils
+
+- changed 'use SOAP::Lite' syntax
+  To make it consistant over all available options, 'import' and 'trace'
+  options now accept only one parameter. Use array syntax (with brackets)
+  if you want to pass more than one parameter.
+
+  Instead of 
+    use SOAP::Lite +trace => debug => sub {};
+  do
+    use SOAP::Lite +trace => [debug => sub {}];
 
 COPYRIGHT
 

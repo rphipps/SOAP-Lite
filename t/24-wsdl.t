@@ -14,7 +14,7 @@ use SOAP::Lite
   on_fault => sub {
     my $soap = shift;
     my $res = shift;
-    ref $res ? warn(join "\n", "--- SOAP FAULT ---", $res->faultcode, $res->faultstring, $res->faultdetail, '') 
+    ref $res ? warn(join "\n", "--- SOAP FAULT ---", $res->faultcode, $res->faultstring, '') 
              : warn(join "\n", "--- TRANSPORT ERROR ---", $soap->transport->status, '');
     return new SOAP::SOM;
   }
@@ -31,11 +31,11 @@ $r = $s->test_connection;
 
 unless (defined $r && defined $r->envelope) {
   print "1..0 # Skip: ", $s->transport->status, "\n"; 
-#  exit;
+  exit;
 }
 # ------------------------------------------------------
 
-plan tests => 8;
+plan tests => 9;
 
 {
 # Service description (WSDL) (http://www.xmethods.net/)
@@ -46,11 +46,16 @@ plan tests => 8;
   ok($s->getQuote('MSFT') > 1);
   ok(SOAP::Lite
     -> service('http://www.xmethods.net/sd/StockQuoteService.wsdl')
-    -> getQuote('MSFT')  > 1);
+    -> getQuote('MSFT') > 1);
+
+  # WSDL with <import> element and multiple ports (non-SOAP bindings)
+  ok(SOAP::Lite
+    -> service('http://www.xmethods.net/sd/StockQuoteImport.wsdl')
+    -> getQuote('MSFT') > 1);
 
   my $schema = SOAP::Schema
     -> schema('http://www.xmethods.net/sd/StockQuoteService.wsdl')
-    -> parse;
+    -> parse('StockQuoteService');
 
   foreach (keys %{$schema->services}) {
     eval { $schema->stub($_) } or die;

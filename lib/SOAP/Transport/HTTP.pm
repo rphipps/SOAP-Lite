@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.50 2001/04/18 11:45:14 $
+# $Id: SOAP::Transport::HTTP.pm,v 0.51 2001/07/18 15:15:14 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.50';
+$VERSION = '0.51';
 
 use SOAP::Lite;
 
@@ -180,7 +180,7 @@ sub new { require LWP::UserAgent;
     $self = $class->SUPER::new(@_);
     $self->on_action(sub {
       (my $action = shift) =~ s/^("?)(.*)\1$/$2/;
-      die "SOAPAction shall match 'uri#method' if present\n" 
+      die "SOAPAction shall match 'uri#method' if present (got '$action', expected '@{[join('#', @_)]}'\n"
         if $action && $action ne join('#', @_) 
                    && $action ne join('/', @_)
                    && (substr($_[0], -1, 1) ne '/' || $action ne join('', @_));
@@ -252,6 +252,7 @@ sub make_response {
   my $self = shift;
   my($code, $response) = @_;
 
+  my $encoding = $1 if $response =~ /^<\?xml(?: version="1.0"| encoding="([^"]+)")+\?>/;
   $response =~ s!(\?>)!$1<?xml-stylesheet type="text/css"?>! if $self->request->content_type eq 'multipart/form-data';
 
   $self->options->{is_compress} ||= 
@@ -267,7 +268,8 @@ sub make_response {
      HTTP::Headers->new(
        'SOAPServer' => $self->product_tokens,
        $compressed ? ('Content-Encoding' => $COMPRESS) : (),
-       'Content-Type' => 'text/xml',
+       'Content-Type' => join('; ', 'text/xml', 
+         !$SOAP::Constants::DO_NOT_USE_CHARSET && $encoding ? 'charset=' . lc($encoding) : ()),
        'Content-Length' => length $response), 
      $response,
   ));
@@ -400,17 +402,71 @@ sub handler {
 
   if ($self->response->is_success) {
     $self->response->headers->scan(sub { $r->header_out(@_) });
-    $r->send_http_header($self->response->content_type);
+    $r->send_http_header(join '; ', $self->response->content_type);
     $r->print($self->response->content);
   } else {
     $self->response->headers->scan(sub { $r->err_header_out(@_) });
-    $r->content_type($self->response->content_type);
+    $r->content_type(join '; ', $self->response->content_type);
     $r->custom_response($self->response->code, $self->response->content);
   }
   $self->response->code;
 }
 
+sub configure {
+  my $self = shift->new;
+  my $config = shift->dir_config;
+  foreach (%$config) {
+    $config->{$_} =~ /=>/
+      ? $self->$_({split /\s*(?:=>|,)\s*/, $config->{$_}})
+      : ref $self->$_() ? () # hm, nothing can be done here
+                        : $self->$_(split /\s+|\s*,\s*/, $config->{$_})
+      if $self->can($_);
+  }
+  $self;
+}
+
 { sub handle; *handle = \&handler } # just create alias
+
+# ======================================================================
+#
+# Copyright (C) 2001 Single Source oy (marko.asplund@kronodoc.fi)
+# a FastCGI transport class for SOAP::Lite.
+#
+# $Id: FCGI.pm,v 1.14 2001/07/11 07:08:00 aspa Exp $
+#
+# ======================================================================
+
+package SOAP::Transport::HTTP::FCGI;
+
+use vars qw(@ISA);
+@ISA = qw(SOAP::Transport::HTTP::CGI);
+
+sub DESTROY { SOAP::Trace::objects('()') }
+
+sub new { require FCGI; Exporter::require_version('FCGI' => 0.47); # requires thread-safe interface
+  my $self = shift;
+
+  if (!ref($self)) {
+    my $class = ref($self) || $self;
+    $self = $class->SUPER::new(@_);
+    $self->{_fcgirq} = FCGI::Request(\*STDIN, \*STDOUT, \*STDERR);
+    SOAP::Trace::objects('()');
+  }
+  return $self;
+}
+
+sub handle {
+  my $self = shift->new;
+
+  my ($r1, $r2);
+  my $fcgirq = $self->{_fcgirq};
+
+  while (($r1 = $fcgirq->Accept()) >= 0) {
+    $r2 = $self->SUPER::handle;
+  }
+
+  return undef;
+}
 
 # ======================================================================
 
@@ -590,16 +646,17 @@ You may also do it in one line:
 
 =head2 COMPRESSION
 
-SOAP::Lite provides you option for enabling compression on wire (for HTTP 
-transport only). Both server and client should support this capability, 
-but this logic should be absolutely transparent for your application. 
-Server will respond with encoded message only if client can accept it 
-(client sends Accept-Encoding with 'deflate' or '*' values) and client 
-has fallback logic, so if server doesn't understand specified encoding 
+SOAP::Lite provides you with the option for enabling compression on the 
+wire (for HTTP transport only). Both server and client should support 
+this capability, but this should be absolutely transparent to your 
+application. The Server will respond with an encoded message only if 
+the client can accept it (indicated by client sending an Accept-Encoding 
+header with 'deflate' or '*' values) and client has fallback logic, 
+so if server doesn't understand specified encoding 
 (Content-Encoding: deflate) and returns proper error code 
-(415 NOT ACCEPTABLE) client will repeat the same request not encoded and 
-will store this server in per-session cache, so all other requests will 
-go there without encoding.
+(415 NOT ACCEPTABLE) client will repeat the same request without encoding
+and will store this server in a per-session cache, so all other requests 
+will go there without encoding.
 
 Having options on client and server side that let you specify threshold
 for compression you can safely enable this feature on both client and 
@@ -625,15 +682,21 @@ server side.
 
 =back
 
-Compression will be enabled on client side IF: threshold is specified AND
-size of current message is bigger than threshold AND module Compress::Zlib
-is available. Client will send header 'Accept-Encoding' with value 'deflate'
-if threshold is specified AND module Compress::Zlib is available.
+Compression will be enabled on the client side 
+B<if> the threshold is specified 
+B<and> the size of current message is bigger than the threshold 
+B<and> the module Compress::Zlib is available. 
 
-Server will accept compressed message if module Compress::Zlib is available,
-and will respond with compressed message ONLY IF: threshold is specified AND
-size of current message is bigger than threshold AND module Compress::Zlib
-is available AND header 'Accept-Encoding' is presented in request.
+The Client will send the header 'Accept-Encoding' with value 'deflate'
+B<if> the threshold is specified 
+B<and> the module Compress::Zlib is available.
+
+Server will accept the compressed message if the module Compress::Zlib 
+is available, and will respond with the compressed message 
+B<only if> the threshold is specified 
+B<and> the size of the current message is bigger than the threshold 
+B<and> the module Compress::Zlib is available 
+B<and> the header 'Accept-Encoding' is presented in the request.
 
 =head1 EXAMPLES
 
@@ -739,6 +802,10 @@ causes random segmentation faults in httpd processes try to configure
 Apache with:
 
  RULE_EXPAT=no
+
+-- OR (for Apache 1.3.20 and later) --
+
+ ./configure --disable-rule=EXPAT
 
 See http://archive.covalent.net/modperl/2000/04/0185.xml for more 
 details and lot of thanks to Robert Barta (rho@bigpond.net.au) for

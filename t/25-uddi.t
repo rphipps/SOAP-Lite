@@ -11,8 +11,8 @@ use strict;
 use Test;
 
 use UDDI::Lite 
-  import => ['UDDI::Data'],
-  import => ['UDDI::Lite'],
+  import => 'UDDI::Data',
+  import => 'UDDI::Lite',
   proxy => 'http://uddi.microsoft.com/inquire';
 
 my($a, $s, $r, $serialized, $deserialized);

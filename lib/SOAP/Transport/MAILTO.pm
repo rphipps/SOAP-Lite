@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::MAILTO.pm,v 0.50 2001/04/18 11:45:14 $
+# $Id: SOAP::Transport::MAILTO.pm,v 0.51 2001/07/18 15:15:14 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::MAILTO;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.50';
+$VERSION = '0.51';
 
 use MIME::Lite; 
 use URI;
@@ -54,7 +54,7 @@ sub send_receive {
   my $msg = MIME::Lite->new(
     To         => $uri->to,
     Type       => 'text/xml',
-    Encoding   => 'base64',
+    Encoding   => $parameters{Encoding} || 'base64',
     Data       => $envelope,
     $parameters{From}       ? (From       => $parameters{From}) : (),
     $parameters{'Reply-To'} ? ('Reply-To' => $parameters{'Reply-To'}) : (),

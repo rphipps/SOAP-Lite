@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::POP3.pm,v 0.50 2001/04/18 11:45:14 $
+# $Id: SOAP::Transport::POP3.pm,v 0.51 2001/07/18 15:15:14 $
 #
 # ======================================================================
 
@@ -12,10 +12,10 @@ package SOAP::Transport::POP3;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.50';
+$VERSION = '0.51';
 
 use Net::POP3; 
-use URI::Escape; 
+use URI; 
 use SOAP::Lite;
 
 # ======================================================================
@@ -26,16 +26,24 @@ use Carp ();
 use vars qw(@ISA $AUTOLOAD);
 @ISA = qw(SOAP::Server);
 
+sub DESTROY { my $self = shift; $self->quit if $self->{_pop3server} }
+
 sub new {
   my $self = shift;
     
   unless (ref $self) {
     my $class = ref($self) || $self;
-    my($server, $auth) = reverse split /@/, URI::Escape::uri_unescape(shift);
+    my $address = shift;
+    Carp::carp "URLs without 'pop://' scheme are deprecated. Still continue" 
+      if $address =~ s!^(pop://)?!pop://!i && !$1;
+    my $server = URI->new($address);
     $self = $class->SUPER::new(@_);
-    $self->{_pop3server} = Net::POP3->new($server) or Carp::croak "Can't connect to $server: $!";
-    $self->{_pop3server}->login(split /:/, $auth) or Carp::croak "Can't authenticate to $server"
-      if defined $auth;
+    $self->{_pop3server} = Net::POP3->new($server->host_port) or Carp::croak "Can't connect to '@{[$server->host_port]}': $!";
+    my $method = !$server->auth || $server->auth eq '*' ? 'login' : 
+                  $server->auth eq '+APOP' ? 'apop' : 
+                  Carp::croak "Unsupported authentication scheme '@{[$server->auth]}'";
+    $self->{_pop3server}->$method(split /:/, $server->user) or Carp::croak "Can't authenticate to '@{[$server->host_port]}' with '$method' method"
+      if defined $server->user;
   }
   return $self;
 }
@@ -53,7 +61,7 @@ sub handle {
   my $self = shift->new;
   my $messages = $self->list or return;
   foreach my $msgid (keys %$messages) {
-    $self->SUPER::handle($self->get($msgid));
+    $self->SUPER::handle(join '', @{$self->get($msgid)});
   } continue {
     $self->delete($msgid);
   }
@@ -77,20 +85,24 @@ SOAP::Transport::POP3 - Server side POP3 support for SOAP::Lite
   use SOAP::Transport::POP3;
 
   my $server = SOAP::Transport::POP3::Server
-    -> new('pop.mail.server')
+    -> new('pop://pop.mail.server')
     # if you want to have all in one place
-    # -> new('user:password@pop.mail.server') 
+    # -> new('pop://user:password@pop.mail.server') 
+    # or, if you have server that supports MD5 protected passwords
+    # -> new('pop://user:password;AUTH=+APOP@pop.mail.server') 
     # specify list of objects-by-reference here 
     -> objects_by_reference(qw(My::PersistentIterator My::SessionIterator My::Chat))
     # specify path to My/Examples.pm here
     -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
   ;
   # you don't need to use next line if you specified your password in new()
-  $server->login('user' => 'password') or die "Can't authenticate to SMTP server\n";
+  $server->login('user' => 'password') or die "Can't authenticate to POP3 server\n";
 
   # handle will return number of processed mails
   # you can organize loop if you want
-  $server->handle while sleep 10;
+  do { $server->handle } while sleep 10;
+
+  # you may also call $server->quit explicitly to purge deleted messages
 
 =head1 DESCRIPTION
 

@@ -10,4 +10,3 @@ BEGIN {
 use SOAP::Test;
 
 SOAP::Test::Server::run_for(shift || 'http://localhost/soap');
-

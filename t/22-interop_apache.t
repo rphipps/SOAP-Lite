@@ -14,7 +14,7 @@ use SOAP::Lite
   on_fault => sub {
     my $soap = shift;
     my $res = shift;
-    ref $res ? warn(join " ", "SOAP FAULT:", $res->faultdetail || $res->faultstring, "\n") 
+    ref $res ? warn(join " ", "SOAP FAULT:", $res->faultstring, "\n") 
              : warn(join " ", "TRANSPORT ERROR:", $soap->transport->status, "\n");
     return new SOAP::SOM;
   }
