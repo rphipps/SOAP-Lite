@@ -12,4 +12,11 @@ sub autobind {
   return $param1, $param2;
 }
 
+sub addheader {
+  my $self = shift;
+  my $param1 = shift;
+  my $header = shift;
+  return $param1, $header->value($header->value x 2);
+}
+
 1;

@@ -4,35 +4,33 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.36 2000/09/24 20:12:10 $
+# $Id: SOAP::Transport::HTTP.pm,v 0.38 2000/10/05 22:06:20 $
 #
 # ======================================================================
 
 package SOAP::Transport::HTTP;
 
 use strict;
+use vars qw($VERSION);
+$VERSION = '0.38';
 
 # ======================================================================
 
 package SOAP::Transport::HTTP::Client;
 
-use vars qw($AUTOLOAD);
+use vars qw(@ISA);
+@ISA = qw(LWP::UserAgent);
 
-use LWP::UserAgent;
-use URI;
-
-sub new { 
+sub new { eval "use LWP::UserAgent; use URI"; die if $@;
   my $self = shift;
   my $class = ref($self) || $self;
-  return $self if ref $self;
-  $self = bless {
-    _ua => do { 
-       my $ua = LWP::UserAgent->new; 
-       $ua->agent(join '/', 'SOAP::Transport', 'Perl', SOAP::Transport->VERSION);
-       $ua;
-    },
-    _on_debug => sub {},
-  } => $class;
+
+  unless (ref $self) {
+    $self = bless $class->SUPER::new() => $class;
+    $self->agent(join '/', 'SOAP::Transport', 'Perl', SOAP::Transport::HTTP->VERSION);
+    $self->on_debug(sub {});
+  }
+
   if (@_) {
     my %parameters = @_;
     foreach (grep {defined $parameters{$_}} keys %parameters) {
@@ -44,7 +42,7 @@ sub new {
 
 sub BEGIN {
   no strict 'refs';
-  for my $method (qw(endpoint code message is_success status on_debug ua)) {
+  for my $method (qw(endpoint code message is_success status on_debug parameters)) {
     my $field = '_' . $method;
     *$method = sub {
       my $self = shift->new;
@@ -53,23 +51,14 @@ sub BEGIN {
   }
 }
 
-sub AUTOLOAD {
-  my($method) = $AUTOLOAD =~ m/([^:]+)$/;
-  return if $method eq 'DESTROY';
-
-  no strict 'refs';
-  *$AUTOLOAD = sub { shift->ua->$method(@_) };
-  goto &$AUTOLOAD;
-}
-
-sub request {
+sub send_receive {
   my($self, %parameters) = @_;
   my($envelope, $endpoint, $action) = 
     @parameters{qw(envelope endpoint action)};
 
-  $self->endpoint($endpoint) if defined $endpoint;
+  $endpoint ||= $self->endpoint;
 
-  my $req = new HTTP::Request (POST => $self->endpoint, new HTTP::Headers, $envelope);
+  my $req = HTTP::Request->new(POST => $endpoint, HTTP::Headers->new, $envelope);
 
   $req->header('SOAPAction' => $action);
   $req->header(Host => URI->new($self->endpoint)->host_port);
@@ -78,7 +67,7 @@ sub request {
 
   $self->on_debug->($req->as_string);
     
-  my $resp = $self->ua->request($req);
+  my $resp = $self->SUPER::request($req);
 
   $self->on_debug->($resp->as_string);
 
@@ -101,23 +90,22 @@ sub request {
 package SOAP::Transport::HTTP::Server;
 
 use SOAP::Lite;
-
-my $Client = 'Client';
-my $Server = 'Server';
+use vars qw(@ISA);
+@ISA = qw(SOAP::Server);
 
 sub new { 
   my $self = shift;
   my $class = ref($self) || $self;
-  return $self if ref $self;
-  $self = bless {
-    _dispatch_to => [], 
-    _dispatched => [],
-    _on_action => sub {
+
+  unless (ref $self) {
+    $self = bless $class->SUPER::new() => $class;
+    $self->on_action(sub {
       (my $action = shift) =~ s/^("?)(.+)\1$/$2/;
       die "SOAPAction shall match 'uri#method' if present\n" 
         if $action && $action ne join '#', @_;
-    },
-  } => $class;
+    });
+  }
+
   if (@_) {
     my %parameters = @_;
     foreach (grep {defined $parameters{$_}} keys %parameters) {
@@ -129,91 +117,30 @@ sub new {
 
 sub BEGIN {
   no strict 'refs';
-  for my $method (qw(request response on_action)) {
+  for my $method (qw(request response)) {
     my $field = '_' . $method;
     *$method = sub {
       my $self = shift->new;
       @_ ? ($self->{$field} = shift, return $self) : return $self->{$field};
     }
   }
-  for my $method (qw(dispatch_to)) {
-    my $field = '_' . $method;
-    *$method = sub {
-      my $self = shift->new;
-      @_ ? ($self->{$field} = [@_], return $self) 
-         : return @{$self->{$field}};
-    }
-  }
-}
-
-sub dispatched {
-  my $self = shift->new;
-  @_ ? (push(@{$self->{_dispatched}}, @_), return $self) : return @{$self->{_dispatched}};
 }
 
 sub handle {
-  my $self = shift;
+  my $self = shift->new;
 
   return $self->response(new HTTP::Response 400) # BAD_REQUEST
     unless $self->request->method eq 'POST';
 
-  return $self->make_fault($Client, 'Bad Request' => 'Content-Type must be text/xml, '. $self->request->as_string)
+  return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Request' => 'Content-Type must be text/xml')
     unless $self->request->content_type eq 'text/xml';
 
-  my $request = eval { local $SIG{'__DIE__'}; SOAP::Deserializer->deserialize($self->request->content) };
-  return $self->make_fault($Client, 'Bad Data' => "Application failed during request deserialization: $@")
-    if $@;
+  $self->action($self->request->header('SOAPAction'));
 
-  my($method_uri, $method_name) = ($request->namespaceuriof(SOAP::SOM::method), $request->dataof(SOAP::SOM::method)->name);
-  $method_name =~ s/^$SOAP::Constants::NSMASK://; # ignore namespace
+  my $response = $self->SUPER::handle($self->request->content) or return;
 
-  eval { local $SIG{'__DIE__'}; $self->on_action->($self->request->header('SOAPAction'), $method_uri, $method_name); };
-  return $self->make_fault($Client, 'Bad SOAPAction' => $@)
-    if $@;
-
-  return $self->make_fault($Client, 'Bad URI' => "URI shall have path")
-    unless defined (my $class = URI->new($method_uri)->path);
-
-  for ($class) { s!^/!!; s!/!::!g; s/^$/main/; } 
-  my $static = grep { 
-    /^$class$/ ||                          # MODULE
-    /^${class}::$method_name$/ ||          # MODULE::method
-    /^$method_name$/ && ($class eq 'main') # method (main assumed)
-  } grep {!m![/\\]!} $self->dispatch_to;   # filter PATH
-
-  no strict 'refs';
-  unless (defined %{"${class}::"} && UNIVERSAL::can($class => $method_name)) {   
-    local @INC = grep {m![/\\]!} $self->dispatch_to # '\' to keep windows guys happy
-      unless $static;
-    eval 'local $SIG{"__DIE__"};' . "require $class";
-    return $self->make_fault($Client, 'Bad Class Name' => "Failed to access class ($class)")
-      if $@;
-    $self->dispatched($class) unless $static;
-  } 
-
-  return $self->make_fault($Client, 'Bad Class::method Call' => "Denied access to method ($method_name) in class ($class)")
-    unless $static || grep {/^$class$/} $self->dispatched;
-
-  my @results = eval { local $SIG{'__DIE__'}; 
-    my($object, @parameters) = $request->paramsin;
-    local $^W;
-    defined $object && ref $object && UNIVERSAL::isa($object => $class) 
-      ? ($object->$method_name(@parameters), 
-         $request->dataof(SOAP::SOM::method.'/[1]')->value($object))
-      : $class->$method_name($object, @parameters) 
-  };
-  # let application errors pass through with 'Server' code
-  return ($@ =~ s/ at .*\n//, $@ =~ /^Can't locate object method/) 
-    ? $self->make_fault($Client, 'Bad Method Call' => "Failed to locate method ($method_name) in class ($class)")
-    : $self->make_fault($Server, 'Application error' => "Application failed during method execution: $@")
-    if $@;
-
-  my $response = SOAP::Serializer
-    -> prefix('s')      # distinguish element names from client and server
-    -> uri($method_uri) 
-    -> envelope(method => $method_name . 'Response', @results);
   $self->response(new HTTP::Response
-     200 => undef, # OK
+     $SOAP::Constants::HTTP_ON_SUCCESS_CODE => undef, 
      HTTP::Headers->new('Content-Type' => 'text/xml', 'Content-Length' => length $response), 
      $response,
   );
@@ -221,12 +148,13 @@ sub handle {
 
 sub make_fault {
   my $self = shift;
-  my $response = SOAP::Serializer->envelope(fault => @_);
+  my $response = $self->SUPER::make_fault(@_);
   $self->response(new HTTP::Response 
-     500 => undef, # INTERNAL_SERVER_ERROR
+     $SOAP::Constants::HTTP_ON_FAULT_CODE => undef,
      HTTP::Headers->new('Content-Type' => 'text/xml', 'Content-Length' => length $response),
      $response,
   );
+  return;
 }
 
 # ======================================================================
@@ -234,15 +162,15 @@ sub make_fault {
 package SOAP::Transport::HTTP::CGI;
 
 use vars qw(@ISA);
-
 @ISA = qw(SOAP::Transport::HTTP::Server);
 
 sub new { 
   my $self = shift;
   my $class = ref($self) || $self;
-  return $self if ref $self;
-  $self = new SOAP::Transport::HTTP::Server;
-  bless $self => $class;
+  unless (ref $self) {
+    $self = bless $class->SUPER::new() => $class;
+  }
+  return $self;
 }
 
 sub handle {
@@ -271,16 +199,16 @@ sub handle {
 package SOAP::Transport::HTTP::Daemon;
 
 use vars qw($AUTOLOAD @ISA);
-
 @ISA = qw(SOAP::Transport::HTTP::Server);
 
 sub new { eval "use HTTP::Daemon"; die if $@;
   my $self = shift;
   my $class = ref($self) || $self;
-  return $self if ref $self;
-  $self = new SOAP::Transport::HTTP::Server;
-  $self->{_daemon} = new HTTP::Daemon(@_);
-  bless $self => $class;
+  unless (ref $self) {
+    $self = bless $class->SUPER::new() => $class;
+    $self->{_daemon} = new HTTP::Daemon(@_);
+  }
+  return $self;
 }
 
 sub AUTOLOAD {
@@ -310,15 +238,15 @@ sub handle {
 package SOAP::Transport::HTTP::Apache;
 
 use vars qw(@ISA);
-
 @ISA = qw(SOAP::Transport::HTTP::Server);
 
 sub new { 
   my $self = shift;
   my $class = ref($self) || $self;
-  return $self if ref $self;
-  $self = new SOAP::Transport::HTTP::Server;
-  bless $self => $class;
+  unless (ref $self) {
+    $self = bless $class->SUPER::new() => $class;
+  }
+  return $self;
 }
 
 sub handler { eval "use Apache; use Apache::Constants qw(OK)"; die if $@;
@@ -347,13 +275,15 @@ sub handler { eval "use Apache; use Apache::Constants qw(OK)"; die if $@;
 
 *handle = \&handler; # just create alias
 
+# ======================================================================
+
 1;
 
 __END__
 
 =head1 NAME
 
-SOAP::Transport::HTTP::Server - Server side HTTP support for SOAP::Lite for Perl
+SOAP::Transport::HTTP - Server/Client side HTTP support for SOAP::Lite for Perl
 
 =head1 SYNOPSIS
 
@@ -477,7 +407,7 @@ see L</SECURITY> section.
 =head2 SECURITY
 
 Due to security reasons if you choose dynamic deployment and specified 
-C<PATH/>, current path for perl modules (@INC) will be disabled. 
+C<PATH/>, current path for perl modules (C<@INC>) will be disabled. 
 If you want to access other modules in your included package you have 
 several options:
 
@@ -570,7 +500,8 @@ Apache.pm:
 
 =head1 DEPENDENCIES
 
- SOAP::Lite                for SOAP::Transport::HTTP::Server
+ Crypt::SSLeay             for HTTPS/SSL
+ SOAP::Lite, URI           for SOAP::Transport::HTTP::Server
  LWP::UserAgent, URI       for SOAP::Transport::HTTP::Client
  HTTP::Daemon              for SOAP::Transport::HTTP::Deamon
  Apache, Apache::Constants for SOAP::Transport::HTTP::Apache

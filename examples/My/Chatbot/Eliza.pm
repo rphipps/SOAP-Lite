@@ -1,6 +1,6 @@
 ###################################################################
 
-package Chatbot::Eliza;
+package My::Chatbot::Eliza;
  
 # Copyright (c) 1997-1999 John Nolan. All rights reserved. 
 # This program is free software.  You may modify and/or 

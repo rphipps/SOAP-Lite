@@ -7,7 +7,7 @@ Revision history for Perl extension SOAP::Lite.
 	- next stable version; works with public test servers
 
 0.3  Mon Sep  4 00:59:04 2000
-	- first public beta version
+	+ first public beta version
 	+ added live SOAP calls
 	+ added test suite (25 tests)
 	+ added documentation
@@ -35,7 +35,7 @@ Revision history for Perl extension SOAP::Lite.
         + added more tests (47 for now)
 
 0.35 Sun Sep 17 23:57:10 2000
-        + fixed minors (Response instead of Respond, server will map client's uri)
+        ! fixed minors (Response instead of Respond, server will map client's uri)
         + cleaned HTTP::Server internals (will go to SOAP::Server in future)
         + test.pl won't abort on transport errors. Failed test will be skipped
         + added daemon server implementation
@@ -52,12 +52,25 @@ Revision history for Perl extension SOAP::Lite.
         + added SOAP prefix to method calls 
         + added more documentation
         + added more tests (54 for now)
-        + added examples (Chatbot::Eliza, My::PingPong, My::Calculator)
+        + added more examples (Chatbot::Eliza, My::PingPong)
 
 0.36 Sun Sep 24 20:12:10 2000
-        + fixed output parameters autobinding
+        ! fixed output parameters autobinding
         + added mod_perl server implementation
         + added recognizing all simple types mentioned in specification
         + added support for 'hex' type
         + added more documentation (twice as much as before)
-        + added more tests (75 for now)
+        + added more tests (74 for now)
+
+0.38 Thu Oct  5 22:06:20 2000
+        ! fixed namespace for base64 encoding
+        ! fixed security problem on server side, upgrade is highly recommended
+        + added HTTPS/SSL support
+        + added SMTP client implementation
+        + added POP3 server implementation
+        + added support for Basic/Digest server authentication
+        + added support for header(s) on client/server side with SOAP::Header
+        + added Array and SOAPStruct for interoperability with ApacheSOAP
+        + added generic class for server support SOAP::Server
+        + added Actor attribute
+        + added more examples, documentation and tests (88 for now)

@@ -1,0 +1,18 @@
+#!/bin/env perl 
+#!d:\perl\bin\perl.exe 
+
+use SOAP::Transport::POP3;
+
+my $server = SOAP::Transport::POP3::Server
+  -> new('pop.mail.server')
+  # if you want to have all in one place
+  # -> new('user:password@pop.mail.server') 
+  # specify path to My/Examples.pm here
+  -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
+;
+$server->login('user' => 'password') or die "Can't authenticate to SMTP server\n";
+
+# handle will return number of processed mails
+# you can organize loop if you want
+$server->handle while sleep 10;
+

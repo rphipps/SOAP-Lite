@@ -6,7 +6,7 @@
 # Change 1..1 below to 1..last_test_to_print .
 # (It may become useful if the test is moved to ./t subdirectory.)
 
-BEGIN { $| = 1; print "1..74\n"; }
+BEGIN { $| = 1; print "1..88\n"; }
 END {print "not ok 1\n" unless $loaded;}
 use SOAP::Lite;
 $loaded = 1;
@@ -39,7 +39,7 @@ my $test = 1;
   $serialized = join '', SOAP::Serializer->serialize(1, [1,2], {a=>3}, \4);
 
   $test++; print $serialized =~ 
-    m!<c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENV:Array SOAP-ENC:arrayType="xsd:int\[2\]"><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\2><c-gensym\2 xsi:type="xsd:int">2</c-gensym\2></SOAP-ENV:Array><SOAP-ENV:Struct><a xsi:type="xsd:int">3</a></SOAP-ENV:Struct><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\4></c-gensym\3>!
+    m!<c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENV:Array(?: xsi:type="SOAP-ENV:Array"| SOAP-ENC:arrayType="xsd:int\[2\]"){2}><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\2><c-gensym\2 xsi:type="xsd:int">2</c-gensym\2></SOAP-ENV:Array><SOAP-ENV:Struct xsi:type="SOAP-ENV:SOAPStruct"><a xsi:type="xsd:int">3</a></SOAP-ENV:Struct><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\4></c-gensym\3>!
     ? "ok $test\n" : "not ok $test\n";
 }  
 
@@ -61,7 +61,7 @@ my $test = 1;
   $serialized = join '', SOAP::Serializer->serialize($a);
 
   $test++; print $serialized =~ 
-    m!<SOAP-ENV:Struct id="ref-0x(\w+)"><a id="ref-0x\w+"><b href="#ref-0x\1"/></a></SOAP-ENV:Struct>!
+    m!<SOAP-ENV:Struct(?: xsi:type="SOAP-ENV:SOAPStruct"| id="ref-0x(\w+)"){2}><a(?: xsi:type="SOAP-ENV:SOAPStruct"| id="ref-0x\w+"){2}><b(?: xsi:type="SOAP-ENV:SOAPStruct"| href="#ref-0x\1"){2}/></a></SOAP-ENV:Struct>!
     ? "ok $test\n" : "not ok $test\n";
 }
 
@@ -88,14 +88,14 @@ my $test = 1;
   $serialized = join '', SOAP::Serializer->serialize("\0\1\2\3   \4\5\6", '<123>&amp</123>');
 
   $test++; print $serialized =~ 
-    m!<c-gensym(\d+) xsi:type="SOAP-ENV:base64">AAECAyAgIAQFBg==</c-gensym\1><c-gensym(\d+) xsi:type="xsd:string">&lt;123>&amp;amp&lt;/123></c-gensym\2>!
+    m!<c-gensym(\d+) xsi:type="SOAP-ENC:base64">AAECAyAgIAQFBg==</c-gensym\1><c-gensym(\d+) xsi:type="xsd:string">&lt;123>&amp;amp&lt;/123></c-gensym\2>!
     ? "ok $test\n" : "not ok $test\n";
 }
 
 { # check objects and SOAP::Data 
   print "Blessed references and SOAP::Data encoding test(s)...\n";
 
-  $serialized = join '', SOAP::Serializer->serialize(SOAP::Data->urn('some_urn' => bless {a => 1} => 'ObjectType'));
+  $serialized = join '', SOAP::Serializer->serialize(SOAP::Data->uri('some_urn' => bless {a => 1} => 'ObjectType'));
 
   $test++; print $serialized =~ 
     m!<namesp(\d+):ObjectType xsi:type="namesp\1:ObjectType" xmlns:namesp\1="some_urn"><a xsi:type="xsd:int">1</a></namesp\1:ObjectType>!
@@ -211,7 +211,7 @@ my $test = 1;
 { # check output parameters   
   print "Output parameters test(s)...\n";
 
-  $deserializer = SOAP::Deserializer->deserialize('
+  $deserialized = SOAP::Deserializer->deserialize('
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
 	 xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
 	 xmlns:xsd="http://www.w3.org/1999/XMLSchema"
@@ -226,7 +226,7 @@ my $test = 1;
 </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 ');
-  my @paramsout = $deserializer->paramsout;
+  my @paramsout = $deserialized->paramsout;
 
   $test++; print $paramsout[0] eq 'name2' && $paramsout[1] eq 'name3'
     ? "ok $test\n" : "not ok $test\n";
@@ -258,7 +258,7 @@ EOBASE64
   $serialized = SOAP::Serializer->serialize($a);
 
   $test++; print $serialized =~ 
-    m!<c-gensym(\d+) xsi:type="SOAP-ENV:base64">CnF3ZXJ0eXVpb3BbXWFzZGZnaGprbDsnenhjdmJubSwuLwpRV0VSVFlVSU9Qe31BU0RGR0hKS0w6IlpYQ1ZCTk08Pj8KYDEyMzQ1Njc4OTAtPVwKfiFAIyQlXiYqKClfK3wKCg==</c-gensym\1>!
+    m!<c-gensym(\d+) xsi:type="SOAP-ENC:base64">CnF3ZXJ0eXVpb3BbXWFzZGZnaGprbDsnenhjdmJubSwuLwpRV0VSVFlVSU9Qe31BU0RGR0hKS0w6IlpYQ1ZCTk08Pj8KYDEyMzQ1Njc4OTAtPVwKfiFAIyQlXiYqKClfK3wKCg==</c-gensym\1>!
     ? "ok $test\n" : "not ok $test\n";
   
   $test++; print SOAP::Deserializer->deserialize($serialized)->valueof('/') eq $a 
@@ -298,17 +298,16 @@ EOBASE64
 { # check header serialization/deserialization   
   print "Header serialization/deserialization test(s)...\n";
 
-  $serializer = SOAP::Serializer->header(
-    SOAP::Data->name(t1 => 5)->attr({'~V:mustUnderstand' => 1}),
-    SOAP::Data->name(t2 => 7)->mustUnderstand(2),
+  $serialized = SOAP::Serializer->envelope('method'
+      => 'mymethod', 1, 2, 3, 
+      SOAP::Header->name(t1 => 5)->attr({'~V:mustUnderstand' => 1}),
+      SOAP::Header->name(t2 => 7)->mustUnderstand(2),
   );
-  $deserializer = SOAP::Deserializer->deserialize(
-    $serializer->envelope(method => 'mymethod', 1, 2, 3)
-  );
+  $deserialized = SOAP::Deserializer->deserialize($serialized);
 
-  my $t1 = $deserializer->match(SOAP::SOM::header)->dataof('t1');
-  my $t2 = $deserializer->dataof('t2');
-  my @paramsin = $deserializer->paramsin;
+  my $t1 = $deserialized->match(SOAP::SOM::header)->dataof('t1');
+  my $t2 = $deserialized->dataof('t2');
+  my @paramsin = $deserialized->paramsin;
 
   $test++; print $t2->type eq 'xsd:int' ? "ok $test\n" : "not ok $test\n";
   $test++; print $t2->mustUnderstand == 1 ? "ok $test\n" : "not ok $test\n";
@@ -336,10 +335,10 @@ EOBASE64
 }
 
 print "
-This test sends a live SOAP call to your local Perl server (CGI implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
+This test sends a live SOAP call to your local web server (CGI implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
 ";
 if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /^\s*y/i) {
-  $test+=6; print "skipped 6 test(s)\n"; 
+  $test+=8; print "skipped 8 test(s)\n"; 
 } else {
 # Local server with Perl implementation (http://www.geocities.com/paulclinger/soap.html)
   print "Perl SOAP server test(s)...\n";
@@ -364,11 +363,17 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
   my $result = $s->autobind($param1, $param2)->result;
   $test++; print $result == $param1 && $param2->value == 24 ? "ok $test\n" : "not ok $test\n"; 
 
+  print "Header manipulating test(s)...\n";
+
+  $a = $s->addheader(2, SOAP::Header->name(my => 123)); 
+  $test++; print $a->header->{my} eq '123123' ? "ok $test\n" : "not ok $test\n"; 
+  $test++; print $a->headers eq '123123' ? "ok $test\n" : "not ok $test\n"; 
+
   print "Object autobinding and SOAP:: prefix test(s)...\n";
   print "You should get warning now...\n";
 
-  use SOAP::Lite +autodispatch 
-    => (uri => 'urn:', proxy => 'http://localhost/cgi-bin/soap.cgi');
+  eval "use SOAP::Lite +autodispatch 
+    => (uri => 'urn:', proxy => 'http://localhost/cgi-bin/soap.cgi')";
 
   my $p = My::PingPong->new(10);
   local $^W = 1;
@@ -377,10 +382,10 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
 }
 
 print "
-This test sends a live SOAP call to your local Perl server (daemon implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
+This test sends a live SOAP call to your local web server (daemon implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
 ";
 if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /^\s*y/i) {
-  $test+=6; print "skipped 6 test(s)\n"; 
+  $test+=8; print "skipped 8 test(s)\n"; 
 } else {
 # Local server with Perl implementation (http://www.geocities.com/paulclinger/soap.html)
   print "Perl SOAP server test(s)...\n";
@@ -405,11 +410,17 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
   my $result = $s->autobind($param1, $param2)->result;
   $test++; print $result == $param1 && $param2->value == 24 ? "ok $test\n" : "not ok $test\n"; 
 
+  print "Header manipulating test(s)...\n";
+
+  $a = $s->addheader(2, SOAP::Header->name(my => 123)); 
+  $test++; print $a->header->{my} eq '123123' ? "ok $test\n" : "not ok $test\n"; 
+  $test++; print $a->headers eq '123123' ? "ok $test\n" : "not ok $test\n"; 
+
   print "Object autobinding and SOAP:: prefix test(s)...\n";
   print "You should get warning now...\n";
 
-  use SOAP::Lite +autodispatch 
-    => (uri => 'urn:', proxy => 'http://localhost/');
+  eval "use SOAP::Lite +autodispatch 
+    => (uri => 'urn:', proxy => 'http://localhost/')";
 
   my $p = My::PingPong->new(10);
   local $^W = 1;
@@ -418,10 +429,10 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
 }
 
 print "
-This test sends a live SOAP call to your local Perl server (mod_perl implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
+This test sends a live SOAP call to your local Apache server (mod_perl implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
 ";
 if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /^\s*y/i) {
-  $test+=6; print "skipped 6 test(s)\n"; 
+  $test+=8; print "skipped 8 test(s)\n"; 
 } else {
 # Local server with Perl implementation (http://www.geocities.com/paulclinger/soap.html)
   print "Perl SOAP server test(s)...\n";
@@ -446,16 +457,58 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /
   my $result = $s->autobind($param1, $param2)->result;
   $test++; print $result == $param1 && $param2->value == 24 ? "ok $test\n" : "not ok $test\n"; 
 
+  print "Header manipulating test(s)...\n";
+
+  $a = $s->addheader(2, SOAP::Header->name(my => 123)); 
+  $test++; print $a->header->{my} eq '123123' ? "ok $test\n" : "not ok $test\n"; 
+  $test++; print $a->headers eq '123123' ? "ok $test\n" : "not ok $test\n"; 
+
   print "Object autobinding and SOAP:: prefix test(s)...\n";
   print "You should get warning now...\n";
 
-  use SOAP::Lite +autodispatch 
-    => (uri => 'urn:', proxy => 'http://localhost/soap');
+  eval "use SOAP::Lite +autodispatch 
+    => (uri => 'urn:', proxy => 'http://localhost/soap')";
 
   my $p = My::PingPong->new(10);
   local $^W = 1;
   my $next = $p->SOAP::next;
   $test++; print $p->value == $next+1 ? "ok $test\n" : "not ok $test\n";
+}
+
+print "
+This test sends a live SOAP call to your local SECURE server (CGI implementation) with SOAP interface. See example in SOAP::Transport::HTTP.pm.
+";
+if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'yes') =~ /^\s*y/i) {
+  $test+=7; print "skipped 7 test(s)\n"; 
+} else {
+# Local server with Perl implementation (http://www.geocities.com/paulclinger/soap.html)
+  print "Perl SOAP server test(s)...\n";
+
+  $s = SOAP::Lite
+    -> uri('http://my.own.site.com/My/Examples')                
+    -> proxy('https://localhost/cgi-bin/soap.cgi')
+  ;
+
+  $test++; print $s->getStateName(1)->result eq 'Alabama' ? "ok $test\n" : "not ok $test\n"; 
+  $test++; print $s->getStateNames(1,4,6,13)->result =~ /^Alabama\s+Arkansas\s+Colorado\s+Illinois\s*$/ ? "ok $test\n" : "not ok $test\n"; 
+  $r = $s->getStateList([1,2,3,4])->result;
+  $test++; print ref $r && $r->[0] eq 'Alabama' ? "ok $test\n" : "not ok $test\n"; 
+  $r = $s->getStateStruct({item1 => 1, item2 => 4})->result;
+  $test++; print ref $r && $r->{item2} eq 'Arkansas' ? "ok $test\n" : "not ok $test\n"; 
+
+  print "Autobinding of output parameters test(s)...\n";
+
+  $s->uri('urn:/My/Parameters');
+  my $param1 = 10;
+  my $param2 = SOAP::Data->name('myparam' => 12);
+  my $result = $s->autobind($param1, $param2)->result;
+  $test++; print $result == $param1 && $param2->value == 24 ? "ok $test\n" : "not ok $test\n"; 
+
+  print "Header manipulating test(s)...\n";
+
+  $a = $s->addheader(2, SOAP::Header->name(my => 123)); 
+  $test++; print $a->header->{my} eq '123123' ? "ok $test\n" : "not ok $test\n"; 
+  $test++; print $a->headers eq '123123' ? "ok $test\n" : "not ok $test\n"; 
 }
 
 print "
@@ -480,7 +533,7 @@ This test sends a live SOAP call to several public test servers available on Int
 If you're not connected to the internet, please skip this test.
 ";
 if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'no') =~ /^\s*y/i) {
-  $test+=16; print "skipped 16 test(s)\n"; 
+  $test+=17; print "skipped 17 test(s)\n"; 
 } else {
 # Public test server with Frontier implementation (http://soap.weblogs.com/)
   print "Frontier server test(s)...\n";
@@ -566,17 +619,6 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'no') =~ /^
   $test++; print $r > 1 ? "ok $test\n" : "not ok $test\n";
 
   $s = SOAP::Lite                             
-    -> uri('urn:xmethods-Areacode')
-    -> proxy('http://services.xmethods.com:8080/soap/servlet/rpcrouter');
-
-  # $s->transport->timeout(5); # you can test UserAgent options
-  $r = $s->getLocation(SOAP::Data->type(string => '816')->name('areacode'),
-                       SOAP::Data->type(string => '741')->name('prefix'))
-         ->result;
-  print "Area for areacode 816 and prefix 741 is '$r'\n";
-  $test++; print $r eq 'PARKVILLE, MO' ? "ok $test\n" : "not ok $test\n";
-
-  $s = SOAP::Lite                             
     -> uri('urn:xmethods-delayed-quotes')                
     -> proxy('http://services.xmethods.com:8080/soap/servlet/rpcrouter');
 
@@ -607,4 +649,19 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'no') =~ /^
     -> proxy('http://www.xmethods.com/perl/soap.pl?class=soapPing')
     -> pingHost(name SOAP::Data hostname => 'www.yahoo.com')
     -> result == 1 ? "ok $test\n" : "not ok $test\n";
+
+  print "BabelFish translator SOAP::Lite server test(s)...\n";
+  $test++; print SOAP::Lite                             
+    -> uri('urn:xmethodsBabelFish')                
+    -> proxy('http://www.xmethods.com/perl/soaplite.cgi')
+    -> BabelFish(SOAP::Data->name(translationmode => 'en_it'), 
+                 SOAP::Data->name(sourcedata => 'I want to work'))
+    -> result =~ /^Desidero lavorare$/ ? "ok $test\n" : "not ok $test\n";
+
+  print "DevelopMentor's Perl server test(s)...\n";
+  $test++; print SOAP::Lite                             
+    -> uri('urn:soap-perl-test')                
+    -> proxy('http://soapl.develop.com/soap?class=SPTest')
+    -> add(SOAP::Data->name(a => 3), SOAP::Data->name(b => 4))
+    -> result == 7 ? "ok $test\n" : "not ok $test\n";
 }

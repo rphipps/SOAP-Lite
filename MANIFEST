@@ -5,14 +5,19 @@ README
 test.pl
 lib/SOAP/Lite.pm              Main SOAP::Lite module
 lib/SOAP/Transport/HTTP.pm    Module for HTTP transport, client and server
+lib/SOAP/Transport/MAILTO.pm  Module for SMTP/sendmail transport, client
+lib/SOAP/Transport/POP3.pm    Module for POP3 transport, server
 examples/SOAPsh.pl            SOAP shell
 examples/soap.cgi             SOAP server, CGI implementation
 examples/soap.daemon          SOAP server, daemon implementation
+examples/soap.pop3            SOAP server, POP3 implementation
 examples/pingpong.pl          Example for local/remote access to the same object
 examples/autoeliza.pl         Script for Chatbot::Eliza with autodispatching
 examples/autoexamples.pl      Script for My::Examples with autodispatching
+examples/authentication.pl    Example for Basic/Digest server authentication
+examples/soapsmtp.pl          Example for SMTP/sendmail message sending
 examples/Apache.pm            Module for SOAP server, mod_perl implementation
 examples/My/Examples.pm       Module for server with Examples backend
 examples/My/PingPong.pm       Module for server with PingPong backend
 examples/My/Parameters.pm     Module for server with Paramaters backend
-examples/Chatbot/Eliza.pm     Fixed version of Chatbot::Eliza
+examples/My/Chatbot/Eliza.pm  Chatbot::Eliza, fixed for serialization

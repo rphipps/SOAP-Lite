@@ -1,9 +1,9 @@
 #!/bin/env perl 
 #!d:\perl\bin\perl.exe 
 
-use My::PingPong;
+# you can do this
 use SOAP::Lite +autodispatch 
-  => (uri => 'urn:', 
+  => (uri => 'urn:/My/Examples', 
       proxy => 'http://localhost/', 
       # proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
       # proxy => 'http://localhost/',                 # local daemon server
@@ -16,12 +16,17 @@ use SOAP::Lite +autodispatch
       }
      )
 ;
+sub SOAP::Transport::HTTP::Client::get_basic_credentials { return ('user' => 'password') };
 
-  # you can manipulate same object on remote and local machine
-  my $p = My::PingPong->new(10);           # local
-  # my $p = My::PingPong->SOAP::new(10);   # same thing remotely
-  print 'remote: ', $p->SOAP::next, "\n";  # remote
-  print 'local: ', $p->next, "\n";         # local
-  print 'remote: ', $p->SOAP::value, "\n"; # remote
+print getStateName(1), "\n\n";
+print getStateNames(12,24,26,13), "\n\n";
+print getStateList([11,12,13,42])->[0], "\n\n";
+print getStateStruct({item1 => 10, item2 => 4})->{item2}, "\n\n";
 
+# OR if you have SOAP::Lite object you can do
+# $s->transport->credentials('host_port', 'realm', 'user' => 'password');
 
+# see LWP::UserAgent for difference and more documentation
+
+# OR add user and possword to your URL as follows:
+# proxy => 'http://login:password@localhost/'

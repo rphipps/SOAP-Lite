@@ -6,20 +6,21 @@ and lightweight interface to the Simple Object Access Protocol (SOAP) both
 on client and server side. 
 
 To learn more about SOAP, see
-<URL:http://www.w3.org/TR/SOAP>
-<URL:http://www.perfectxml.com/soap.asp>
-<URL:http://www.w3schools.com/soap/>
-<URL:http://www.xml.com/pub/Guide/SOAP/>
-<URL:http://msdn.microsoft.com/msdnmag/issues/0300/soap/soap.asp>
-<URL:http://xml.apache.org/soap/>
-<URL:http://www.develop.com/soap/>
-<URL:http://www.soap-wrc.com/>
-<URL:http://discuss.develop.com/soap.html>
-<URL:http://soap.weblogs.com/>
-<URL:http://www.oasis-open.org/cover/soap.html>
-<URL:http://www.xmlrpc.com/stories/storyReader$555>
-<URL:http://davenet.userland.com/1998/07/14/xmlRpcForNewbies>
-<URL:http://scriptingnews.userland.com/backissues/2000/06/27#performanceOfSoap>
+http://www.w3.org/TR/SOAP
+http://www.perfectxml.com/soap.asp
+http://www.w3schools.com/soap/
+http://www.xml.com/pub/Guide/SOAP/
+http://msdn.microsoft.com/msdnmag/issues/0300/soap/soap.asp
+http://xml.apache.org/soap/
+http://www.develop.com/soap/
+http://www.soap-wrc.com/
+http://discuss.develop.com/soap.html
+http://soap.weblogs.com/
+http://www.soapwebservices.com/
+http://www.oasis-open.org/cover/soap.html
+http://www.xmlrpc.com/stories/storyReader$555
+http://davenet.userland.com/1998/07/14/xmlRpcForNewbies
+http://scriptingnews.userland.com/backissues/2000/06/27#performanceOfSoap
 
 This version of SOAP::Lite supports a subset of the SOAP 1.1 specification.
 See <URL:http://www.w3.org/TR/SOAP> for details. 
@@ -34,8 +35,7 @@ FEATURES
 - Provides an object oriented interface for serializing/deserializing and
   sending/receiving SOAP packets.
 - Supports serialization/deserialization of sophisticated object graphs
-  which may have cycles (a circular queue would serialize just fine,
-  as well as $a=\$a. See test.pl and documentation for more examples).
+  which may have cycles (See test.pl and documentation for more examples).
 - Has more than 20 tests that access public test servers with different 
   implementations: Apache SOAP, Frontier, Perl, XSLT, COM and VB6.
 - Support for extensibility of the serialization/deserialization
@@ -52,6 +52,10 @@ FEATURES
 - Supports transparent SOAP calls with autodispatch feature.
 - Supports dynamic/static class/method binding.
 - Provides CGI/daemon/mod_perl server implementation
+- Supports HTTPS protocol
+- Supports SMTP protocol
+- Provides POP3 server implementation
+- Supports Basic/Digest server authentication
 - Provides shell for interactive SOAP sessions. See SOAPsh.pl.
 - Easy services deployment. Just put module in specified directory and 
   it'll be accessible.
@@ -70,9 +74,11 @@ Following modules will be loaded on demand only:
 
   XML::Parser::Expat (included with XML::Parser)
   MIME::Base64                                  
-  URI (for HTTP transport and autodispatch)
+  URI (for HTTP/SMTP transport and autodispatch)
   HTTP::Daemon (for daemon server implementation, included with libwww-perl) 
   Apache (for mod_perl server implementation, included with mod_perl) 
+  Net::POP3 and MIME::Parser (for POP3 server implementation)
+  MIME::Lite (for SMTP client implementation)
 
 Following modules will be used for HTTP protocol only:
 
@@ -80,9 +86,9 @@ Following modules will be used for HTTP protocol only:
   HTTP::Request (included with libwww-perl) 
   HTTP::Header (included with libwww-perl) 
   HTTP::Status (included with libwww-perl) 
+  Crypt::SSLeay (for HTTPS/SSL transfer)
 
 These modules should be available on CPAN.
-For details on which versions are recommended, please see MakeFile.PL.
 
 INSTALLATION
 
@@ -108,7 +114,7 @@ documentation from the module files directly.
 
 LIMITATIONS
 
-Library currenly supports only HTTP protocol with no M-POST requests.
+Library currenly supports HTTP protocol with no M-POST requests.
 No support for multidimensional, partially transmitted and sparse arrays 
 (however arrays of arrays are supported, as well as any other data
 structures, and you can add your own implementation with SOAP::Data).
