@@ -17,7 +17,6 @@ examples/soap.pop3            SOAP server, POP3 implementation
 examples/soap.tcp             SOAP server, TCP implementation
 examples/soap.mod_cgi         SOAP server, Apache::Registry implementation
 examples/pingpong.pl          Example for local/remote access to the same object
-examples/autoeliza.pl         Script for Chatbot::Eliza with autodispatching
 examples/autoexamples.pl      Script for My::Examples with autodispatching
 examples/authentication.pl    Example for Basic/Digest server authentication
 examples/soapsmtp.pl          Example for SMTP/sendmail message sending
@@ -25,7 +24,19 @@ examples/parametersbyname.pl  Example for passing parameters-by-name
 examples/chat.pl              Client side for Chat implementation 
 examples/iterator.pl          Example for Session/Persistent iterators
 examples/soapmark.pl          Simple test for different implementations
-examples/uddi.pl              Example for UDDI interface
+examples/SOAPsimple1.pl       Example for SOAP interface
+examples/SOAPsimple2.pl       Example for SOAP interface
+examples/stubmaker.pl         Script for creating stubs from schema description
+examples/WSDLstub1.pl         Example for WSDL stub interface
+examples/WSDLstub2.pl         Example for WSDL stub interface
+examples/WSDLstub3.pl         Example for WSDL stub interface
+examples/WSDLdynamic1.pl      Example for WSDL dynamic interface
+examples/WSDLdynamic2.pl      Example for WSDL dynamic interface
+examples/WSDLdynamic3.pl      Example for WSDL dynamic interface
+examples/UDDIsimple1.pl       Example for UDDI interface
+examples/UDDIsimple2.pl       Example for UDDI interface
+examples/UDDIsimple3.pl       Example for UDDI interface
+examples/oneliners            Couple of one-line SOAP calls
 examples/Apache.pm                 Module for SOAP server, mod_perl implementation
 examples/My/Chat.pm                Module with Chat server implementation 
 examples/My/Examples.pm            Module with Examples backend

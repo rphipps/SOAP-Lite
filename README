@@ -30,36 +30,37 @@ FEATURES
 
 - Supports SOAP 1.1 spec.
 - Provides full namespace support for SOAP 1.1.
-- Contains various reusable components (modules) that can be
-  used separately or together, like SOAP::Serializer and SOAP::Deserializer.
-- Provides an object oriented interface for serializing/deserializing and
-  sending/receiving SOAP packets.
-- Supports serialization/deserialization of sophisticated object graphs
-  which may have cycles (See test.pl and documentation for more examples).
-- Has more than 20 tests that access public test servers with different 
-  implementations: Apache SOAP, Frontier, Perl, XSLT, COM and VB6.
-- Support for extensibility of the serialization/deserialization
-  architecture has been included; see SOAP::Data for details.
-- Supports blessed object references.
-- Supports arrays (both serialization and deserialization with autotyping).
-- Supports ordered hashes (as working example of user-defined data types).
-- Custom/user-defined types (see SOAP::Data::as_ordered_hash for example).
-- Customizible auto type definitions.
-- Supports Base64 encoding.
 - Supports XML entity encoding.
 - Supports header attributes.
+- Supports HTTPS protocol.
+- Supports SMTP protocol.
+- Provides POP3 server implementation.
+- Supports Basic/Digest server authentication.
+- Supports blessed object references.
+- Contains various reusable components (modules) that can be used 
+  independently, as, for instance, SOAP::Serializer and SOAP::Deserializer.
+- Provides an object oriented interface for serializing/deserializing and
+  sending/receiving SOAP packets. Support for extensibility of the 
+  serialization/deserialization architecture has been included.
+- Supports serialization/deserialization of sophisticated object graphs
+  which may have cycles (a circular queue would serialize just fine,
+  as well as $a=\$a. See test.pl and documentation for more examples).
+- Supports arrays (both serialization and deserialization with autotyping).
+- Custom/user-defined types (see SOAP::Data::as_ordered_hash for example).
+- Supports ordered hashes (as working example of user-defined data types).
+- Customizable auto type definitions.
+- Has more than 40 tests that access public test servers with different 
+  implementations: Apache SOAP, Frontier, Perl, XSLT, COM and VB6.
+- Has (limited) schema support (WSDL) with dynamic and stub access.
+- Supports Base64 encoding.
 - Supports out parameters binding.
 - Supports transparent SOAP calls with autodispatch feature.
 - Supports dynamic/static class/method binding.
-- Provides CGI/daemon/mod_perl server implementation
-- Supports HTTPS protocol
-- Supports SMTP protocol
-- Provides POP3 server implementation
-- Supports Basic/Digest server authentication
-- Supports objects-by-reference with simple garbage collection and activation.
-- Provides shell for interactive SOAP sessions. See SOAPsh.pl.
-- Easy services deployment. Just put module in specified directory and 
+- Provides CGI/daemon server implementation.
+- Provides interactive shell for SOAP sessions (examples/SOAPsh.pl).
+- Easy services deployment. Put module in specified directory and 
   it'll be accessible.
+- Has enough examples and documentation to be up and running in no time.
 
 PREREQUISITES
 
@@ -129,7 +130,7 @@ LIMITATIONS
 No support for multidimensional, partially transmitted and sparse arrays 
 (however arrays of arrays are supported, as well as any other data
 structures, and you can add your own implementation with SOAP::Data).
-No support for xsd schemas (or any other kind of schema).
+Limited support for WSDL schema.
 
 SUPPORT
 
@@ -149,14 +150,12 @@ SOAP::Lite should be available also from CPAN.
 
 SEE ALSO
 
-You can get SOAP/Perl library from Keith Brown (http://develop.com/soap) 
-or directly from CPAN. I tried to introduce no interactions between these 
-two libraries and hopefully you'll be able to use both simultaneously. 
-Let me know if I did something wrong and you cannot use both at the same time. 
+SOAP/Perl library from Keith Brown (http://www.develop.com/soap/) or
+(http://search.cpan.org/search?dist=SOAP)
 
 COPYRIGHT
 
-(C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

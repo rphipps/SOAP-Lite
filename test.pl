@@ -6,7 +6,7 @@
 # Change 1..1 below to 1..last_test_to_print .
 # (It may become useful if the test is moved to ./t subdirectory.)
 
-BEGIN { $| = 1; print "1..145\n"; }
+BEGIN { $| = 1; print "1..154\n"; }
 END {print "not ok 1\n" unless $loaded;}
 use SOAP::Lite;
 $loaded = 1;
@@ -82,13 +82,20 @@ my $test = 1;
     ? "ok $test\n" : "not ok $test\n";
 }
 
-{ # check base64, XML encoding
-  print "base64, XML encoding test(s)...\n";
+{ # check base64, XML encoding of elements and attributes 
+  print "base64, XML encoding of elements and attributes test(s)...\n";
 
   $serialized = join '', SOAP::Serializer->serialize("\0\1\2\3   \4\5\6", '<123>&amp</123>');
 
   $test++; print $serialized =~ 
     m!<c-gensym(\d+) xsi:type="SOAP-ENC:base64">AAECAyAgIAQFBg==</c-gensym\1><c-gensym(\d+) xsi:type="xsd:string">&lt;123>&amp;amp&lt;/123></c-gensym\2>!
+    ? "ok $test\n" : "not ok $test\n";
+
+  $serialized = join '', SOAP::Serializer->serialize(
+    SOAP::Data->name(name=>'value')->attr({attr => '<123>"&amp"</123>'})
+  );
+  $test++; print $serialized eq
+    qq!<name xsi:type="xsd:string" attr="&lt;123>&quot;&amp;amp&quot;&lt;/123>">value</name>!
     ? "ok $test\n" : "not ok $test\n";
 }
 
@@ -344,8 +351,8 @@ EOBASE64
   }
 }
 
-{ # check header serialization/deserialization   
-  print "Header serialization/deserialization test(s)...\n";
+{ # check header/envelope serialization/deserialization   
+  print "Header/Envelope serialization/deserialization test(s)...\n";
 
   $serialized = SOAP::Serializer->method( # same as ->envelope(method =>
       'mymethod', 1, 2, 3, 
@@ -361,6 +368,18 @@ EOBASE64
   $test++; print $t2->type eq 'xsd:int' ? "ok $test\n" : "not ok $test\n";
   $test++; print $t2->mustUnderstand == 1 ? "ok $test\n" : "not ok $test\n";
   $test++; print @paramsin == 3 ? "ok $test\n" : "not ok $test\n";
+
+  $serialized = SOAP::Serializer->method( # same as ->envelope(method =>
+      SOAP::Data->name('mymethod')->attr({something => 'value'}), 1, 2, 3, 
+  );
+  $test++; print $serialized =~ /<mymethod something="value">/ 
+    ? "ok $test\n" : "not ok $test\n";
+
+  $serialized = SOAP::Serializer
+    -> namespace('')
+    -> method('mymethod');
+  $test++; print $serialized =~ m!<Envelope(?: xmlns="http://schemas.xmlsoap.org/soap/envelope/"| encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:xsd="http://www.w3.org/1999/XMLSchema")+/>! 
+    ? "ok $test\n" : "not ok $test\n";
 }
 
 {
@@ -1009,7 +1028,7 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'no') =~ /^
     -> proxy('http://services.xmethods.net/soap/servlet/rpcrouter');
 
   my $isbn = '0672319225';
-  $r = $s->getPrice(SOAP::Data->type(string => $isbn))->result;
+  $r = $s->getPrice(SOAP::Data->type(string => $isbn))->result || 0;
   print "Price for ISBN$isbn is \$$r\n";
   $test++; print $r > 20 && $r < 60 ? "ok $test\n" : "not ok $test\n";
 
@@ -1086,4 +1105,49 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'no') =~ /^
     -> GetBestBets(SOAP::Data->name('~:Query' => 'data'))
     -> result -> {Lastcache} =~ /T/ ? "ok $test\n" : "not ok $test\n";
 
+# Service description (WSDL) (http://www.xmethods.com/)
+  print "Service description (WSDL) test(s)...\n";
+  $s = SOAP::Lite
+    -> schema('http://www.xmethods.net/sd/StockQuoteService.wsdl');
+
+  $test++; print $s->getQuote('MSFT') > 1 ? "ok $test\n" : "not ok $test\n";
+
+  $test++; print SOAP::Lite
+    -> schema('http://www.xmethods.net/sd/StockQuoteService.wsdl')
+    -> getQuote('MSFT')  > 1 ? "ok $test\n" : "not ok $test\n";
+
+# UDDI access
+  print "UDDI access test(s)...\n";
+
+  eval "use UDDI::Lite 
+    import => ['UDDI::Data' => ':all']";
+  my $uddi = new UDDI::Lite proxy => 'http://test.uddi.microsoft.com/inquire';
+
+  my @parameters = (
+    findQualifiers(findQualifier('sortByNameAsc',
+                                 'caseSensitiveMatch')), 
+    name('M'),
+  );
+
+  $test++; print ref $parameters[0] eq 'UDDI::Data' ? "ok $test\n" : "not ok $test\n";
+
+  my $b = $uddi->find_business(@parameters)->result;
+  $test++; print defined $b ? "ok $test\n" : "not ok $test\n";
+
+  for ($b->businessInfos->businessInfo) {    
+    print $_->name, "\n";    
+    if ($_->name eq "Microsoft Corporation") {	
+      my $key = $_->businessKey;	
+      print "$key\n";	
+      $test++; print $key =~ /CBCA/ ? "ok $test\n" : "not ok $test\n";
+
+      my $e = $uddi->get_businessDetail($key)->result->businessEntity;	
+      my @services = $e->businessServices->businessService;	
+      $test++; print @services > 1 ? "ok $test\n" : "not ok $test\n";
+
+      for (@services) {	    
+        print "  ", $_->name, "\n";	
+      }    
+    }
+  }
 }

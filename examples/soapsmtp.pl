@@ -4,7 +4,7 @@
 use SOAP::Lite;
 
 SOAP::Lite
-  -> uri('urn:My/Examples')                
+  -> uri('http://soaplite.com/My/Examples')                
   -> proxy('mailto:destination.email@address', smtp => 'smtp.server', From => 'your.email', Subject => 'SOAP message')
 
   # or 

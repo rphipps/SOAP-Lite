@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::POP3.pm,v 0.42 2000/11/14 23:14:18 $ 
+# $Id: SOAP::Transport::POP3.pm,v 0.43 2000/11/28 01:47:02 $ 
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::POP3;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.42';
+$VERSION = '0.43';
 
 use Net::POP3; 
 use MIME::Parser; 
@@ -42,7 +42,7 @@ sub new {
 }
 
 sub AUTOLOAD {
-  my($method) = $AUTOLOAD =~ m/([^:]+)$/;
+  my $method = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
   return if $method eq 'DESTROY';
 
   no strict 'refs';

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Lite.pm,v 0.42 2000/11/14 23:14:18 $ 
+# $Id: SOAP::Lite.pm,v 0.43 2000/11/28 01:47:02 $ 
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package SOAP::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.42';
+$VERSION = '0.43';
 
 # ======================================================================
 
@@ -72,7 +72,7 @@ sub proxy {
   $_[0] =~ /^(\w+):/ or die "proxy: transport protocol not specified\n";
   my $protocol = uc $1; # untainted now
   # https: should be done through Transport::HTTP.pm
-  for ($protocol) { s/^HTTPS$/HTTP/; }
+  for ($protocol) { s/^HTTPS$/HTTP/ }
 
   (my $protocol_class = "${class}::$protocol") =~ s/-/_/g;
   no strict 'refs';
@@ -86,7 +86,7 @@ sub proxy {
 }
 
 sub AUTOLOAD {
-  my($method) = $AUTOLOAD =~ m/([^:]+)$/;
+  my $method = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
   return if $method eq 'DESTROY';
 
   no strict 'refs';
@@ -107,7 +107,7 @@ package SOAP::Data;
 
 use vars qw(@ISA @EXPORT_OK);
 use Exporter;
-use Carp;
+use Carp ();
 
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(name type attr value uri actor encodingStyle);
@@ -116,18 +116,16 @@ sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { 
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     $self = bless {_attr => {}, _value => [], _signature => []} => $class;
     SOAP::Trace::objects('()');
   }
 
-  if (@_) { my %parameters = @_;
-    foreach (keys %parameters) {
-      $self->$_($parameters{$_}) if $self->can($_);
-    }
-  }
+  Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && @_ & 1; 
+  while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
+
   return $self;
 }
 
@@ -147,7 +145,7 @@ sub BEGIN {
       my $self = UNIVERSAL::isa($_[0], __PACKAGE__) ? shift->new : __PACKAGE__->new;
       @_ ? ($self->{$field} = shift, $self->value(@_), return $self) 
          : (defined $self->{$field} || 
-            (($self->{$field}) = map {$self->{_attr}->{$_}} # =~/^$SOAP::Constants::NSMASK:(.+)/; $1||$_
+            (($self->{$field}) = map {$self->{_attr}->{$_}} 
                                  grep {/^xsi:$method$/o} keys %{$self->{_attr}}),
             return $self->{$field});
     }
@@ -181,7 +179,7 @@ sub BEGIN {
 }
 
 sub urn {
-  carp "'SOAP::Data->urn' method is deprecated. Instead use 'uri'" if $^W;
+  Carp::carp "'SOAP::Data->urn' method is deprecated. Instead use 'uri'" if $^W;
   shift->uri(@_);
 }
 
@@ -213,29 +211,30 @@ sub signature {
 
 package SOAP::Serializer;
 
-use Carp;
+use Carp ();
 
 BEGIN {
   # namespaces and anonymous data structures
   my $ns   = 0; 
   my $name = 0; 
   my $prefix = 'c-';
-  use overload; # protect from overloading stringifications in inherited classes
-  sub gen_id   { overload::StrVal(shift) =~ /\((0x\w+)\)/; $1 }
+  use overload;
+  sub gen_id   { my $o = shift; ($o =~ /\((0x\w+)\)/o) || (overload::AddrRef($o) =~ /\((0x\w+)\)/o); $1 }
   sub gen_ns   { 'namesp' . ++$ns } 
   sub gen_name { join '', $prefix, 'gensym', ++$name } 
   sub prefix   { $prefix =~ s/^[^\-]+-/$_[1]-/; $_[0]; }
+  sub encode_data { (my $e = shift) =~ s/([&<])/$1 eq '&'?'&amp;':'&lt;'/eg; $e }
+  sub encode_attribute { (my $e = shift) =~ s/([&<"])/$1 eq '&'?'&amp;':$1 eq '<'?'&lt;':'&quot;'/eg; $e }
 }
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { 
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     $self = bless {
-      _uri => 'urn:' . do { (my $uri = __PACKAGE__) =~ s/::/__/g; $uri },
       _indent => 0,
       _autotype => 1,
       _readable => 0,
@@ -259,16 +258,14 @@ sub new {
       _encoding => 'UTF-8',
       _objectstack => {},
       _signature => [],
-      _on_nonserialized => sub {carp "Cannot marshall @{[ref shift]} reference" if $^W; return},
+      _on_nonserialized => sub {Carp::carp "Cannot marshall @{[ref shift]} reference" if $^W; return},
     } => $class;
     SOAP::Trace::objects('()');
   }
 
-  if (@_) { my %parameters = @_;
-    foreach (keys %parameters) {
-      $self->$_($parameters{$_}) if $self->can($_);
-    }
-  }
+  Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && @_ & 1; 
+  while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
+
   return $self;
 }
 
@@ -289,7 +286,7 @@ sub BEGIN {
 }
 
 sub header {
-  croak "'SOAP::Serializer->header' method is deprecated. Instead use 'SOAP::Header'";
+  Carp::croak "'SOAP::Serializer->header' method is deprecated. Instead use 'SOAP::Header'";
 }
 
 sub multiref_object {
@@ -333,6 +330,7 @@ sub multiref_anchor {
 # ----------------------------------------------------------------------
 
 sub qualify { $_[1] =~ /:/ ? $_[1] : join ':', $_[0], $_[1] }
+sub overqualify (&$) { for ($_[1]) { &{$_[0]}; s/^:|:$//g } }
 
 sub encode_object {
   my($self, $object, $name, $type, $attr) = @_;
@@ -349,18 +347,19 @@ sub encode_object {
   return if $objectstack{gen_id($object)} > 2;
 
   if (UNIVERSAL::isa($object => 'SOAP::Data')) { 
-    $object->name($name) unless defined $object->name;
-    my @realvalues = $object->value;
-    return [$object->name || gen_name, $object->attr] unless @realvalues;
+    # using $object->SOAP::Data:: to enable overriding name() and others in inherited classes
+    $object->SOAP::Data::name($name) unless defined $object->SOAP::Data::name;
+    my @realvalues = $object->SOAP::Data::value;
+    return [$object->SOAP::Data::name || gen_name, $object->SOAP::Data::attr] unless @realvalues;
 
-    my $method = 'as_' . ($object->type || '-'); # dummy type if not defined
+    my $method = 'as_' . ($object->SOAP::Data::type || '-'); # dummy type if not defined
     # try to call method specified for this type
     my @values =  map { 
-         $self->can($method) && $self->$method($_, $object->name || gen_name, $object->type, $object->attr)
-      || $self->typecast($_, $object->name || gen_name, $object->type, $object->attr)
-      || $self->encode_object($_, $object->name, $object->type, $object->attr)
+         $self->can($method) && $self->$method($_, $object->SOAP::Data::name || gen_name, $object->SOAP::Data::type, $object->SOAP::Data::attr)
+      || $self->typecast($_, $object->SOAP::Data::name || gen_name, $object->SOAP::Data::type, $object->SOAP::Data::attr)
+      || $self->encode_object($_, $object->SOAP::Data::name, $object->SOAP::Data::type, $object->SOAP::Data::attr)
     } @realvalues;
-    $object->signature([map {join $;, $_->[0], $_->[1]->{'xsi:type'} || ''} @values]) if @values;
+    $object->SOAP::Data::signature([map {join $;, $_->[0], $_->[1]->{'xsi:type'} || ''} @values]) if @values;
     return @values;
   } 
   my($class, $ref) = ($object =~ /(?:(.+)=)?(.+)\(/);
@@ -457,8 +456,7 @@ sub as_float {
 sub as_string {
   my $self = shift;
   my($value, $name, $type, $attr) = @_;
-  $value =~ s/([&<])/$1 eq '&'?'&amp;':'&lt;'/eg;
-  return [$name, {%{$attr || {}}, 'xsi:type' => 'xsd:string'}, $value];
+  return [$name, {%{$attr || {}}, 'xsi:type' => 'xsd:string'}, encode_data($value)];
 }
 
 sub as_boolean {
@@ -499,7 +497,7 @@ sub tag {
   my $indent = $self->readable ? "\n" . ' ' x $self->indent : '';
   # check for special attribute
   return "$indent$value" if exists $attrs->{_} && delete $attrs->{_} eq 'xml'; 
-  my $tagattrs = join(' ', '', map { sprintf '%s="%s"', $_, $attrs->{$_} } 
+  my $tagattrs = join(' ', '', map { sprintf '%s="%s"', $_, encode_attribute($attrs->{$_}) } 
                               grep { defined $attrs->{$_} } keys %$attrs);
   $value gt '' 
     ? sprintf("$indent<%s%s$indent>%s</%s>", $tag, $tagattrs, $value, $tag) 
@@ -513,15 +511,16 @@ sub xmlize {
   delete $attrs->{$SOAP::Constants::CNS}; # drop internal attribute
 
 # qualify element and attributes with default namespace
-  $name =~ s/^~V/$self->namespace/e;
+  overqualify { s/^~V/$self->namespace/e } $name;
   foreach (grep {/~[VC]/} keys %$attrs) {
-    (my $key = $_) =~ s/~([VC])/($1 eq 'V' ? $self->namespace() 
-                                           : $self->encodingspace())/e;
+    overqualify { 
+      s/~([VC])/($1 eq 'V' ? $self->namespace() : $self->encodingspace())/e;
+    } (my $key = $_);
     $attrs->{$key} = delete $attrs->{$_};
   }
-  if (exists $attrs->{'xmlns:~'}) {
+  if (exists $attrs->{'xmlns:~'} && $attrs->{'xmlns:~'}) {
     my $ns = ($name =~ s/^($SOAP::Constants::NSMASK):// ? $1 : gen_ns);
-    $attrs->{"xmlns:$ns"} = delete $attrs->{'xmlns:~'}; # ? add 'urn:'
+    $attrs->{"xmlns:$ns"} = delete $attrs->{'xmlns:~'}; 
     $name = "$ns:$name";
   }
 
@@ -538,17 +537,12 @@ sub xmlize {
 # always qualify types 
   foreach (grep {/(^|:)type$/ && $attrs->{$_}} keys %$attrs) {
     $attrs->{$_} = join ':', $self->{_current_namespace} || '~V', $attrs->{$_} if $attrs->{$_} !~ /:/;
-    $attrs->{$_} =~ s/~([VC])/($1 eq 'V' ? $self->namespace() 
-                                         : $self->encodingspace())/e;
+    overqualify { 
+      s/~([VC])/($1 eq 'V' ? $self->namespace() : $self->encodingspace())/e;
+    } $attrs->{$_};
   }
 
   $name =~ s/^~/$self->{_current_namespace}/e;
-
-  unless ($name =~ /^$SOAP::Constants::NSMASK$/) {
-    require MIME::Base64; $name = MIME::Base64::encode_base64($name,'');
-    $name =~ s/(=+)$/'-' x length($1)/e; # '=' doesn't allowed in elements
-    $attrs->{__} = 'encoded';
-  }
 
   local $self->{_indent} = $self->{_indent} + 2;
   return $self->tag($name, $attrs) unless defined $values;
@@ -579,10 +573,9 @@ sub envelope { SOAP::Trace::trace('()');
     SOAP::Trace::method(@parameters);
     my $method = shift(@parameters) or die "Unspecified method for SOAP call\n";
     $parameters = SOAP::Data->set_value(@parameters);
-    $body = SOAP::Data
-      -> name($method)
-      -> attr({'xmlns:~' => $self->uri})
-      -> value(\$parameters);
+    $body = UNIVERSAL::isa($method => 'SOAP::Data') 
+      ? $method->value(\$parameters)
+      : SOAP::Data->name($method => \$parameters)->attr({'xmlns:~' => $self->uri});
   } elsif ($type eq 'fault') {
     SOAP::Trace::fault(@parameters);
     $body = SOAP::Data
@@ -591,8 +584,10 @@ sub envelope { SOAP::Trace::trace('()');
       -> value(\SOAP::Data->set_value(
         SOAP::Data->name(faultcode => qualify($self->namespace => shift(@parameters))),
         SOAP::Data->name(faultstring => shift(@parameters)),
-        SOAP::Data->name(detail => do{my $detail = shift(@parameters); ref $detail ? \$detail : $detail}),
+        @parameters ? SOAP::Data->name(detail => do{my $detail = shift(@parameters); ref $detail ? \$detail : $detail}) : (),
+        @parameters ? SOAP::Data->name(faultactor => shift(@parameters)) : (),
       ));
+    1;
   } elsif ($type eq 'freeform') {
     SOAP::Trace::freeform(@parameters);
     $body = SOAP::Data->set_value(@parameters);
@@ -610,7 +605,7 @@ sub envelope { SOAP::Trace::trace('()');
   $self->signature($parameters->signature) if ref $parameters;
   # add multireferences right after Body if any (add after Header?)
   push(@{$encoded->[2]->[1]->[2]}, map { $self->encode_object($_) } $self->get_multirefs);
-  return join '', qq!<?xml version="1.0" encoding="@{[$self->encoding]}" ?>!,
+  return join '', qq!<?xml version="1.0" encoding="@{[$self->encoding]}"?>!,
                   $self->xmlize($encoded);
 }
 
@@ -705,7 +700,7 @@ sub BEGIN {
 }
 
 # use object in boolean context return true/false on last match
-# Ex.: $som->match('//Fault') ? 'failure' : 'success';
+# Ex.: $som->match('//Fault') ? 'SOAP call failed' : 'success';
 use overload fallback => 1, 'bool'  => sub { @{shift->{_current}} > 0 };
 
 sub DESTROY { SOAP::Trace::objects('()') }
@@ -857,12 +852,6 @@ sub traverse_ids {
 sub decode_object {
   my $self = shift;              
   my $ref = shift;
-
-  # decode element name if special attribute is present
-  if (exists $ref->[1]->{__} && delete $ref->[1]->{__} eq 'encoded') {
-    $ref->[0] =~ s/(-+)$/'=' x length($1)/e;
-    require MIME::Base64; $ref->[0] = MIME::Base64::decode_base64($ref->[0]); 
-  }
   my($name, $attrs, $childs, $value) = @$ref;
 
   use vars qw($ns %uris); # drop namespace from name
@@ -1015,13 +1004,15 @@ package SOAP::Server::Parameters;
 
 package SOAP::Server;
 
+use Carp ();
+
 sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { 
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     my(@params, @methods);
     while (@_) { $class->can($_[0]) ? push(@methods, shift() => shift) : push(@params, shift) }
     $self = bless {
@@ -1036,18 +1027,15 @@ sub new {
     SOAP::Trace::objects('()');
   }
 
-  if (@_) { my %parameters = @_;
-    foreach (keys %parameters) {
-      $self->$_($parameters{$_}) if $self->can($_);
-    }
-  }
+  Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && @_ & 1; 
+  while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
 
   return $self;
 }
 
 sub BEGIN {
   no strict 'refs';
-  for my $method (qw(on_action action)) {
+  for my $method (qw(on_action action myuri)) {
     my $field = '_' . $method;
     *$method = sub {
       my $self = shift->new;
@@ -1106,7 +1094,7 @@ sub handle { SOAP::Trace::trace('()');
   } grep {!m![/\\.]!} $self->dispatch_to;        # filter PATH
 
   no strict 'refs';
-  unless (defined %{"${class}::"} && UNIVERSAL::can($class => $method_name)) {   
+  unless (defined %{"${class}::"}) {   
     # allow all for static and only specified path for dynamic bindings
     local @INC = (($static ? @INC : ()), grep {m![/\\.]!} $self->dispatch_to); # '\' to keep windows guys happy
     eval 'local $SIG{"__DIE__"}; local $^W; ' . "require $class";
@@ -1139,7 +1127,7 @@ sub handle { SOAP::Trace::trace('()');
   return unless defined wantarray; # nothing to do in void context
 
   # let application errors pass through with 'Server' code
-  return ($@ =~ s/ at .*\n//, $@ =~ /^Can't locate object method/) 
+  return ($@ =~ s/ at .*\n//, $@ =~ /^Can't locate object method "$method_name"/) 
     ? $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Method Call' => "Failed to locate method ($method_name) in class ($class)")
     : $self->make_fault($SOAP::Constants::FAULT_SERVER, 'Application error' => ref $@ ? $@ : "Application failed: $@")
     if $@;
@@ -1150,13 +1138,13 @@ sub handle { SOAP::Trace::trace('()');
     -> envelope(method => $method_name . 'Response', @results);
 }
 
-sub make_fault { shift; SOAP::Serializer->fault(@_) }
+sub make_fault { my $self = shift; SOAP::Serializer->fault(@_, $self->myuri) } 
 
 # ======================================================================
 
 package SOAP::Trace;
 
-use Carp;
+use Carp ();
 
 my @list = qw(transport dispatch result parameters headers objects method fault freeform trace debug);
 { no strict 'refs'; for (@list) { *$_ = sub {} } }
@@ -1180,7 +1168,7 @@ sub import { no strict 'refs';
       local $_ = $_;
       my $minus = s/^-//;
       my $all = $_ eq 'all';
-      carp "Illegal symbol for tracing ($_)" unless $all || $pack->can($_);
+      Carp::carp "Illegal symbol for tracing ($_)" unless $all || $pack->can($_);
       $minus ? push(@notrace, $all ? @list : $_) : push(@symbols, $all ? @list : $_);
     }
   }
@@ -1190,10 +1178,216 @@ sub import { no strict 'refs';
 
 # ======================================================================
 
+package SOAP::Schema::Data;
+
+use vars qw(@ISA $AUTOLOAD);
+@ISA = qw(SOAP::Data);
+
+use overload fallback => 1, '""' => sub { shift->value };
+
+sub _compileit {
+  no strict 'refs';
+  my $method = shift;
+  *$method = sub { 
+    return __PACKAGE__->SUPER::name($method => $_[0]->attr->{$method})
+      if exists $_[0]->attr->{$method};
+    my @elems = grep {UNIVERSAL::isa($_ => __PACKAGE__) && $_->SUPER::name =~ /(^|:)$method$/} $_[0]->value;
+    return wantarray? @elems : $elems[0];
+  }
+}
+
+sub BEGIN { foreach (qw(name type)) { _compileit($_) } }
+
+sub AUTOLOAD {
+  my $method = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
+  return if $method eq 'DESTROY';
+
+  _compileit($method);
+  goto &$AUTOLOAD;
+}
+
+# ======================================================================
+
+package SOAP::Schema::Deserializer;
+
+use vars qw(@ISA);
+@ISA = qw(SOAP::Deserializer);
+
+sub decode_value {
+  my $self = shift;
+  my $ref = shift;
+  my($name, $attrs, $childs, $value) = @$ref;
+
+  # base class knows what to do with it
+  return $self->SUPER::decode_value($ref) if exists $attrs->{href};
+
+  SOAP::Schema::Data
+    -> SOAP::Data::name($name) 
+    -> attr($attrs)
+    -> set_value(ref $childs && @$childs ? map(($self->decode_object($_))[1], @$childs) : $value);
+}
+
+# ======================================================================
+
+package SOAP::Schema::WSDL;
+
+sub parse {
+  shift if UNIVERSAL::isa($_[0] => __PACKAGE__);
+  my $s = shift;
+  my @result;
+  foreach ($s->service) {
+    my $name = $_->name;
+    my $binding = $_->port->binding;
+    my $endpoint = $_->port->address->location;
+    my %services;
+    foreach ($s->binding) {
+      next unless $_->name eq $binding;
+      my $porttype = $_->type;
+      foreach ($_->operation) {
+        my $opername = $_->name;
+        my $soapaction = $_->operation->soapAction;
+        my $namespace = $_->input->body->namespace;
+        my @parts;
+        foreach ($s->portType) {
+          next unless $_->name eq $porttype;
+          foreach ($_->operation) {
+            next unless $_->name eq $opername;
+            my $inputmessage = $_->input->message;
+            foreach ($s->message) {
+              next unless $_->name eq $inputmessage;
+              @parts = $_->part;
+            }
+          }
+        }
+        for ($services{$opername}) {
+          $_->{endpoint} = $endpoint;
+          $_->{soapaction} = $soapaction;
+          $_->{uri} = $namespace;
+          $_->{parameters} = [@parts];
+        }
+      }
+    }
+    push @result, $name => \%services;
+  }
+  return @result;
+}  
+
+# ======================================================================
+
+package SOAP::Schema;
+
+use Carp ();
+
+sub DESTROY { SOAP::Trace::objects('()') }
+
+sub new { 
+  my $self = shift;
+
+  unless (ref $self) {
+    my $class = ref($self) || $self;
+    $self = bless {
+      _deserializer => SOAP::Schema::Deserializer->new,
+    } => $class;
+   
+    SOAP::Trace::objects('()');
+  }
+
+  Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && @_ & 1; 
+  while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
+
+  return $self;
+}
+
+sub BEGIN {
+  no strict 'refs';
+  for my $method (qw(deserializer schema services)) {
+    my $field = '_' . $method;
+    *$method = sub {
+      my $self = shift->new;
+      @_ ? ($self->{$field} = shift, return $self) : return $self->{$field};
+    }
+  }
+}
+
+sub parse {
+  my $self = shift->new;
+  my $s = $self->deserializer->deserialize(shift || $self->access)->valueof('/');
+  # here should be something that defines what schema description we want to use
+  $self->services({SOAP::Schema::WSDL->parse($s)});
+}
+
+sub load {
+  my $self = shift->new;
+  local $^W; # supress warnings about redefining
+  foreach (keys %{$self->services || Carp::croak 'Nothing to load. Schema is not specified'}) { 
+    eval $self->stub($_) or Carp::croak "Bad stub: $@";
+  }
+  $self;
+}
+
+sub access { eval "use LWP::UserAgent"; die if $@; 
+  my $self = shift->new;
+  my $url = shift || $self->schema || Carp::croak 'Nothing to access. URL is not specified';
+  my $ua = LWP::UserAgent->new;
+  my $resp = $ua->request(HTTP::Request->new(GET => $url));
+  $resp->is_success ? $resp->content : Carp::croak $resp->status_line;
+}
+
+sub stub {
+  my $self = shift->new;
+  my $package = shift;
+  my $services = $self->services->{$package};
+  join("\n", 
+    "package $package;\n",
+    'my %methods = (',
+    (map { my $service = $_;
+           join("\n", 
+                "  $_ => {", 
+                map("    $_ => '$services->{$service}{$_}',", qw/endpoint soapaction uri/),
+                "    parameters => [",
+                map("      SOAP::Data->new(name => '" . $_->name . "', type => '" . $_->type . "'),", @{$services->{$service}{parameters}}),
+                "    ],\n  },",
+               ), 
+         } keys %$services),
+    ");", <<'EOP');
+
+use SOAP::Lite;
+use Exporter;
+
+use vars qw(@ISA $AUTOLOAD @EXPORT_OK %EXPORT_TAGS);
+@ISA = qw(Exporter SOAP::Lite);
+@EXPORT_OK = (keys %methods);
+%EXPORT_TAGS = ('all' => [@EXPORT_OK]);
+
+my $soap;
+
+no strict 'refs';
+for my $method (@EXPORT_OK) {
+  my %method = %{$methods{$method}};
+  *$method = sub {
+    my $self = UNIVERSAL::isa($_[0] => __PACKAGE__) 
+      ? shift->new : ($soap ||= __PACKAGE__->new);
+    $self->proxy($method{endpoint}) unless $self->proxy;
+    my @templates = @{$method{parameters}};
+    my $som = $self
+      -> endpoint($method{endpoint})
+      -> uri($method{uri})
+      -> on_action(sub{$method{soapaction}})
+      -> call($method => map {shift(@templates)->value($_)} @_); 
+    ref $som ? $som->result : $som;
+  }
+}
+
+1;
+EOP
+}
+
+# ======================================================================
+
 package SOAP::Lite;
 
 use vars qw($AUTOLOAD);
-use Carp;
+use Carp ();
 use URI;
 
 my $soap;
@@ -1202,13 +1396,16 @@ sub autodispatched { $soap } # access to autodispatched object
 
 sub import {
   my $pkg = shift;
+  my $caller = caller;
+  no strict 'refs'; 
   while (@_) {
     my $command = shift;
     my @parameters = UNIVERSAL::isa($_[0], 'ARRAY') ? @{shift()} : splice(@_); 
     if ($command eq 'autodispatch') { 
       $soap = ($soap||$pkg)->new(@parameters);
-      no strict 'refs'; local $^W; # no AUTOLOAD redefined warnings
+      local $^W; # no AUTOLOAD redefined warnings
       *UNIVERSAL::AUTOLOAD = sub {
+        local($1,$2);
         my($package, $method) = $AUTOLOAD =~ m/(?:(.+)::)([^:]+)$/;
         return if $method eq 'DESTROY';
   
@@ -1216,7 +1413,7 @@ sub import {
         my $currenturi = $uri->path;
         $package = 
           $package eq 'SOAP' ? ref $_[0] || ($_[0] eq 'SOAP' 
-            ? $currenturi || croak "URI is not specified for SOAP call" : $_[0]) :
+            ? $currenturi || Carp::croak "URI is not specified for SOAP call" : $_[0]) :
           $package eq 'main' ? $currenturi || $package  
                              : $package;
         # drop first parameter if it's a class name
@@ -1225,12 +1422,20 @@ sub import {
         $uri->path($package);
   
         my $som = $soap->uri($uri->as_string)->call($method => @_);
-        ref $som ? $som->result : $som;
+        UNIVERSAL::isa($som => 'SOAP::SOM') ? $som->result : $som;
       };
+    } elsif ($command eq 'schema') {
+      foreach (keys %{SOAP::Schema->schema(shift(@parameters))->parse->load->services}) {
+        $_->export_to_level(1, undef, @parameters ? @parameters : ':all');
+      }
     } elsif ($command eq 'debug' || $command eq 'trace') { 
       SOAP::Trace->import(@parameters ? @parameters : 'all');
+    } elsif ($command eq 'import') {
+      local $^W; # supress warnings about redefining
+      shift(@parameters)->export_to_level(1, undef, @parameters) if @parameters;
     } else {
-      $soap = $pkg->new($command, @parameters);
+      Carp::carp "Odd (wrong?) number of parameters in import(), still continue" unless @parameters & 1;
+      $soap = ($soap||$pkg)->new($command, @parameters);
     }
   }
 }
@@ -1239,9 +1444,9 @@ sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { 
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     $self = bless {
       _transport => SOAP::Transport->new,
       _serializer => SOAP::Serializer->new,
@@ -1250,16 +1455,13 @@ sub new {
     } => $class;
    
     $self->on_action($self->on_action || sub { sprintf '"%s#%s"', @_ });
-    $self->on_fault($self->on_fault || sub {ref $_[1] ? return $_[1] : croak "SOAP call failed: ", $_[0]->transport->status});
+    $self->on_fault($self->on_fault || sub {ref $_[1] ? return $_[1] : Carp::croak "SOAP call failed: ", $_[0]->transport->status});
     $self->on_nonserialized($self->on_nonserialized || $self->serializer->on_nonserialized);
     SOAP::Trace::objects('()');
   }
 
-  if (@_) { my %parameters = @_;
-    foreach (keys %parameters) {
-      $self->$_($parameters{$_}) if $self->can($_);
-    }
-  }
+  Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && @_ & 1; 
+  while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
 
   return $self;
 }
@@ -1294,9 +1496,20 @@ sub BEGIN {
   }
 }
 
+sub schema {
+  my $field = '_schema';
+  my $self = shift->new;
+  return $self->{$field} unless @_;
+
+  my %services = %{SOAP::Schema->schema($self->{$field} = shift)->parse->load->services};
+  Carp::croak "Cannot activate service description with multiple services through this interface\n" 
+    if keys %services > 1; 
+  return (keys %services)[0]->new;
+}
+
 sub on_debug { 
   my $self = shift; 
-  carp "'SOAP::Lite->on_debug' method is deprecated. Instead use 'SOAP::Lite +debug ...'" if $^W;
+  Carp::carp "'SOAP::Lite->on_debug' method is deprecated. Instead use 'SOAP::Lite +debug ...'" if $^W;
   SOAP::Trace->import(debug => shift);
   $self;
 }
@@ -1311,7 +1524,7 @@ sub default {
 }
 
 sub AUTOLOAD {
-  my($method) = $AUTOLOAD =~ m/([^:]+)$/;
+  my $method = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
   return if $method eq 'DESTROY';
 
   no strict 'refs';
@@ -1348,7 +1561,7 @@ sub call { SOAP::Trace::trace('()');
       if (exists $signatures{$signature}) {
         my $param = $signatures{$signature};
         my($value) = $_->value; # take first value
-        UNIVERSAL::isa($_[$param] => 'SOAP::Data') ? $_[$param]->value($value) :
+        UNIVERSAL::isa($_[$param] => 'SOAP::Data') ? $_[$param]->SOAP::Data::value($value) :
         UNIVERSAL::isa($_[$param] => 'ARRAY')      ? (@{$_[$param]} = @$value) :
         UNIVERSAL::isa($_[$param] => 'HASH')       ? (%{$_[$param]} = %$value) :
         UNIVERSAL::isa($_[$param] => 'SCALAR')     ? (${$_[$param]} = $$value) :
@@ -1371,6 +1584,7 @@ SOAP::Lite - Client and server side SOAP implementation
 
 =head1 SYNOPSIS
 
+  # client side
   use SOAP::Lite;
   print SOAP::Lite 
     -> uri('http://simon.fell.com/calc')
@@ -1379,18 +1593,22 @@ SOAP::Lite - Client and server side SOAP implementation
     -> result ->[1];
  
 
-  The same code with autodispatch: 
-
+  # the same code with autodispatch: 
   use SOAP::Lite +autodispatch => 
     uri => 'http://simon.fell.com/calc',
     proxy => 'http://www.razorsoft.net/ssss4c/soap.asp'
   ;
+  print doubler([10,20,30,50,100])->[1];                             
 
-  print doubler([10,20,30,50,100])->[2];                             
+
+  # code with service description
+  use SOAP::Lite;
+  print SOAP::Lite
+    -> schema('http://www.xmethods.net/sd/StockQuoteService.wsdl')
+    -> getQuote('MSFT');
 
 
-  Code for SOAP server (CGI) looks like: 
-
+  # code for SOAP server (CGI):
   use SOAP::Transport::HTTP;
   SOAP::Transport::HTTP::CGI
     -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
@@ -1398,14 +1616,11 @@ SOAP::Lite - Client and server side SOAP implementation
 
 =head1 DESCRIPTION
 
-SOAP::Lite for Perl is a collection of Perl modules which provides a 
+SOAP::Lite is a collection of Perl modules which provides a 
 simple and lightweight interface to the Simple Object Access Protocol 
 (SOAP) both on client and server side.
 
-To learn more about SOAP, visit the FAQ at http://www.develop.com/soap/soapfaq.htm.
-
-This version of SOAP::Lite supports the SOAP 1.1 specification.
-See http://www.w3.org/TR/SOAP for details.
+This version of SOAP::Lite supports the SOAP 1.1 specification ( http://www.w3.org/TR/SOAP ).
 
 The main features of the library are:
 
@@ -1421,13 +1636,43 @@ Provides full namespace support for SOAP 1.1.
 
 =item *
 
-Contains various reusable components (modules) that can be
-used separately or together, like SOAP::Serializer and SOAP::Deserializer.
+Supports XML entity encoding.
+
+=item *
+
+Supports header attributes.
+
+=item *
+
+Supports HTTPS protocol.
+
+=item *
+
+Supports SMTP protocol.
+
+=item *
+
+Provides POP3 server implementation.
+
+=item *
+
+Supports Basic/Digest server authentication.
+
+=item *
+
+Supports blessed object references.
+
+=item *
+
+Contains various reusable components (modules) that can be used 
+independently, as, for instance, SOAP::Serializer and SOAP::Deserializer.
 
 =item *
 
 Provides an object oriented interface for serializing/deserializing and
-sending/receiving SOAP packets.
+sending/receiving SOAP packets. Support for extensibility of the 
+serialization/deserialization architecture has been included; 
+see SOAP::Data for details.
 
 =item *
 
@@ -1437,29 +1682,12 @@ as well as $a=\$a. See test.pl and documentation for more examples).
 
 =item *
 
-Has more than 40 tests that access public test servers with different 
-implementations: Apache SOAP, Frontier, Perl, XSLT, COM and VB6.
-
-=item *
-
-Support for extensibility of the serialization/deserialization
-architecture has been included; see SOAP::Data for details.
-
-=item *
-
-Supports blessed object references.
-
-=item *
-
 Supports arrays (both serialization and deserialization with autotyping).
 
 =item *
 
-Supports ordered hashes (as working example of user-defined data types).
-
-=item *
-
 Custom/user-defined types (see SOAP::Data::as_ordered_hash for example).
+Supports ordered hashes (as working example of user-defined data types).
 
 =item *
 
@@ -1467,15 +1695,16 @@ Customizable auto type definitions.
 
 =item *
 
+Has more than 40 tests that access public test servers with different 
+implementations: Apache SOAP, Frontier, Perl, XSLT, COM and VB6.
+
+=item *
+
+Has (limited) schema support (WSDL) with dynamic and stub access.
+
+=item *
+
 Supports Base64 encoding.
-
-=item *
-
-Supports XML entity encoding.
-
-=item *
-
-Supports header attributes.
 
 =item *
 
@@ -1491,42 +1720,30 @@ Supports dynamic/static class/method binding.
 
 =item *
 
-Provides CGI/daemon server implementation
+Provides CGI/daemon server implementation.
 
 =item *
 
-Supports HTTPS protocol
+Provides interactive shell for SOAP sessions (examples/SOAPsh.pl).
 
 =item *
 
-Supports SMTP protocol
-
-=item *
-
-Provides POP3 server implementation
-
-=item *
-
-Supports Basic/Digest server authentication
-
-=item *
-
-Provides shell for interactive SOAP sessions. See SOAPsh.pl.
-
-=item *
-
-Easy services deployment. Just put module in specified directory and 
+Easy services deployment. Put module in specified directory and 
 it'll be accessible.
+
+=item *
+
+Has enough examples and documentation to be up and running in no time.
 
 =back
 
 =head2 WHERE TO FIND EXAMPLES
 
-See test.pl, examples/*.pl and module documentation for a client-side 
-examples that show the serialization of a SOAP request, sending it over 
-HTTP and receiving a response, and the deserialization of the response.
-See examples/soap.cgi, examples/soap.daemon and examples/My/Apache.pm
-for server implementations.
+See test.pl, examples/*.pl and the module documentation for a client-side 
+examples that demonstrate the serialization of a SOAP request, sending it 
+via HTTP to the server and receiving the response, and the deserialization 
+of the response. See examples/soap.cgi, examples/soap.daemon and 
+examples/My/Apache.pm for server-side implementations.
 
 =head1 OVERVIEW OF CLASSES AND PACKAGES
 
@@ -1534,17 +1751,20 @@ This table should give you a quick overview of the classes provided by the
 library.
 
  SOAP::Lite.pm
- -- SOAP::Lite         -- Main class provides all logic
- -- SOAP::Transport    -- Supports transport architecture
- -- SOAP::Data         -- Provides extensions for serialization architecture
- -- SOAP::Header       -- Provides extensions for Header serialization
- -- SOAP::Parser       -- Parse XML file into object tree
- -- SOAP::Serializer   -- Serializes data structures to SOAP package
- -- SOAP::Deserializer -- Deserializes result of SOAP::Parser into objects
- -- SOAP::SOM          -- Provides access to deserialized object tree
- -- SOAP::Constants    -- Provides access to common constants
- -- SOAP::Trace        -- Provides tracing facilities
- -- SOAP::Server::Object -- Internal class implements objects-by-reference 
+ -- SOAP::Lite           -- Main class provides all logic
+ -- SOAP::Transport      -- Supports transport architecture
+ -- SOAP::Data           -- Provides extensions for serialization architecture
+ -- SOAP::Header         -- Provides extensions for header serialization
+ -- SOAP::Parser         -- Parses XML file into object tree
+ -- SOAP::Serializer     -- Serializes data structures to SOAP package
+ -- SOAP::Deserializer   -- Deserializes results of SOAP::Parser into objects
+ -- SOAP::SOM            -- Provides access to deserialized object tree
+ -- SOAP::Constants      -- Provides access to common constants
+ -- SOAP::Trace          -- Provides tracing facilities
+ -- SOAP::Schema         -- Provides access and stub(s) for schema(s)
+ -- SOAP::Schema::WSDL   -- WSDL implementation for SOAP::Schema
+ -- SOAP::Server         -- Handles requests on server side 
+ -- SOAP::Server::Object -- Handles objects-by-reference 
 
  SOAP::Transport::HTTP.pm
  -- SOAP::Transport::HTTP::Client  -- Client interface to HTTP transport
@@ -1568,19 +1788,20 @@ library.
 
 =head2 SOAP::Lite
 
-All methods that SOAP::Lite gives you access to can be used for both
-setting and retrieving values. If you provide no parameters, you'll
-get current value, and if you'll provide parameter(s), new value
-will be assigned and method will return object (if not stated something
-else). This is suitable for stacking these calls like:
+All methods that SOAP::Lite provides can be used for both
+setting and retrieving values. If you provide no parameters, you will
+get current value, and if parameter(s) are provided, a new value
+will be assigned to the object and the method in question will return 
+the current object (if not stated otherwise). This is suitable for stacking
+these calls like:
 
   $lite = SOAP::Lite
     -> uri('http://simon.fell.com/calc')
     -> proxy('http://www.razorsoft.net/ssss4c/soap.asp')
   ;
 
-Order is insignificant and you may call new() method first. If you
-don't do it, SOAP::Lite will do it for you. However, new() method
+The order is insignificant and you may call the C<new()> method first. If you
+don't do it, SOAP::Lite will do it for you. However, the C<new()> method
 gives you additional syntax:
 
   $lite = new SOAP::Lite
@@ -1588,9 +1809,8 @@ gives you additional syntax:
     proxy => 'http://www.razorsoft.net/ssss4c/soap.asp'
   ;
 
-new() accepts hash with method names and values, and will call 
-appropriate method with passed value.
-
+C<new()> accepts a hash with method names as keys. It will call the 
+appropriate methods together with the passed values.
 Since new() is optional it won't be mentioned anymore.
 
 Other available methods are:
@@ -1599,91 +1819,94 @@ Other available methods are:
 
 =item transport()
 
-Provides access to SOAP::Transport object. Object will be created for 
-you. You can reassign it (but generally you should not).
+Provides access to the L</SOAP::Transport> object. The object will be created 
+for you. You can reassign it (but generally you should not).
 
 =item serializer()
 
-Provides access to L</SOAP::Serialization> object. Object will be created for 
-you. You can reassign it (but generally you should not).
+Provides access to the L</SOAP::Serialization> object. The object will be 
+created for you. You can reassign it (but generally you should not).
 
 =item proxy()
 
-Shortcut for C<transport-E<gt>proxy()>. Lets you specify endpoint and 
-load required module at the same time. Required for dispatching SOAP 
-calls. Name of the module will be defined depending on protocol 
-specified for endpoint. Prefix SOAP::Transport will be appended,
-module loaded and object of class (with appended ::Client) will
+Shortcut for C<transport-E<gt>proxy()>. This lets you specify an endpoint and 
+also loads the required module at the same time. It is required for dispatching SOAP 
+calls. The name of the module will be defined depending on the protocol 
+specific for the endpoint. The prefix C<SOAP::Transport> will be prepended,
+the module will be loaded and object of class (with appended ::Client) will
 be created. 
-For example, for 'http://localhost/' class for create object will 
-look like SOAP::Transport:HTTP::Client;
+
+For example, for 'http://localhost/', the class for creating objects will 
+look for SOAP::Transport:HTTP::Client;
 
 =item endpoint()
 
-Lets you specify endpoint B<without> changing/loading protocol module. 
-Usable for changing endpoints without changing protocols. You should 
-call proxy() first. No checks for protocol equality will be made.
+Lets you specify an endpoint B<without> changing/loading the protocol module. 
+This is useful for switching endpoints without switching protocols. You should 
+call C<proxy()> first. No checks for protocol equivalence will be made.
 
 =item outputxml()
 
-Lets you specify output from all methods call. If C<true>, all methods
-will return unprocessed raw xml. You can parsed it with XML::Parser,
-SOAP::Deserializer or any other module that will work for you.
+Lets you specify the kind of output from all method calls. If C<true>, all 
+methods will return unprocessed, raw XML code. You can parse it with 
+XML::Parser, SOAP::Deserializer or any other appropriate module.
 
 =item autotype()
 
-Shortcut for C<serializer-E<gt>autotype()>. Lets you specify will serializer
-try to make autotyping for you or not. Default setting is C<true>.
+Shortcut for C<serializer-E<gt>autotype()>. This lets you specify whether 
+the serializer will try to make autotyping for you or not. Default setting 
+is C<true>.
 
 =item readable()
 
-Shortcut for C<serializer-E<gt>readable()>. Lets you specify format for
-generated xml code. Carriage returns and indentation will be added for
-readability. Usable when you want to see generated code in debugger. 
-By default there are no additional characters in generated xml code. 
+Shortcut for C<serializer-E<gt>readable()>. This lets you specify the format 
+for the generated XML code. Carriage returns <CR> and indentation will be 
+added for readability. Useful in the case you want to see the generated code 
+in a debugger. By default, there are no additional characters in generated 
+XML code. 
 
 =item namespace()
 
-Shortcut for C<serializer-E<gt>namespace()>. Lets you specify default
-namespace for generated envelope. 'SOAP-ENV' by default.
+Shortcut for C<serializer-E<gt>namespace()>. This lets you specify the default
+namespace for generated envelopes ('SOAP-ENV' by default).
 
 =item encodingspace()
 
-Shortcut for C<serializer-E<gt>encodingspace()>. Lets you specify default
-encoding namespace for generated envelope. 'SOAP-ENC' by default.
+Shortcut for C<serializer-E<gt>encodingspace()>. This lets you specify the 
+default encoding namespace for generated envelopes ('SOAP-ENC' by default).
 
 =item encoding()
 
-Shortcut for C<serializer-E<gt>encoding()>. Lets you specify encoding 
-for generated envelope. For now it won't actually change envelope
-encoding, it'll just modify xml header. 'UTF-8' by default.
+Shortcut for C<serializer-E<gt>encoding()>. This lets you specify the encoding 
+for generated envelopes. For now it will not actually change envelope
+encoding, it will just modify the XML header ('UTF-8' by default).
 
 =item typelookup()
 
-Shortcut for C<serializer-E<gt>typelookup()>. Gives you access to 
-typelookup table that used for autotyping. For more information
+Shortcut for C<serializer-E<gt>typelookup()>. This gives you access to 
+the C<typelookup> table that is used for autotyping. For more information
 see L</SOAP::Serializer>.
 
 =item uri()
 
-Shortcut for C<serializer-E<gt>uri()>. Lets you specify uri for SOAP method.
-Default value is provided, however you call will definitely fail if
-you don't specify required uri. 
+Shortcut for C<serializer-E<gt>uri()>. This lets you specify the uri for SOAP 
+methods. Nothing is specified by default and your call will definitely fail 
+if you don't specify the required uri. 
 
 =item multirefinplace()
 
-Shortcut for C<serializer-E<gt>multirefinplace()>. If true, serializer will
-put value for multireferences in the first occurence of the reference. 
-Otherwise it will be encoded as top intependent element, right after Body.
-Default value is 'false'. 
+Shortcut for C<serializer-E<gt>multirefinplace()>. If true, the serializer will
+put values for multireferences in the first occurrence of the reference. 
+Otherwise it will be encoded as top independent element, right after C<method>
+element inside C<Body>. Default value is 'false'. 
 
 =item header() 
 
 DEPRECATED. Use SOAP::Header instead. 
 
-Shortcut for C<serializer-E<gt>header()>. Lets you specify header for 
-generated envelope. You can specify C<root>, C<mustUnderstand> or any
-other header using SOAP::Data class:
+Shortcut for C<serializer-E<gt>header()>. This lets you specify the header for 
+generated envelopes. You can specify C<root>, C<mustUnderstand> or any
+other header using L</SOAP::Data> class:
 
   $serializer = SOAP::Serializer->envelope('method' => 'mymethod', 1,
     SOAP::Header->name(t1 => 5)->attr({'~V:mustUnderstand' => 1}),
@@ -1704,48 +1927,48 @@ will be serialized into:
     </SOAP-ENV:Body>
   </SOAP-ENV:Envelope>
 
-You can mix SOAP::Header parameters with other parameters and also you can
-return SOAP::Header parameters as result of remote call and they will be 
-placed in header. See My::Parameters::addheader as example.
+You can mix SOAP::Header parameters with other parameters and you can also
+return SOAP::Header parameters as a result of a remote call. They will be 
+placed into the header. See My::Parameters::addheader as an example.
 
 =item on_action()
 
-Lets you specify handler for on_action event. Triggered for creating
-SOAPAction. Default handler will make SOAPAction as C<"uri#method">.
-You can change this behavior globally (see L</DEFAULT HANDLERS>) or
-locally, for particular object.
+This lets you specify a handler for C<on_action event>. It is triggered when 
+creating SOAPAction. The default handler will set SOAPAction to 
+C<"uri#method">. You can change this behavior globally 
+(see L</DEFAULT HANDLERS>) or locally, for a particular object.
 
 =item on_fault()
 
-Lets you specify handler for on_fault event. Default behavior is die 
-on transport error and does nothing on others. You can change this 
-behavior globally (see L</DEFAULT HANDLERS>) or locally, for particular 
-object.
+This lets you specify a handler for C<on_fault event>. The default behavior is 
+to C<die> on an transport error and to do nothing on other error conditions. You 
+can change this behavior globally (see L</DEFAULT HANDLERS>) or locally, for a 
+particular object.
 
 =item on_debug()
 
-Lets you specify handler for on_debug event. Default behavior is do 
-nothing. Use +trace/+debug option for SOAP::Lite instead.
+This lets you specify a handler for C<on_debug event>. Default behavior is to 
+do nothing. Use +trace/+debug option for SOAP::Lite instead.
 
 =item on_nonserialized()
 
-Lets you specify handler for on_nonserialized event. Default behavior 
-is produce warning if warnings are on for everything that cannot be
-properly serialized (like CODE references or GLOBs).
+This lets you specify a handler for C<on_nonserialized event>. The default 
+behavior is to produce a warning if warnings are on for everything that cannot 
+be properly serialized (like CODE references or GLOBs).
 
 =back
 
 =head2 SOAP::Data
 
-You can use this class if you want to specify value, name, type, uri or 
+You can use this class if you want to specify a value, a name, atype, a uri or 
 attributes for SOAP elements (use C<value()>, C<name()>, C<type()>, 
 C<uri()> and C<attr()> methods correspondingly). 
 For example, C<SOAP::Data-E<gt>name('abc')-E<gt>value(123)> will be serialized
-to '<abc>123</abc>', as well as SOAP::Data->name(abc => 123).
-Each of them except 'value' method can have value as second parameter. 
-All methods return current value if you call them without parameters and
-return object otherwise, so you can stack them. See test.pl for more 
-examples. You can import these methods with: 
+to '<abc>123</abc>', as well as will SOAP::Data->name(abc => 123).
+Each of them (except the C<value> method) can have a value as the second 
+parameter. All methods return the current value if you call them without 
+parameters. The return the object otherwise, so you can stack them. See test.pl 
+for more examples. You can import these methods with: 
    
   SOAP::Data->import('name'); 
 
@@ -1755,15 +1978,15 @@ or
 
 and then use C<name(abc =E<gt> 123)> for brevity. 
 
-Interface for specific attributes is also provided. You can use C<actor()>,
+An interface for specific attributes is also provided. You can use the C<actor()>,
 C<mustUnderstand()>, C<encodingStyle()> and C<root()> methods to set/get
-values of correspondent attributes.
+values of the correspondent attributes.
 
   SOAP::Data
     ->name(c => 3)
     ->encodingStyle('http://xml.apache.org/xml-soap/literalxml')
 
-should be serialized into:
+will be serialized into:
 
   <c SOAP-ENV:encodingStyle="http://xml.apache.org/xml-soap/literalxml"
      xsi:type="xsd:int">3</c>
@@ -1771,29 +1994,29 @@ should be serialized into:
 =head2 SOAP::Serializer
 
 Usually you don't need to interact directly with this module. The only 
-case when you need it, it's autotyping. This feature lets you specify 
-types for your data according to your needs as well as introduce new
+case when you need it, it when using autotyping. This feature lets you specify 
+types for your data according to your needs as well as to introduce new
 data types (like ordered hash for example). 
 
-You can specify type with C<SOAP::Data-E<gt>type(float => 123)> and during
-serialization stage module will try to serialize you data with as_float 
-method, then call typecast method (you can override it or inherit your 
-own class from SOAP::Data) and only then will try to serialize it as 
-usual data structure. For example:
+You can specify a type with C<SOAP::Data-E<gt>type(float => 123)>. During
+the serialization stage the module will try to serialize your data with the 
+C<as_float> method. It then calls the C<typecast> method (you can override it 
+or inherit your own class from SOAP::Data) and only then it will try to 
+serialize it according to data type (SCALAR, ARRAY or HASH). For example:
 
   SOAP::Data->type('ordered_hash' => [a => 1, b => 2]) 
 
-will be serialized as ordered hash, using as_ordered_hash method.
+will be serialized as an ordered hash, using the C<as_ordered_hash> method.
 
-If you do not specify type directly serialization module will try
-to autodefine type for you according to typelookup hash. It contains 
-type name as key and following 3-element array as value:
+If you do not specify a type directly, the serialization module will try
+to autodefine the type for you according to the C<typelookup> hash. It contains 
+the type name as key and the following 3-element array as value:
 
   priority, 
   check_function (CODE reference), 
   typecast function (METHOD name or CODE reference)
 
-For example, if you want to add uriReference to autodefined types,
+For example, if you want to add C<uriReference> to autodefined types,
 you should add something like this:
 
   $s->typelookup({
@@ -1801,7 +2024,7 @@ you should add something like this:
     uriReference => [11, sub { shift =~ m!^http://! }, 'as_uriReference']
   });
 
-and add C<as_uriReference> method to L</SOAP::Serializer> class:
+and add the C<as_uriReference> method to the L</SOAP::Serializer> class:
 
   sub SOAP::Serializer::as_uriReference {
     my $self = shift;
@@ -1809,22 +2032,28 @@ and add C<as_uriReference> method to L</SOAP::Serializer> class:
     return [$name, {%{$attr || {}}, 'xsi:type' => 'xsd:uriReference'}, $value];
   }
 
-Specified methods will work for both autotyping and direct typing, so you
-can use either C<SOAP::Data-E<gt>type(uriReference =E<gt> 'http://yahoo.com')> or
-just C<'http://yahoo.com'> and it'll be serialized into the same type.
+The specified methods will work for both autotyping and direct typing, so you
+can use either 
 
-For more examples see as_* methods in SOAP::Serializer.
+  SOAP::Data->type(uriReference => 'http://yahoo.com')>
 
-SOAP::Serializer provides you with autotype(), readable(), namespace(),
-encodingspace(), encoding(), typelookup(), uri(), multirefinplace() and 
-envelope() methods. All methods except envelope() are described in 
+or just 
+
+  'http://yahoo.com'
+
+and it will be serialized into the same type. For more examples see C<as_*> 
+methods in L</SOAP::Serializer>.
+
+The SOAP::Serializer provides you with C<autotype()>, C<readable()>, C<namespace()>,
+C<encodingspace()>, C<encoding()>, C<typelookup()>, C<uri()>, C<multirefinplace()> and 
+C<envelope()> methods. All methods (except C<envelope()>) are described in the
 L</SOAP::Lite> section.
 
 =over 4
 
 =item envelope()
 
-Allows you build three kind of envelopes depenfing on the first parameter:
+It allows you to build three kind of envelopes depending on the first parameter:
 
 =over 4
 
@@ -1832,90 +2061,116 @@ Allows you build three kind of envelopes depenfing on the first parameter:
 
   envelope(method => 'methodname', @parameters);
 
-Lets you build request/response envelope.
+or
+
+  method('methodname', @parameters);
+
+Lets you build a request/response envelope.
 
 =item fault
 
-  envelope(fault => 'faultcode', 'faultstring', 'details');
+  envelope(fault => 'faultcode', 'faultstring', $details);
 
-Lets you build fault envelope. 
+or 
+  
+  fault('faultcode', 'faultstring', $details);
+
+Lets you build a fault envelope. Faultcode will be properly qualified and
+details could be string or object.
 
 =item freeform
 
   envelope(freeform => 'something that I want to serialize');
 
-Reserved for nonRPC calls. Lets you build you own payload inside SOAP 
-envelope. All specification rules are applied, except method specific.
+or
+
+  freeform('something that I want to serialize');
+           
+Reserved for nonRPC calls. Lets you build your own payload inside a SOAP 
+envelope. All SOAP 1.1 specification rules are enforced, except method 
+specific ones. See UDDI::Lite as example.
 
 =back
 
 For more examples see test.pl and SOAP::Transport::HTTP.pm
 
-=back
-
 =head2 SOAP::SOM
 
-SOM gives you access to deserialized enveloped with several methods.
-All methods accepts node path (similar to XPath notations). 
-SOM understands '/' as a root node, '//' as relative location path
+SOM gives you access to the deserialized envelope via several methods.
+All methods accept a node path (similar to XPath notations). 
+SOM interprets '/' as the root node, '//' as relative location path
 ('//Body' will find all bodies in document, as well as 
 '/Envelope//nums' will find all 'nums' nodes under Envelope node),
-'[num]' as node number and '[opnum]' that can be operation ('<', 
-'>', '<=', '>=', '!', '=') followed by node number. 
+'[num]' as node number and '[op num]' with C<op> being a comparison 
+operator ('<', '>', '<=', '>=', '!', '=').
+
 All nodes in nodeset will be returned in document order.
 
 =over 4
 
 =item match()
 
-Accepts path to node and return true/false in boolean context and
-SOM object otherwise. valueof() and dataof() can be used to get value(s)
-of matched node(s).
+Accepts a path to a node and returns true/false in a boolean context and
+a SOM object otherwise. C<valueof()> and C<dataof()> can be used to get 
+value(s) of matched node(s).
 
 =item valueof()
 
-Returns value of (previously) matched node. Can accept node path. 
-In that case return value of matched node, but do not change current
-node. Suitable when you want to match node and then navigate through
-node childs:
+Returns the value of a (previously) matched node. It accepts a node path. 
+In this case, it returns the value of matched node, but does not change the current
+node. Suitable when you want to match a  node and then navigate through
+node children:
 
   $som->match('/Envelope/Body/[1]'); # match method
   $som->valueof('[1]');              # result
   $som->valueof('[2]');              # first out parameter (if present)
 
-Return value depends on context. In scalar context will return first
-element from matched nodeset.
+The returned value depends on the context. In a scalar context it will return 
+the first element from matched nodeset. In an array context it will return 
+all matched elements.
 
-=item dataof()
+=item dataof()        
 
-Same as valueof(), but returns SOAP::Data object, so you can get access
-to name, type and attributes of element.
+Same as C<valueof()>, but it returns a L</SOAP::Data> object, so you can get 
+access to the name, the type and attributes of an element.
 
 =item headerof()
 
-Same as dataof(), but returns SOAP::Header object, so you can get access
-to name, type and attributes of element.  
+Same as C<dataof()>, but it returns L</SOAP::Header> object, so you can get 
+access to the name, the type and attributes of an element. Can be used for 
+modifying headers (if you want to see updated header inside Header element, 
+it's better to use this method instead of C<dataof()> method).
 
 =item namespaceuriof()
 
-Returns uri associated with matched element. This uri can be inherited.
+Returns the uri associated with the matched element. This uri can also be 
+inherited, for example, if you have 
+
+  <a xmlns='http://my.namespace'>
+    <b>
+       value
+    </b>
+  </a>
+
+this method will return same value for 'b' element as for 'a'.
 
 =back
 
-SOAP::SOM also provides you methods for quick access to Envelope, Body, 
-method and parameters (both in and out). All these methods return real
-values (in most cases it'll be reference to hash), if called as object
-method. Return value also depends on context: in array context it'll 
-return you array of values and in scalar context it'll return first
-element. So if you want to access first output parameter, you can call
+SOAP::SOM also provides  methods for direct access to the envelope, the body, 
+methods and parameters (both in and out). All these methods return real
+values (in most cases it will be a hash reference), if called as object
+method. Returned values also depend on context: in an array context it will 
+return an array of values and in scalar context it will return the first
+element. So, if you want to access the first output parameter, you can call
 C<$param = $som-E<gt>paramsout>; 
-and you'll get it disregarding real number of output parameters. 
+and you will get it regardless of the actual number of output parameters. 
 If you call it as class function (for example, SOAP::SOM::method)
-it returns Xpath string that match current element ('/Envelope/Body/[1]'
-in case of 'method'). Method will return undef if not present OR if you
-try to access element that has xsi:null="1" attribute. To distinguish
-between these two cases you can first access match method that'll 
-return true/false in boolean context and then get the real value:
+it returns an XPath string that matches the current element 
+('/Envelope/Body/[1]' in case of 'method'). The method will return C<undef> 
+if not present OR if you try to access an element that has an C<xsi:null="1"> 
+attribute. To distinguish between these two cases you can first access the 
+C<match()> method that will return true/false in a boolean context and then 
+get the real value:
 
   if ($som->match('//myparameter')) {
     $value = $som->valueof; # can be undef too
@@ -1927,12 +2182,12 @@ return true/false in boolean context and then get the real value:
 
 =item envelope()
 
-Returns hash with deserialized envelope. Keys in this hash will be 
-'Header' (if present) and 'Body'. Values will be deserialized header
-and body correspondingly.
-If called as function (SOAP::SOM::envelope) will return Xpath string 
-that match envelope content. Usable when you want just match it and 
-then iterate content by yourself. Example:
+Returns a hash with an deserialized envelope. Keys in this hash will be 
+'Header' (if present) and 'Body'. Values will be the deserialized header
+and body, respectively.
+If called as function (C<SOAP::SOM::envelope>) it will return a Xpath string 
+that matches the envelope content. Useful when you want just match it and 
+then iterate over the content by yourself. Example:
 
   if ($som->match(SOAP::SOM::envelope)) {
     $som->valueof('Header'); # should give access to header if present
@@ -1943,8 +2198,8 @@ then iterate content by yourself. Example:
 
 =item header()
 
-Returns hash with deserialized header. If you want to get access to 
-all attributes in header use:
+Returns a hash with the deserialized header. If you want to access all 
+attributes in the header use:
 
   # get element as SOAP::Data object 
   $transaction = $som->match(join '/', SOAP::SOM::header, 'transaction')->dataof;
@@ -1953,9 +2208,9 @@ all attributes in header use:
 
 =item headers()
 
-Returns nodeset of deserialized headers. Difference between header() and 
-headers() methods is that former gives you access to the whole header and 
-later to the headers inside 'Header' tag:
+Returns a node set of deserialized headers. The difference between the 
+C<header()> and C<headers()> methods is that the first gives you access 
+to the whole header and second to the headers inside the 'Header' tag:
 
   $som->headerof(join '/', SOAP::SOM::header, '[1]');
   # gives you first header as SOAP::Header object
@@ -1969,57 +2224,127 @@ later to the headers inside 'Header' tag:
 
 =item body()
 
-Returns hash with deserialized body. 
+Returns a hash with the deserialized body. 
 
 =item fault()
 
-Returns value (hash) of Fault elements: faultcode, faultstring and
-detail. If Fault element is present, result, paramsin, paramsout and methods 
-will return undef value.
+Returns a (hash) value of 'Fault' elements: C<faultcode>, C<faultstring> and
+C<detail>. If the 'Fault' element is present, C<result()>, C<paramsin()>, 
+C<paramsout()> and C<method()> will return an undef.
 
 =item faultcode()
 
-Returns value of faultcode element if present and undef otherwise.
+Returns the value of the C<faultcode> element if present and undef otherwise.
 
 =item faultstring()
 
-Returns value of faultstring element if present and undef otherwise.
+Returns the value of the C<faultstring> element if present and undef otherwise.
 
 =item faultactor()
 
-Returns value of faultactor element if present and undef otherwise.
+Returns the value of the C<faultactor> element if present and undef otherwise.
 
 =item faultdetail()
 
-Returns value of detail element if present and undef otherwise.
+Returns the value of the C<detail> element if present and undef otherwise.
 
 =item method()
 
-Returns value of method element (all input parameters if you call it on 
-desetialized request envelope, and result/output parameters if you call it
-on deserialized response envelope). Return undef if Fault element is 
+Returns the value of the method element (all input parameters if you call it on 
+a deserialized request envelope, and result/output parameters if you call it
+on a deserialized response envelope). Returns undef if the 'Fault' element is 
 present.
 
 =item result()
 
-Returns value of result from method call. In fact, it'll return first
-child element (in document order) of method element.
+Returns the value of the C<result> of the method call. In fact, it will return 
+the first child element (in document order) of the method element.
 
 =item paramsin()
 
-Return value(s) of all passed parameters.
+Returns the value(s) of all passed parameters.
 
 =item paramsout()
 
-Return value(s) of output parameters. See following section for details 
-and examples.
+Returns value(s) of the output parameters. 
 
 =back
 
+=head2 SOAP::Schema
+
+SOAP::Schema gives you ability to load schemas and create stubs according 
+to these schemas. Different syntaxes are provided:
+
+=over 4
+
+=item *
+
+  use SOAP::Lite
+    schema => 'http://www.xmethods.net/sd/StockQuoteService.wsdl',
+    # schema => 'file:/your/local/path/StockQuoteService.wsdl',
+    # schema => 'file:./StockQuoteService.wsdl',
+  ;
+  print getQuote('MSFT'), "\n";
+
+=item *
+
+  use SOAP::Lite;
+  print SOAP::Lite
+    -> schema('http://www.xmethods.net/sd/StockQuoteService.wsdl')
+    -> getQuote('MSFT'), "\n";
+
+=item *
+
+  use SOAP::Lite;
+  my $service = SOAP::Lite
+    -> schema('http://www.xmethods.net/sd/StockQuoteService.wsdl');
+  print $service->getQuote('MSFT'), "\n";
+
+=back
+
+You can create stub with B<stubmaker> script:
+
+  perl stubmaker.pl http://www.xmethods.net/sd/StockQuoteService.wsdl
+
+and you'll be able to access SOAP services in one line:
+
+  perl "-MStockQuoteService qw(:all)" -le "print getQuote('MSFT')" 
+
+or dynamically:
+
+  perl "-MSOAP::Lite schema=>'file:./quote.wsdl'" -le "print getQuote('MSFT')"
+
+Other supported syntaxes with stub(s) are:
+
+=over 4
+
+=item *
+
+  use StockQuoteService ':all';
+  print getQuote('MSFT'), "\n";
+
+=item *
+
+  use StockQuoteService;
+  print StockQuoteService->getQuote('MSFT'), "\n";
+
+=item *
+
+  use StockQuoteService;
+  my $service = StockQuoteService->new;
+  print $service->getQuote('MSFT'), "\n";
+
+=back
+
+Support for schemas is limited for now. Though module was tested with dozen
+different schemas it won't understand complex objects and will work only
+with WSDL. 
+
 =head2 SOAP::Trace
 
-SOAP::Trace provides you trace/debug facilities for SOAP::Lite library.
-To access it you need to specify list of traceable events:
+SOAP::Trace provides you with a trace/debug facility for the SOAP::Lite 
+library. To activate it you need to specify a list of traceable 
+events/parts of SOAP::Lite:
 
   use SOAP::Lite +trace =>
     qw(list of available traces here);
@@ -2031,36 +2356,35 @@ Available events are:
  result     -- (server) result of method call
  parameters -- (server) parameters for method call
  headers    -- (server) headers of received message
- objects    -- (both) new/DESTROY calls
- method     -- (both) parameters for '->envelope(method =>' call
- fault      -- (both) parameters for '->envelope(fault =>' call
- freeform   -- (both) parameters for '->envelope(freeform =>' call
- trace      -- (both) trace enters into some important functions
- debug      -- (both) details about transport 
+ objects    -- (both)   new/DESTROY calls
+ method     -- (both)   parameters for '->envelope(method =>' call
+ fault      -- (both)   parameters for '->envelope(fault =>' call
+ freeform   -- (both)   parameters for '->envelope(freeform =>' call
+ trace      -- (both)   trace enters into some important functions
+ debug      -- (both)   details about transport 
 
 For example:
 
   use SOAP::Lite +trace =>
     qw(method fault);
 
-lets you output parameters for all your fault/normal envelopes on STDERR. 
-If you want to log it you can either redirect STDERR to some other file, 
-for example:
+lets you output the parameter values for all your fault/normal envelopes onto STDERR. 
+If you want to log it you can either redirect STDERR to some file
 
   BEGIN { open(STDERR, '>>....'); }
 
-or (what's better) define your own function for particular event:
+or (preferably) define your own function for a particular event:
 
   use SOAP::Lite +trace =>
     method => sub {'log messages here'}, fault => \&log_faults;
 
-You can share same function for several events:
+You can share the same function for several events:
 
   use SOAP::Lite +trace =>
     method, fault => \&log_methods_and_faults;
 
-Also you can use 'all' to get all available tracing and use '-' before to 
-disable particular logging:
+Also you can use 'all' to get all available tracing and use '-' in front of an event to 
+disable particular event:
 
   use SOAP::Lite +trace =>
     all, -transport; # to get all logging without transport messages
@@ -2071,8 +2395,8 @@ Finally,
 
 will switch all debugging on.
 
-You can use 'debug' instead of 'trace'. I'd like 'trace', others 'debug'. 
-Also on_debug is available for compatibility with old versions, like:
+You can use 'debug' instead of 'trace'. I prefer 'trace', others 'debug'. 
+Also C<on_debug> is available for backward compatibility, as in
 
   use SOAP::Lite;
 
@@ -2084,7 +2408,7 @@ Also on_debug is available for compatibility with old versions, like:
   print $s->GetVocabulary(SOAP::Data->name('~:Query' => 'something'))
           ->valueof('//FOUND');
 
-or switch it individually, with
+or switch it on individually, with
 
   use SOAP::Lite +trace => debug;
 
@@ -2092,16 +2416,18 @@ or
   
   use SOAP::Lite +trace => debug => sub {'do_what_I_want_here'};
 
-Compare with: 
+Compare this with: 
 
   use SOAP::Lite +trace => transport;
  
-that gives you access to REAL request/response objects, so you can even 
+which gives you access to B<actual> request/response objects, so you can even 
 set/read cookies or do whatever you want there.
 
-Difference between debug and transport is that transport will get 
-HTTP::Request/HTTP::Response object and debug will get stringified request 
-(NOT OBJECT!) and also can be called in other places too. 
+The difference between C<debug> and C<transport> is that C<transport> will get 
+a HTTP::Request/HTTP::Response object and C<debug> will get a stringified request 
+(NOT OBJECT!). It can also be called in other places too. 
+
+=head1 FEATURES AND OPTIONS
 
 =head2 IN/OUT, OUT PARAMETERS AND AUTOBINDING
 
@@ -2127,19 +2453,19 @@ or
   $paramout1 = $paramsout[0]; # gives you 'res2', same as ($r->paramsout)[0]
   $paramout2 = $paramsout[1]; # gives you 'res3', same as ($r->paramsout)[1]
 
-Generally, if server returns C<return (1,2,3)> you'll get C<1> as result 
+Generally, if server returns C<return (1,2,3)> you will get C<1> as the result 
 and C<2> and C<3> as out parameters.
 
-If server returns C<return [1,2,3]> you'll get ARRAY from result() and 
-C<undef> from paramsout() .
-Result can be arbitrary complex: it can be array of something, it can
-be object, it can be anything and it still be in result() . If only
-one parameter is returned paramsout() will return C<undef>.
+If the server returns C<return [1,2,3]> you will get an ARRAY from C<result()> and 
+C<undef> from C<paramsout()> .
+Results can be arbitrary complex: they can be an array of something, they can
+be objects, they can be anything and still be returned by C<result()> . If only
+one parameter is returned, C<paramsout()> will return C<undef>.
 
 But there is more.
-If you have in your output parameters parameter with the same
-signature (name+type) as in input parameters it'll be mapped
-automatically. Example:
+If you have in your output parameters a parameter with the same
+signature (name+type) as in the input parameters this parameter will be mapped
+into your input automatically. Example:
 
 B<server>:
 
@@ -2157,9 +2483,9 @@ B<client>:
   $result = $soap->mymethod($a, $b);
 
 After that, C<$result == 10 and $b-E<gt>value == 24>! Magic? Kind of. 
-Autobinding gives it to you. That'll work with objects also with 
-one difference: you don't need to worry about name and type of
-object parameter. Consider PingPong example (My/PingPong.pm and
+Autobinding gives it to you. That will work with objects also with 
+one difference: you do not need to worry about the name and the type of
+object parameter. Consider the C<PingPong> example (examples/My/PingPong.pm and
 examples/pingpong.pl):
 
 B<server>:
@@ -2179,24 +2505,34 @@ B<server>:
 
 B<client>:
 
-  use SOAP::Lite +autodispatch 
-    => (uri => 'urn:', proxy => 'http://localhost/');
+  use SOAP::Lite +autodispatch =>
+    uri => 'urn:', 
+    proxy => 'http://localhost/'
+  ;
 
   my $p = My::PingPong->new(10); # $p->{_num} is 10 now, real object returned 
   print $p->next, "\n";          # $p->{_num} is 11 now!, object autobinded
 
 =head2 AUTODISPATCHING
 
-SOAP::Lite provides autodispatching feature that lets you create 
-code that looks similar for local and remote access.
+WARNING! This feature can have side effects for your application and
+can affect functionality of other modules/libraries because of overloading
+UNIVERSAL::AUTOLOAD. All unresolved calls will be dispatched as SOAP calls,
+however it could be not what you want in some cases. If so, consider using 
+object interface. 
+
+SOAP::Lite provides an autodispatching feature that lets you create 
+code which looks the same for local and remote access.
 
 For example:
+   
+  use SOAP::Lite +autodispatch =>
+    uri => 'urn:/My/Examples', 
+    proxy => 'http://localhost/'
+  ;
 
-  use SOAP::Lite +autodispatch 
-    => (uri => 'urn:/My/Examples', proxy => 'http://localhost/');
-
-tells autodispatch all calls to 'http://localhost/' endpoint with
-'urn:/My/Examples' uri. All consequent call can look like:
+tells SOAP to 'autodispatch' all calls to the 'http://localhost/' endpoint with
+the 'urn:/My/Examples' uri. All consequent method calls can look like:
 
   print getStateName(1), "\n";
   print getStateNames(12,24,26,13), "\n";
@@ -2205,65 +2541,77 @@ tells autodispatch all calls to 'http://localhost/' endpoint with
 
 As you can see, there is no SOAP specific coding at all.
 
-The same logic will work for objects also:
+The same logic will work for objects as well:
 
   print "Session iterator\n";
   my $p = My::SessionIterator->new(10);     
   print $p->next, "\n";  
   print $p->next, "\n";   
 
-will access remote My::SessionIterator module, get object, and then call
-remote method again. Object will be transferred there, method executed
-and result (and modified object!) will be transferred back.
+This will access the remote My::SessionIterator module, gets an object, and then 
+calls remote methods again. The object will be transferred to the server, the 
+method is executed there and the result (and the modified object!) will be 
+transferred back to the client.
 
-Autodispatch will work B<only> if you don't have the same method in your
+Autodispatch will work B<only> if you do not have the same method in your
 code. For example, if you have C<use My::SessionIterator> somewhere in your
-code for previous example all methods will be resolved locally with no
-SOAP calls. If you want to get access to remote objects/methods even
-in that case, use C<SOAP::> prefix to your methods, like:
+code of our previous example, all methods will be resolved locally  and no
+SOAP calls will be done. If you want to get access to remote objects/methods 
+even in that case, use C<SOAP::> prefix to your methods, like:
 
   print $p->SOAP::next, "\n";  
 
-See pingpong.pl for example of script, that work with the same object
+See C<pingpong.pl> for example of a script, that works with the same object
 locally and remotely.
 
 You can mix autodispatch and usual SOAP calls in the same code if
-you need it. Keep in mind, call with SOAP:: prefix should always be a
-method call, so if you want to call function, use C<SOAP->myfunction()>
+you need it. Keep in mind, that calls with SOAP:: prefix should always be a
+method call, so if you want to call functions, use C<SOAP->myfunction()>
 instead of C<SOAP::myfunction()>.
+
+Be warned though Perl has very flexible syntax some versions will complain
+
+  Bareword "autodispatch" not allowed while "strict subs" in use ...
+
+if you try to put 'autodispatch' and '=>' on separate lines. So, keep them
+on the same line, or put 'autodispatch' in quotes: 
+
+  use SOAP::Lite 'autodispatch' # DON'T use plus in this case
+    => .... 
+  ; 
 
 =head2 ACCESSING HEADERS AND ENVELOPE ON SERVER SIDE
 
-SOAP::Lite gives you easy access to all headers and whole envelope on 
-server side. Consider following code from My::Parameters.pm:
+SOAP::Lite gives you direct access to all headers and the whole envelope on 
+the server side. Consider the following code from My::Parameters.pm:
 
   sub byname { 
     my($a, $b, $c) = @{pop->method}{qw(a b c)};
     return "a=$a, b=$b, c=$c";
   }
 
-You'll get this functionality ONLY if you inherit your class from 
-SOAP::Server::Parameters class. It should keep old code working and
-provide this feature only when you need it.
+You will get this functionality ONLY if you inherit your class from 
+the SOAP::Server::Parameters class. This should keep existing code working and
+provides this feature only when you need it.
 
-Every method on server side will be called as class/object method, so it'll
-get B<object reference> or B<class name> as the first parameter, then method
-parameters, and then envelope as SOAP::SOM object. Shortly:
+Every method on server side will be called as class/object method, so it will
+get an B<object reference> or a B<class name> as the first parameter, then the 
+method parameters, and then an envelope as SOAP::SOM object. Shortly:
 
   $self [, @parameters] , $envelope
 
-If you have fixed number of parameters, you can simple do:
+If you have a fixed number of parameters, you can simple do:
 
   my $self = shift;
   my($param1, $param2) = @_;
 
-and ignore envelope. If you need access to envelope you can do:
+and ignore the envelope. If you need access to the envelope you can do:
 
   my $envelope = pop; 
 
-since envelope is always last element in parameters list.
-In mentioned byname() method C<pop-E<gt>method> will return hash with
-parameter names as keys and values as values. So:
+since the envelope is always the last element in the parameters list.
+The C<byname()> method C<pop-E<gt>method> will return a hash with
+parameter names as hash keys and parameter values as hash values:
 
   my($a, $b, $c) = @{pop->method}{qw(a b c)};
 
@@ -2271,12 +2619,13 @@ gives you by-name access to your parameters.
 
 =head2 SERVICE DEPLOYMENT. STATIC AND DYNAMIC
 
-Let us scrutinize deployment process. Designing your SOAP server you 
+Let us scrutinize the deployment process. When designing your SOAP server you 
 can consider two kind of deployment: B<static> and B<dynamic>.
-For both static and dynamic deployment you should specify C<MODULE>, 
-C<MODULE::method>, C<method> or C<PATH/>. Difference between static and dynamic
-deployment is that if module is not present it'll be loaded on
-demand. See L</SECURITY> section for detailed description.
+For both, static and dynamic,  you should specify C<MODULE>, 
+C<MODULE::method>, C<method> or C<PATH/> when creating C<use>ing the 
+SOAP::Lite module. The difference between static and dynamic deployment is 
+that in case of 'dynamic', any module which is not present will be loaded on
+demand. See the L</SECURITY> section for detailed description.
 
 Example for B<static> deployment:
 
@@ -2298,20 +2647,20 @@ Example for B<dynamic> deployment:
     -> dispatch_to('/Your/Path/To/Deployed/Modules', 'My::Examples') 
     -> handle;
 
-For static deployment you should specify MODULE name directly. 
-For dynamic deployment you can specify name either directly (in that 
-case it'll be required with no restriction) or indirectly, with PATH
-(in that case ONLY path that'll be available will be PATH from 
-dispatch_to() parameters). For information how to handle this situation
+For static deployment you should specify the MODULE name directly. 
+For dynamic deployment you can specify the name either directly (in that 
+case it will be C<require>d without any restriction) or indirectly, with a PATH
+In that case, the ONLY path that will be available will be the PATH given
+to the dispatch_to() method). For information how to handle this situation
 see L</SECURITY> section.
 
-You should also use statis binding when you have several different classes 
+You should also use static binding when you have several different classes 
 in one file and want to make them available for SOAP calls.
 
 =head2 SECURITY
 
-Due to security reasons if you choose dynamic deployment and specified 
-C<PATH/>, current path for perl modules (C<@INC>) will be disabled. 
+Due to security reasons, the current path for perl modules (C<@INC>) will be disabled
+once you have chosen dynamic deployment and specified your own C<PATH/>.
 If you want to access other modules in your included package you have 
 several options:
 
@@ -2324,16 +2673,16 @@ Switch to static linking:
    use MODULE;
    $server->dispatch_to('MODULE');
 
-It can be usable also when you want to import something specific
-from deployed modules: 
+It can be useful also when you want to import something specific
+from the deployed modules: 
 
    use MODULE qw(import_list);
 
 =item 2
 
-Change C<use> to C<require>. Path is unavailable only during 
-initialization part, and it's available again during execution. 
-So, if you do C<require> somewhere in your package it'll work.
+Change C<use> to C<require>. The path is unavailable only during 
+the initialization part, and it is available again during execution. 
+So, if you do C<require> somewhere in your package, it will work.
 
 =item 3
 
@@ -2343,45 +2692,86 @@ Same thing, but you can do:
 
 =item 4
 
-Assign C<@INC> directory in your package and then make C<use>.
+Assign a C<@INC> directory in your package and then make C<use>.
 Don't forget to put C<@INC> in C<BEGIN{}> block or it won't work:
 
    BEGIN { @INC = qw(my_directory); use MODULE }
-
-Personally I don't like this method, better options are available.
 
 =back
 
 =head2 OBJECTS-BY-REFERENCE
 
-SOAP::Lite implements experimental (yet fully functional) support for
-objects-by-reference. You shouldn't see any differences on client side.
-On server side you should specify name of the class you want to return
-by reference (instead of by value) in C<objects_by_reference()> method for
-your server implementation (see soap.pop3, soap.daemon and Apache.pm).
-Garbage collection is done on server side (no early than after 600 
-seconds of inactivity time), and you can overload default behavior with 
-specific function for any particular class. Binding doesn't have any 
-special syntax and implemented on server side (see difference between 
-My::SessionIterator and My::PersistentIterator). On client side object 
-will have same type as before (C<My::SessionIterator-E<gt>new()> will return 
-object of My::SessionIterator type), however this object is just a stub 
-with object ID inside.
+SOAP::Lite implements an experimental (yet fully functional) support for
+objects-by-reference. You should not see any difference on the client side 
+when using this. On the server side you should specify the names of the 
+classes you want to be returned by reference (instead of by value) in the 
+C<objects_by_reference()> method for your server implementation (see 
+soap.pop3, soap.daemon and Apache.pm).
+
+Garbage collection is done on the server side (not earlier than after 600 
+seconds of inactivity time), and you can overload the default behavior with 
+specific functions for any particular class. 
+
+Binding does not have any special syntax and is implemented on server side 
+(see the differences between My::SessionIterator and My::PersistentIterator). 
+On the client side, objects will have same type/class as before 
+(C<My::SessionIterator-E<gt>new()> will return an object of class 
+My::SessionIterator). However, this object is just a stub with an object ID 
+inside.
 
 =head2 DEFAULT HANDLERS
 
-C<use SOAP::Lite> syntax also lets you specify default event handlers 
-for your code. Imagine you have different SOAP objects and want to 
-share same on_action() (or on_fault() ) handler. You can specify 
-on_action() during initialization for every object, but also you can 
-do:
+The C<use SOAP::Lite> syntax also lets you specify default event handlers 
+for your code. Imagine to have different SOAP objects and that you want to 
+share the same C<on_action()> (or C<on_fault()> for that matter) handler. 
+You can specify C<on_action()> during initialization for every object, but 
+also you can do:
 
   use SOAP::Lite on_action => sub {sprintf '%s#%s', @_};
 
-and this handler will be default handler for all your SOAP objects. 
-You can override it if you specify handler for particular object.
-
+and this handler will be the default handler for all your SOAP objects. 
+You can override it if you specify a handler for a particular object.
 See test.pl as example of on_fault() handler.
+
+=head2 INTEROPERABILITY
+
+=over 4
+
+=item Microsoft's .NET 
+
+To use .NET client and SOAP::Lite server
+
+=item 1
+
+declare proper soapAction (uri#method) in your SDL file or client code
+
+=item 2
+
+use fully qualified name for your return value, e.g.: 
+
+  return SOAP::Data->name('~:myname')->type('string')->value($output);
+
+=back
+
+To use SOAP::Lite client and .NET server
+
+=item 1
+
+declare proper soapAction (uri/method) in your call
+
+=item 2
+
+use fully qualified name for method parameters, e.g.:
+
+  example SOAPsh call (all should be in one line)
+  > perl SOAPsh.pl "http://beta.search.microsoft.com/search/mscomsearchservice.asmx"
+   "http://tempuri.org/"
+   "on_action(sub{sprintf '%s%s', @_ })"
+   "GetVocabulary(SOAP::Data->name('~:Query'  => 'biztalk'))"
+
+=back
+
+Thanks to Petr Janata (petr.janata@i.cz) for description and examples.
 
 =head1 BUGS AND LIMITATIONS
 
@@ -2395,7 +2785,7 @@ structures, and you can add your own implementation with L</SOAP::Data>).
 
 =item *
 
-No support for xsd schemas.
+Limited support for xsd schemas.
 
 =back
 
@@ -2417,16 +2807,13 @@ http://www.perl.com/CPAN-local/authors/id/A/AS/ASANDSTRM/XML-Parser-2.27-bin-1-M
 
 You can download the latest version SOAP::Lite for Unix or SOAP::Lite for Win32 ( http://geocities.com/paulclinger/soap.html ).
 SOAP::Lite is available also from CPAN ( http://search.cpan.org/search?dist=SOAP-Lite ).  
-You are very welcome to write mail to author (paulclinger@yahoo.com) 
-with your comments, suggestions, bug reports and complains.
+You are very welcome to write mail to the authors (paulclinger@yahoo.com) 
+with your comments, suggestions, bug reports and complaints.
 
 =head1 SEE ALSO
 
-You can get SOAP/Perl library from Keith Brown 
-( http://www.develop.com/soap/ ) or directly from CPAN. 
-I tried introduced as little interactions as possible and hopefully 
-you'll be able to use both libraries simultaneously. Let me know if I 
-did something wrong and you cannot use them at the same time.
+L<SOAP> SOAP/Perl library from Keith Brown ( http://www.develop.com/soap/ ) or
+( http://search.cpan.org/search?dist=SOAP )
 
 =head1 COPYRIGHT
 

@@ -118,3 +118,17 @@ Revision history for Perl extension SOAP::Lite.
         + added soap.tcp example for TCP server implementation
         + added tests with Microsoft implementation
         + added documentation and tests (145 for now)
+
+0.43 Tue Nov 28 01:47:02 2000
+        ! fixed bug in UDDI interface that made UDDI client almost useless
+        ! fixed Makefile.PL
+        ! tests confirmed memory leak is gone 
+        + changed syntax for UDDI client to more flexible/convinient
+        + added limited support for WSDL schemas. Dynamic and stub access
+        + added script for stub generation (stubmaker.pl)
+        + optimized code on server side
+        + object interface for SOAP, UDDI and schemas are supported consistently
+        + allowed manipulation of method's attributes and namespaces
+        + added attributes encoding ('&', '<' and '"' are encoded)
+        + updated documentation 
+        + added more examples and tests (154 for now)

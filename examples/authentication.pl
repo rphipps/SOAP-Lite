@@ -3,7 +3,7 @@
 
 # you can do this
 use SOAP::Lite +autodispatch => 
-  uri => 'urn:/My/Examples', 
+  uri => 'http://soaplite.com/My/Examples', 
   proxy => 'http://localhost/', 
 # proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
 # proxy => 'http://localhost/',                 # local daemon server
@@ -25,5 +25,5 @@ print getStateStruct({item1 => 10, item2 => 4})->{item2}, "\n\n";
 
 # see LWP::UserAgent for difference and more documentation
 
-# OR add user and possword to your URL as follows:
+# OR add user and password to your URL as follows:
 # proxy => 'http://login:password@localhost/'

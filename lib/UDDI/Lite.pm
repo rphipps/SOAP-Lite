@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: UDDI::Lite.pm,v 0.42 2000/11/14 23:14:18 $ 
+# $Id: UDDI::Lite.pm,v 0.43 2000/11/28 01:47:02 $ 
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package UDDI::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.42';
+$VERSION = '0.43';
 
 use SOAP::Lite;
 
@@ -35,10 +35,18 @@ sub result { # result should point to immediate child of Body
 
 package UDDI::Data;
 
-use vars qw(@ISA $AUTOLOAD);
+use vars qw(@ISA $AUTOLOAD @EXPORT_OK %EXPORT_TAGS);
 @ISA = qw(SOAP::Data);
 
-use overload '""' => sub { shift->value };
+my @elements = (qw/accessPoint address addressLine authInfo authToken bindingDetail bindingKey bindingTemplate bindingTemplates businessDetail businessDetailExt businessEntity businessEntityExt businessInfo businessInfos businessKey businessList businessService businessServices categoryBag contact contacts description discoveryURL discoveryURLs dispositionReport email errInfo findQualifier findQualifiers hostingRedirector identifierBag instanceDetails instanceParms keyValue keyedReference name overviewDoc overviewURL personName phone registeredInfo result serviceDetail serviceInfo serviceInfos serviceKey serviceList tModel tModelBag tModelDetail tModelInfo tModelInfos tModelInstanceDetails tModelInstanceInfo tModelKey tModelList uploadRegister/);
+@EXPORT_OK = (@elements);
+%EXPORT_TAGS = ('all' => [@EXPORT_OK]);
+
+use overload fallback => 1, '""' => sub { shift->SUPER::value };
+
+use vars qw(%elements %attributes);
+%elements = (get_serviceDetail=>{serviceKey=>1},find_tModel=>{categoryBag=>1,name=>1,identifierBag=>1,findQualifiers=>1},tModelInstanceInfo=>{instanceDetails=>1,description=>1},address=>{addressLine=>1},categoryBag=>{keyedReference=>1},save_binding=>{authInfo=>1,bindingTemplate=>1},businessEntity=>{categoryBag=>1,businessServices=>1,name=>1,description=>1,identifierBag=>1,discoveryURLs=>1,contacts=>1},businessInfos=>{businessInfo=>1},find_business=>{categoryBag=>1,name=>1,identifierBag=>1,discoveryURLs=>1,findQualifiers=>1,tModelBag=>1},get_bindingDetail=>{bindingKey=>1},identifierBag=>{keyedReference=>1},get_businessDetailExt=>{businessKey=>1},businessServices=>{businessService=>1},tModelInfo=>{name=>1},find_service=>{categoryBag=>1,name=>1,findQualifiers=>1,tModelBag=>1},dispositionReport=>{result=>1},authToken=>{authInfo=>1},get_tModelDetail=>{tModelKey=>1},delete_tModel=>{tModelKey=>1,authInfo=>1},bindingTemplate=>{tModelInstanceDetails=>1,accessPoint=>1,description=>1,hostingRedirector=>1},tModelDetail=>{tModel=>1},businessInfo=>{serviceInfos=>1,name=>1,description=>1},get_registeredInfo=>{authInfo=>1},businessEntityExt=>{businessEntity=>1},registeredInfo=>{businessInfos=>1,tModelInfos=>1},find_binding=>{findQualifiers=>1,tModelBag=>1},serviceInfo=>{name=>1},get_businessDetail=>{businessKey=>1},delete_business=>{businessKey=>1,authInfo=>1},discoveryURLs=>{discoveryURL=>1},businessDetail=>{businessEntity=>1},contacts=>{contact=>1},tModelInstanceDetails=>{tModelInstanceInfo=>1},tModelList=>{tModelInfos=>1},delete_service=>{serviceKey=>1,authInfo=>1},tModelInfos=>{tModelInfo=>1},serviceDetail=>{businessService=>1},tModel=>{categoryBag=>1,name=>1,description=>1,identifierBag=>1,overviewDoc=>1},businessList=>{businessInfos=>1},bindingTemplates=>{bindingTemplate=>1},validate_categorization=>{businessEntity=>1,tModel=>1,businessService=>1,keyValue=>1,tModelKey=>1},contact=>{email=>1,personName=>1,phone=>1,description=>1,address=>1},discard_authToken=>{authInfo=>1},overviewDoc=>{overviewURL=>1,description=>1},delete_binding=>{bindingKey=>1,authInfo=>1},serviceList=>{serviceInfos=>1},bindingDetail=>{bindingTemplate=>1},tModelBag=>{tModelKey=>1},businessDetailExt=>{businessEntityExt=>1},serviceInfos=>{serviceInfo=>1},save_tModel=>{uploadRegister=>1,tModel=>1,authInfo=>1},findQualifiers=>{findQualifier=>1},save_business=>{businessEntity=>1,uploadRegister=>1,authInfo=>1},instanceDetails=>{instanceParms=>1,description=>1,overviewDoc=>1},businessService=>{categoryBag=>1,name=>1,bindingTemplates=>1,description=>1},save_service=>{businessService=>1,authInfo=>1},result=>{errInfo=>1});
+%attributes = (get_serviceDetail=>{generic=>2},find_tModel=>{maxRows=>2,generic=>2},tModelInstanceInfo=>{tModelKey=>2},address=>{sortCode=>2,useType=>2},email=>{useType=>2},save_binding=>{generic=>2},businessEntity=>{authorizedName=>2,operator=>2,businessKey=>2},discoveryURL=>{useType=>2},find_business=>{maxRows=>2,generic=>2},get_bindingDetail=>{generic=>2},get_businessDetailExt=>{generic=>2},tModelInfo=>{tModelKey=>2},find_service=>{maxRows=>2,businessKey=>2,generic=>2},dispositionReport=>{truncated=>2,operator=>2,generic=>2},authToken=>{operator=>2,generic=>2},get_tModelDetail=>{generic=>2},bindingTemplate=>{serviceKey=>2,bindingKey=>2},delete_tModel=>{generic=>2},tModelDetail=>{truncated=>2,operator=>2,generic=>2},businessInfo=>{businessKey=>2},get_registeredInfo=>{generic=>2},registeredInfo=>{truncated=>2,operator=>2,generic=>2},phone=>{useType=>2},find_binding=>{maxRows=>2,serviceKey=>2,generic=>2},serviceInfo=>{serviceKey=>2,businessKey=>2},get_businessDetail=>{generic=>2},delete_business=>{generic=>2},businessDetail=>{truncated=>2,operator=>2,generic=>2},keyedReference=>{keyName=>2,keyValue=>2,tModelKey=>2},tModelList=>{truncated=>2,operator=>2,generic=>2},delete_service=>{generic=>2},serviceDetail=>{truncated=>2,operator=>2,generic=>2},tModel=>{authorizedName=>2,operator=>2,tModelKey=>2},businessList=>{truncated=>2,operator=>2,generic=>2},validate_categorization=>{generic=>2},contact=>{useType=>2},discard_authToken=>{generic=>2},delete_binding=>{generic=>2},serviceList=>{truncated=>2,operator=>2,generic=>2},bindingDetail=>{truncated=>2,operator=>2,generic=>2},hostingRedirector=>{bindingKey=>2},businessDetailExt=>{truncated=>2,operator=>2,generic=>2},get_authToken=>{userID=>2,generic=>2,cred=>2},save_tModel=>{generic=>2},errInfo=>{errCode=>2},save_business=>{generic=>2},accessPoint=>{URLType=>2},businessService=>{serviceKey=>2,businessKey=>2},save_service=>{generic=>2},result=>{keyType=>2,errno=>2});
 
 sub new {
   my $self = shift;
@@ -50,27 +58,46 @@ sub new {
   return $self;
 }
 
+sub _compileit {
+  no strict 'refs';
+  my $method = shift;
+  *$method = sub { 
+    my $uddi = UNIVERSAL::isa($_[0] => 'UDDI::Data');
+
+    die "Expected element (UDDI::Data) as parameter for $method()\n"
+      if !ref $_[0] && exists $elements{$method};
+
+    # MAKE ELEMENT: name('old')
+    return UDDI::Data->SUPER::name($method => @_) 
+      if !$uddi;
+
+    # GET/SET ATTRIBUTE: businessInfo->businessKey
+    return @_ > 1 
+        ? ($_[0]->attr->{$method} = $_[1], $_[0])                    # SET
+        : UDDI::Data->SUPER::name($method => $_[0]->attr->{$method}) # GET
+      if exists $attributes{$_[0]->SUPER::name}{$method};
+
+    # GET ELEMENT: businessInfos->businessInfo
+    my @elems = grep {UNIVERSAL::isa($_ => 'UDDI::Data') && $_->SUPER::name eq $method} $_[0]->value;
+    return wantarray? @elems : $elems[0]
+      if exists $elements{$_[0]->SUPER::name}{$method};
+
+    # MAKE ELEMENT: businessInfos(businessInfo('something'))
+    return UDDI::Data->SUPER::name($method => @_) 
+      if exists $elements{$method}{$_[0]->SUPER::name};
+
+    use Carp ();
+    Carp::croak "Don't know what to do with '$method' and '@{[$_[0]->SUPER::name]}' elements";
+  }
+}
+
+sub BEGIN { _compileit('name') }
+
 sub AUTOLOAD {
-  my($method) = $AUTOLOAD =~ m/([^:]+)$/;
+  my $method = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
   return if $method eq 'DESTROY';
 
-  # 'name' is already in use, so provide 'Name' as synonym and all others for 
-  # consistency. understand [Bb]usinessKey as businessKey
-  $method = lcfirst($method);
-
-  no strict 'refs';
-  *$AUTOLOAD = sub { 
-      my $self = shift;
-      return $self->value if $method eq '_';
-      my @elements = grep {UNIVERSAL::isa($_ => 'UDDI::Data') && $_->name eq $method} $self->value;
-      if (@elements) {
-        wantarray ? @elements : $elements[0];
-      } elsif (exists $self->attr->{$method}) {
-        $self->attr->{$method};
-      } else {
-        return;
-      }
-    };
+  _compileit($method);
   goto &$AUTOLOAD;
 }
 
@@ -86,9 +113,11 @@ sub new {
   my $class = ref($self) || $self;
 
   unless (ref $self) {
-    $self = $class->SUPER::new(@_);
-    $self->attr({'xmlns:~V' => $SOAP::Constants::NS_ENV});
-    $self->autotype(0);
+    $self = $class->SUPER::new(
+      @_,
+      attr => {'xmlns:~V' => $SOAP::Constants::NS_ENV},
+      autotype => 0,
+    );
   }
   return $self;
 }
@@ -98,7 +127,7 @@ sub as_uddi {
   my($value, $name, $type, $attr) = @_;
   return $self->encode_array($value, $name) if ref $value eq 'ARRAY';
   return $self->encode_hash($value, $name) if ref $value eq 'HASH';
-  [$name, {%{$attr || {}}}, ref $value ? [$self->encode_object($value)] : $value];
+  [$name, {%{$attr || {}}}, ref $value ? [$self->encode_object($value)] : $value, SOAP::Serializer::gen_id($value)];
 }                                                                                          
 
 sub encode_array {
@@ -121,12 +150,12 @@ sub decode_value {
 
   # base class knows what to do with elements in SOAP namespace
   return $self->SUPER::decode_value($ref) 
-    if exists $attrs->{href} || $attrs->{'xmlns:~'} eq $SOAP::Constants::NS_ENV;
-
-  $name =~ s/^$SOAP::Constants::NSMASK://; 
+    if exists $attrs->{href} || 
+       defined $attrs->{'xmlns:~'} && $attrs->{'xmlns:~'} eq $SOAP::Constants::NS_ENV;
 
   UDDI::Data
-    -> new(name => $name, attr => $attrs)
+    -> SOAP::Data::name($name)
+    -> attr($attrs)
     -> set_value(ref $childs && @$childs ? map(($self->decode_object($_))[1], @$childs) : $value);
 }
 
@@ -138,20 +167,52 @@ sub deserialize {
 
 package UDDI::Lite;
 
-use vars qw(@ISA $AUTOLOAD);
-@ISA = qw(SOAP::Lite);
+use vars qw(@ISA $AUTOLOAD %EXPORT_TAGS);
+use Exporter;
+use Carp ();
+@ISA = qw(SOAP::Lite Exporter);
+
+BEGIN { # handle exports
+  %EXPORT_TAGS = (
+    'delete'   => [qw/delete_binding delete_business delete_service delete_tModel/],
+    'discard'  => ['discard_authToken'],
+    'save'     => [qw/save_binding save_business save_service save_tModel/],
+    'validate' => ['validate_categorization'],
+    'find'     => [qw/find_binding find_business find_service find_tModel/],
+    'get'      => [qw/get_bindingDetail get_businessDetail get_businessDetailExt get_registeredInfo get_serviceDetail get_tModelDetail/],
+  );
+  $EXPORT_TAGS{inquire} = [map {@{$EXPORT_TAGS{$_}}} qw/find get/];
+  $EXPORT_TAGS{publish} = [map {@{$EXPORT_TAGS{$_}}} qw/delete discard save validate/];
+  $EXPORT_TAGS{all} =     [map {@{$EXPORT_TAGS{$_}}} qw/inquire publish/];
+  Exporter::export_ok_tags('all');
+}
 
 sub new { 
   my $self = shift;
   my $class = ref($self) || $self;
 
   unless (ref $self) {
-    $self = $class->SUPER::new(@_);
-    $self->on_action(sub{'""'});
-    $self->serializer(UDDI::Serializer->new);     # register UDDI Serializer
-    $self->deserializer(UDDI::Deserializer->new); # and Deserializer
+    $self = $class->SUPER::new(
+      on_action    => sub {'""'},
+      serializer   => UDDI::Serializer->new,   # register UDDI Serializer
+      deserializer => UDDI::Deserializer->new, # and Deserializer
+      @_,
+    );
   }
   return $self;
+}
+
+sub AUTOLOAD {
+  my $method = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
+  return if $method eq 'DESTROY';
+
+  no strict 'refs';
+  *$AUTOLOAD = sub { 
+    return shift->call($method => @_) if UNIVERSAL::isa($_[0] => __PACKAGE__);
+    my $som = (__PACKAGE__->autodispatched || Carp::croak "Method call on unspecified object. Died")->call($method => @_);
+    UNIVERSAL::isa($som => 'SOAP::SOM') ? $som->result : $som;
+  };
+  goto &$AUTOLOAD;
 }
 
 sub call { SOAP::Trace::trace('()'); 
@@ -161,7 +222,7 @@ sub call { SOAP::Trace::trace('()');
   my $attr = ref $_[0] eq 'HASH' ? shift() : {};
   while (@_) {
     push(@parameters, UNIVERSAL::isa($_[0] => 'UDDI::Data') 
-      ? shift : UDDI::Data->name(shift, shift));
+      ? shift : SOAP::Data->name(shift, shift));
   }
   my $message = SOAP::Data
     -> name($method => \SOAP::Data->value(@parameters))
@@ -202,7 +263,7 @@ UDDI::Lite - Library for UDDI clients in Perl
     -> proxy('http://test.uddi.microsoft.com/inquire')
     -> find_business(name => 'old')
     -> result
-    -> businessInfos->businessInfo->serviceInfos->serviceInfo->Name;
+    -> businessInfos->businessInfo->serviceInfos->serviceInfo->name;
 
   The same code with autodispatch: 
 
@@ -211,7 +272,18 @@ UDDI::Lite - Library for UDDI clients in Perl
   ;
 
   print find_business(name => 'old')
-    -> businessInfos->businessInfo->serviceInfos->serviceInfo->Name;                         
+    -> businessInfos->businessInfo->serviceInfos->serviceInfo->name;                         
+
+  Or with importing:
+
+  use UDDI::Lite 
+    'UDDI::Lite' => [':inquire'],
+    proxy => 'http://test.uddi.microsoft.com/inquire'
+  ;
+
+  print find_business(name => 'old')
+    -> businessInfos->businessInfo->serviceInfos->serviceInfo->name;                         
+
 
 =head1 DESCRIPTION
 
@@ -232,6 +304,11 @@ Supports both inquiry and publishing API
 =item *
 
 Builded on top of SOAP::Lite module, hence inherited syntax and features
+
+=item *
+
+Supports easy-to-use interface with convinient access to (sub)elements
+and attributes
 
 =item *
 
@@ -292,10 +369,10 @@ Other available methods inherited from SOAP::Lite and most usable are:
 
 =item proxy()
 
-Shortcut for C<transport-E<gt>proxy()>. Lets you specify endpoint and 
-load required module at the same time. Required for dispatching UDDI/SOAP 
-calls. Name of the module will be defined depending on protocol 
-specified for endpoint. SOAP::Lite will do the rest work.
+Shortcut for C<transport-E<gt>proxy()>. This lets you specify an endpoint and 
+also loads the required module at the same time. It is required for dispatching SOAP 
+calls. The name of the module will be defined depending on the protocol 
+specific for the endpoint. SOAP::Lite will do the rest work.
 
 =item namespace()
 
@@ -306,8 +383,7 @@ namespace for generated envelope. 'SOAP-ENV' by default.
 
 Lets you specify handler for on_fault event. Default behavior is die 
 on transport error and does nothing on others. You can change this 
-behavior globally (see L</DEFAULT HANDLERS>) or locally, for particular 
-object.
+behavior globally or locally, for particular object.
 
 =item on_debug()
 
@@ -337,7 +413,7 @@ Later has some advantages: it'll work on any level, so you can do:
   find_business(UDDI::Data->name(name => UDDI::Data->name(subname => 'old')))
 
 and also you can create arrays with this syntax:
-
+                         
   find_business(UDDI::Data->name(name => 
     [UDDI::Data->name(subname1 => 'name1'), 
      UDDI::Data->name(subname2 => 'name2')]))
@@ -350,6 +426,45 @@ will be serialized into:
       <subname2>name2</subname2>
     </name>
   </find_business>
+
+For standard elements more convinient syntax is available:
+
+  find_business(
+    findQualifiers(findQualifier('sortByNameAsc',
+                                 'caseSensitiveMatch')),
+    name('M')
+  )
+
+and
+ 
+  find_business(
+    findQualifiers([findQualifier('sortByNameAsc'), 
+                    findQualifier('caseSensitiveMatch')]), 
+    name('M')
+  )
+
+both will generate:
+
+  <SOAP-ENV:Envelope 
+    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Body>
+      <find_business xmlns="urn:uddi-org:api" generic="1.0">
+        <findQualifiers>
+          <findQualifier>sortByNameAsc</findQualifier>
+          <findQualifier>caseSensitiveMatch</findQualifier>
+        </findQualifiers>
+        <name>M</name>
+      </find_business>
+    </SOAP-ENV:Body>
+  </SOAP-ENV:Envelope>
+
+You can use ANY valid combinations (according to "UDDI Programmer's 
+API Specification"). If you try to generate something unusual, like 
+C<name(name('myname'))>, you'll get:
+
+  Don't know what to do with 'name' and 'name' elements ....
+
+If you REALLY need to do it, use C<UDDI::Data> syntax described above.
 
 As special case you can pass hash as the first parameter of method
 call and values of this hash will be added as attributes to top element:
@@ -371,17 +486,10 @@ You can get access to attributes and elements through the same interface:
   my $bis = $list->businessInfos;
   for ($bis->businessInfo) {
     my $s = $_->serviceInfos->serviceInfo;
-    print $s->Name,        # element
-          $s->BusinessKey, # attribute
+    print $s->name,        # element
+          $s->businessKey, # attribute
           "\n";
   }
-
-Unfortunately name() method is used internally, so for UDDI-specific name()
-element provided Name() alias and for all other methods provided aliases
-with first letter capitalized (for consistency).
-
-  print $s->businessKey; # gives the same result as
-  print $s->BusinessKey; # in last example
 
 =head2 AUTODISPATCHING
 
@@ -394,11 +502,12 @@ For example:
     proxy => 'http://test.uddi.microsoft.com/inquire';
 
 tells autodispatch all UDDI calls to 
-'http://test.uddi.microsoft.com/inquire'. All consequent calls can look 
+'http://test.uddi.microsoft.com/inquire'. All subsequent calls can look 
 like:
 
   find_business(name => 'old');
   find_business(UDDI::Data->name(name => 'old'));
+  find_business(name('old'));
 
 =head1 BUGS AND LIMITATIONS
 
@@ -411,7 +520,8 @@ Interface is still subject to change.
 =item *
 
 Publishing API is not tested and though HTTPS/SLL is supported you
-should specify it yourself for publishing API calls.
+should specify it yourself (with C<proxy> or C<endpoint>) for 
+publishing API calls.
 
 =back
 
@@ -423,7 +533,8 @@ or from CPAN ( http://search.cpan.org/search?dist=SOAP-Lite ).
 
 =head1 SEE ALSO
 
-SOAP::Lite
+L<SOAP::Lite> ( http://search.cpan.org/search?dist=SOAP-Lite )
+L<UDDI> ( http://search.cpan.org/search?dist=UDDI )
 
 =head1 COPYRIGHT
 

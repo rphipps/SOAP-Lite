@@ -48,10 +48,10 @@ my $auto = ExtUtils::MakeMaker::prompt("\nDo you want to proceed with this confi
 foreach (split /(^[-\s]+$)/m, $prerequisites) {
   print unless $auto;
   if (/SOAP::/m &&
-      (/\s+yes\s*$/ ||
+      (/\s+(yes)\s*$/m ||
         /\[(yes|no)\]/ && 
           ($auto || ExtUtils::MakeMaker::prompt("\nDo you plan to use this module?", $1) =~ /^\s*(y)/i))) {
-    %prerequisites = (%prerequisites, map {/\s+/? split : ($_ => 0)} /^\s{20,}([\w:]+(\s+[\d.]+)?)/mg) if $1 =~ /^y/;
+    %prerequisites = (%prerequisites, map {/\s+/? split : ($_ => 0)} /^\s{20,}([\w:]+(?:\s+[\d.]+)?)/mg) if $1 =~ /^y/;
   } 
 }
 

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.42 2000/11/14 23:14:18 $ 
+# $Id: SOAP::Transport::HTTP.pm,v 0.43 2000/11/28 01:47:02 $ 
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.42';
+$VERSION = '0.43';
 
 # ======================================================================
 
@@ -28,24 +28,26 @@ my(%redirect, %mpost);
 # hack for HTTP conection that returns Keep-Alive 
 # miscommunication (?) between LWP::Protocol and LWP::Protocol::http
 # die after timeout
-my $patch = sub { local $^W; 
+sub patch { 
+  local $^W; 
   eval "package LWP::UserAgent; sub redirect_ok {1}";
-  package LWP::Protocol; 
-  my $collect = \&collect; # store original
-  *collect = sub {          
-    if (defined $_[2]->header('Connection') && $_[2]->header('Connection') eq 'Keep-Alive') {
-      my $data = $_[3]->(); 
-      my $next = length($$data) == $_[2]->header('Content-Length') ? sub { \'' } : $_[3];
-      my $done = 0; $_[3] = sub { $done++ ? &$next : $data };
-    }
-    goto &$collect;
-  };
-  return;
+  { package LWP::Protocol; 
+    my $collect = \&collect; # store original  
+    *collect = sub {          
+      if (defined $_[2]->header('Connection') && $_[2]->header('Connection') eq 'Keep-Alive') {
+        my $data = $_[3]->(); 
+        my $next = length($$data) == $_[2]->header('Content-Length') ? sub { \'' } : $_[3];
+        my $done = 0; $_[3] = sub { $done++ ? &$next : $data };
+      }
+      goto &$collect;
+    };
+  }
+  *patch = sub {};
 };
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
-sub new { eval "use LWP::UserAgent"; die if $@; $patch &&= &$patch;
+sub new { require LWP::UserAgent; patch;
   my $self = shift;
   my $class = ref($self) || $self;
 
@@ -133,7 +135,7 @@ use SOAP::Lite;
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
-sub new { eval "use LWP::UserAgent"; die if $@;
+sub new { require LWP::UserAgent;
   my $self = shift;
   my $class = ref($self) || $self;
 
@@ -162,6 +164,8 @@ sub BEGIN {
 
 sub handle {
   my $self = shift->new;
+
+  $self->myuri($self->request->uri->canonical);
 
   if ($self->request->method eq 'POST') {
     $self->action($self->request->header('SOAPAction'));
@@ -249,7 +253,7 @@ use vars qw($AUTOLOAD @ISA);
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
-sub new { eval "use HTTP::Daemon"; die if $@;
+sub new { require HTTP::Daemon; 
   my $self = shift;
   my $class = ref($self) || $self;
 
@@ -262,7 +266,7 @@ sub new { eval "use HTTP::Daemon"; die if $@;
 }
 
 sub AUTOLOAD {
-  my($method) = $AUTOLOAD =~ m/([^:]+)$/;
+  my $method = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
   return if $method eq 'DESTROY';
 
   no strict 'refs';
@@ -292,7 +296,7 @@ use vars qw(@ISA);
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
-sub new { eval "use Apache; use Apache::Constants qw(OK)"; die if $@;
+sub new { require Apache; require Apache::Constants;
   my $self = shift;
   my $class = ref($self) || $self;
 
@@ -321,7 +325,7 @@ sub handler {
   $r->send_http_header;
   $r->print($self->response->content) unless $r->header_only;
 
-  &OK;
+  &Apache::Constants::OK;
 }
 
 *handle = \&handler; # just create alias
@@ -432,7 +436,7 @@ or
 
 should specify proxy server for you. And if you use C<HTTP_proxy_user> 
 and C<HTTP_proxy_pass> for proxy authorization SOAP::Lite should know 
-what to do with it. If not, let me know.
+how to handle it properly. 
 
 =head1 EXAMPLES
 
@@ -514,17 +518,36 @@ as under static deployment. See examples/soap.mod_cgi for example.
 
 =head1 TROUBLESHOOTING
 
-If you see something like this in your webserver's log file: 
+=over 4
+
+=item Dynamic libraries are not found
+
+If you see in webserver's log file something like this: 
+
 Can't load '/usr/local/lib/perl5/site_perl/.../XML/Parser/Expat/Expat.so' 
 for module XML::Parser::Expat: dynamic linker: /usr/local/bin/perl:
  libexpat.so.0 is NEEDED, but object does not exist at
 /usr/local/lib/perl5/.../DynaLoader.pm line 200.
 
-and you are using Apache web server, try to add to your httpd.conf
+and you are using Apache web server, try to put into your httpd.conf
 
  <IfModule mod_env.c>
      PassEnv LD_LIBRARY_PATH
  </IfModule>
+
+=item Apache is crashing with segfaults
+
+If using SOAP::Lite (or XML::Parser::Expat) in combination with mod_perl
+causes random segmentation faults in httpd processes try to configure
+Apache with:
+
+ RULE_EXPAT=no
+
+See http://archive.covalent.net/modperl/2000/04/0185.xml for more 
+details and lot of thanks to Robert Barta (rho@bigpond.net.au) for
+explaining this weird behavior.
+
+=back
 
 =head1 DEPENDENCIES
 

@@ -2,7 +2,7 @@
 #!d:\perl\bin\perl.exe 
 
 use SOAP::Lite +autodispatch => 
-  uri => 'urn:/My/Examples', 
+  uri => 'http://soaplite.com/My/Examples', 
   proxy => 'http://localhost/', 
 # proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
 # proxy => 'http://localhost/',                 # local daemon server

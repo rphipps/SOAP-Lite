@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::TCP.pm,v 0.42 2000/11/14 23:14:18 $ 
+# $Id: SOAP::Transport::TCP.pm,v 0.43 2000/11/28 01:47:02 $ 
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::TCP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.42';
+$VERSION = '0.43';
 
 use IO::Socket;
 
@@ -93,7 +93,7 @@ sub new { eval "use IO::Socket"; die if $@;
 }
 
 sub AUTOLOAD {
-  my($method) = $AUTOLOAD =~ m/([^:]+)$/;
+  my $method = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
   return if $method eq 'DESTROY';
 
   no strict 'refs';
