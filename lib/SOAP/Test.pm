@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Test.pm,v 0.46 2001/01/31 16:30:24 $
+# $Id: SOAP::Test.pm,v 0.47 2001/02/21 17:11:12 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Test;
 
 use 5.004;
 use vars qw($VERSION $TIMEOUT);
-$VERSION = '0.46';
+$VERSION = '0.47';
 
 $TIMEOUT = 5;
 
@@ -58,7 +58,7 @@ sub run_for {
   }
   # ------------------------------------------------------
 
-  plan tests => 32;
+  plan tests => 33;
 
   print "Perl SOAP server test(s)...\n";
 
@@ -268,6 +268,12 @@ sub run_for {
   $s = new SOAP::Lite;
 
   ok($s->getStateName(1)->result eq 'Alabama');
+
+  SOAP::Trace->import(transport => 
+    sub {$_[0]->content_type('something/wrong') if UNIVERSAL::isa($_[0] => 'HTTP::Request')}
+  );
+
+  ok($s->getStateName(1)->faultdetail =~ /Content-Type must be/);
 }
 
 # ======================================================================

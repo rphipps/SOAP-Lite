@@ -1,7 +1,7 @@
-package SOAP::Transport::HTTP::ForkingDaemon;
+package SOAP::Transport::HTTP::Daemon::ForkAfterProcessing;
 
 use strict;
-use vars '@ISA';
+use vars qw(@ISA);
 use SOAP::Transport::HTTP;
 
 # Idea and implementation of Peter Fraenkel (Peter.Fraenkel@msdw.com)
@@ -23,3 +23,5 @@ sub handle {
     undef $c;
   }
 }
+
+1;

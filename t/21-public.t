@@ -43,7 +43,7 @@ plan tests => 23;
   $s = SOAP::Lite 
     -> uri('/examples')
     -> on_action(sub { sprintf '"%s"', @_ })
-    -> proxy('http://superhonker.userland.com/')
+    -> proxy('http://superhonker.userland.com/', timeout => $SOAP::Test::TIMEOUT)
   ;
 
   ok($s->getCurrentTime()->result); 
@@ -60,7 +60,7 @@ plan tests => 23;
   print "COM server test(s)...\n";
   $s = SOAP::Lite 
     -> uri('http://simon.fell.com/calc')
-    -> proxy('http://www.razorsoft.net/ssss4c/soap.asp')
+    -> proxy('http://www.razorsoft.net/ssss4c/soap.asp', timeout => $SOAP::Test::TIMEOUT)
   ;
 
   $r = $s->doubler(name SOAP::Data nums => [10,20,30,50,100])->result;
@@ -70,7 +70,7 @@ plan tests => 23;
   print "ASP server test(s)...\n";
   $s = SOAP::Lite 
     -> uri('www.soap-wrc.com')
-    -> proxy('http://www.soap-wrc.com/webservices/soapv11.asp')
+    -> proxy('http://www.soap-wrc.com/webservices/soapv11.asp', timeout => $SOAP::Test::TIMEOUT)
     -> on_fault(sub{ref$_[1]?return$_[1]:return})
   ;
 
@@ -91,7 +91,7 @@ if (0) { # doesn't seem to be working on 01/31/2001
   print "DevelopMentor's Perl server test(s)...\n";
   ok(SOAP::Lite                             
     -> uri('urn:soap-perl-test')                
-    -> proxy('http://soapl.develop.com/soap?class=SPTest')
+    -> proxy('http://soapl.develop.com/soap?class=SPTest', timeout => $SOAP::Test::TIMEOUT)
     -> add(SOAP::Data->name(a => 3), SOAP::Data->name(b => 4))
     -> result || 0 == 7);
 }
@@ -100,14 +100,14 @@ if (0) { # doesn't seem to be working on 01/31/2001
   print "Microsoft's server test(s)...\n";
   ok(SOAP::Lite 
     -> uri('http://tempuri.org/')
-    -> proxy('http://beta.search.microsoft.com/search/MSComSearchService.asmx')
+    -> proxy('http://beta.search.microsoft.com/search/MSComSearchService.asmx', timeout => $SOAP::Test::TIMEOUT)
     -> on_action(sub{join'',@_})
     -> GetVocabulary(SOAP::Data->name('~:Query' => 'something_very_unusual'))
     -> valueof('//Found') || '' eq 'false');
 
   $r = SOAP::Lite 
     -> uri('http://tempuri.org/')
-    -> proxy('http://beta.search.microsoft.com/search/MSComSearchService.asmx')
+    -> proxy('http://beta.search.microsoft.com/search/MSComSearchService.asmx', timeout => $SOAP::Test::TIMEOUT)
     -> on_action(sub{join'',@_})
     -> GetBestBets(SOAP::Data->name('~:Query' => 'data'))
     -> result;
@@ -117,7 +117,7 @@ if (0) { # doesn't seem to be working on 01/31/2001
   print "4s4c (aka Simon's SOAP Server Services For COM) server test(s)...\n";
   ok(SOAP::Lite 
     -> uri('http://www.pocketsoap.com/whois')
-    -> proxy('http://www.razorsoft.net/ssss4c/whois.asp')
+    -> proxy('http://www.razorsoft.net/ssss4c/whois.asp', timeout => $SOAP::Test::TIMEOUT)
     -> whois(SOAP::Data->name('name' => 'yahoo'))
     -> result || '' =~ /yahoo\.com/i);
 
@@ -125,7 +125,7 @@ if (0) { # doesn't seem to be working on 01/31/2001
   print "MS SOAP (on itfinity.net) server test(s)...\n";
   ok(SOAP::Lite 
     -> uri('http://www.itfinity.net/soap/guid/guid.xsd')
-    -> proxy('http://www.itfinity.net/soap/guid/default.asp')
+    -> proxy('http://www.itfinity.net/soap/guid/default.asp', timeout => $SOAP::Test::TIMEOUT)
     -> NextGUID
     -> result || '' =~ /.{8}-.{4}-.{4}-.{4}-.{12}/);
 
@@ -133,19 +133,19 @@ if (0) { # doesn't seem to be working on 01/31/2001
   print "Apache SOAP (on lemurlabs.com) server test(s)...\n";
   ok(SOAP::Lite 
     -> uri('urn:lemurlabs-ITimeService')
-    -> proxy('http://www.lemurlabs.com/rpcrouter')
+    -> proxy('http://www.lemurlabs.com/rpcrouter', timeout => $SOAP::Test::TIMEOUT)
     -> getInternetTime
     -> result || '' =~ /\d/);
 
   ok(@{SOAP::Lite 
     -> uri('urn:lemurlabs-Fortune')
-    -> proxy('http://www.lemurlabs.com/rpcrouter')
+    -> proxy('http://www.lemurlabs.com/rpcrouter', timeout => $SOAP::Test::TIMEOUT)
     -> getDictionaryNameList #getAnyFortune
     -> result || []} > 1);
 
   $r = SOAP::Lite 
     -> uri('urn:lemurlabs-Fortune')
-    -> proxy('http://www.lemurlabs.com/rpcrouter')
+    -> proxy('http://www.lemurlabs.com/rpcrouter', timeout => $SOAP::Test::TIMEOUT)
     -> getFortuneByDictionary('work')
     -> result || '';
 
@@ -155,7 +155,7 @@ if (0) { # doesn't seem to be working on 01/31/2001
 # Public server with Lucin implementation (http://www.lucin.com/lu003/sal.htm)
   print "Lucin SOAP (lucin.com) server test(s)...\n";
   $r = SOAP::Lite
-    -> proxy('http://srv.lucin.net/bin/SOAP002.asp')
+    -> proxy('http://srv.lucin.net/bin/SOAP002.asp', timeout => $SOAP::Test::TIMEOUT)
     -> uri('http://schema.soapranch.com/salACC/CAddress.xml')
     -> Ping(SOAP::Data->new(name => 'ApplicID', type => 'xsd:long', value => 1001))
     -> result || '';
@@ -167,7 +167,7 @@ if (0) { # doesn't seem to be working on 01/31/2001
   print "All connections are keep-alive\n";
   $s = SOAP::Lite                             
     -> uri('urn:xmethods-BNPriceCheck')                
-    -> proxy('http://services.xmethods.net/soap/servlet/rpcrouter');
+    -> proxy('http://services.xmethods.net/soap/servlet/rpcrouter', timeout => $SOAP::Test::TIMEOUT);
 
   my $isbn = '0672319225';
   $r = $s->getPrice(SOAP::Data->type(string => $isbn))->result || 0;
@@ -176,7 +176,7 @@ if (0) { # doesn't seem to be working on 01/31/2001
 
   $s = SOAP::Lite                             
     -> uri('urn:xmethods-CurrencyExchange')                
-    -> proxy('http://services.xmethods.net/soap');
+    -> proxy('http://services.xmethods.net/soap', timeout => $SOAP::Test::TIMEOUT);
 
   $r = $s->getRate(SOAP::Data->name(country1 => 'England'), 
                    SOAP::Data->name(country2 => 'Japan'))
@@ -186,7 +186,7 @@ if (0) { # doesn't seem to be working on 01/31/2001
 
   $s = SOAP::Lite                             
     -> uri('urn:xmethods-delayed-quotes')                
-    -> proxy('http://services.xmethods.net/soap');
+    -> proxy('http://services.xmethods.net/soap', timeout => $SOAP::Test::TIMEOUT);
 
   $r = $s->getQuote('MSFT')->result || 0;
   print "Quote for MSFT symbol is $r\n";
@@ -194,32 +194,32 @@ if (0) { # doesn't seem to be working on 01/31/2001
 
   ok(SOAP::Lite
     -> uri('urn:xmethods-DomainChecker')                
-    -> proxy('http://services.xmethods.net/soap')
+    -> proxy('http://services.xmethods.net/soap', timeout => $SOAP::Test::TIMEOUT)
     -> checkDomain('yahoo.com')
     -> result || '' eq 'unavailable');
 
   ok(SOAP::Lite
     -> uri('urn:xmethods-CATraffic')                
-    -> proxy('http://services.xmethods.net/soap/servlet/rpcrouter')
+    -> proxy('http://services.xmethods.net/soap/servlet/rpcrouter', timeout => $SOAP::Test::TIMEOUT)
     -> getTraffic(type SOAP::Data string => 101)
     -> result || '' =~ /US 101/);
 
   ok(SOAP::Lite
     -> uri('urn:xmethods-Temperature')                
-    -> proxy('http://services.xmethods.net/soap/servlet/rpcrouter')
+    -> proxy('http://services.xmethods.net/soap/servlet/rpcrouter', timeout => $SOAP::Test::TIMEOUT)
     -> getTemp(type SOAP::Data string => 64151)
     -> result || '' =~ /\./);
 
   ok(SOAP::Lite
     -> uri('urn:xmethodsSoapPing')                
-    -> proxy('http://services.xmethods.net/perl/soaplite.cgi')
+    -> proxy('http://services.xmethods.net/perl/soaplite.cgi', timeout => $SOAP::Test::TIMEOUT)
     -> pingHost(name SOAP::Data hostname => 'www.yahoo.com')
     -> result || 0 == 1);
 
   print "BabelFish translator server test(s)...\n";
   ok(SOAP::Lite                             
     -> uri('urn:xmethodsBabelFish')                
-    -> proxy('http://services.xmethods.net/perl/soaplite.cgi')
+    -> proxy('http://services.xmethods.net/perl/soaplite.cgi', timeout => $SOAP::Test::TIMEOUT)
     -> BabelFish(SOAP::Data->name(translationmode => 'en_it'), 
                  SOAP::Data->name(sourcedata => 'I want to work'))
     -> result || '' =~ /^Desidero lavorare$/);

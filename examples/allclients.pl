@@ -11,10 +11,14 @@ use SOAP::Lite
 # proxy => 'http://localhost/soap',             # local mod_perl server
 # proxy => 'https://localhost/soap',            # local mod_perl SECURE server
 # proxy => 'tcp:localhost:82',                  # local tcp server
+# proxy => 'http://login:password@localhost/cgi-bin/soap.cgi', # local CGI server with authentication
+
+# following proxies are one-way only, they don't return any response
 # proxy => 'ftp://login:password@ftp.somewhere.com/relative/path/to/file.xml', # ftp server
 # proxy => 'ftp://login:password@ftp.somewhere.com//absolute/path/to/file.xml', # ftp server
-# proxy => 'http://login:password@localhost/cgi-bin/soap.cgi', # local CGI server with authentication
+
+# notice how you can pass more than one parameter for proxy
 # proxy => ['mailto:destination.email@address', smtp => 'smtp.server', From => 'your.email', Subject => 'SOAP message'], # smtp server
 ;
 
-print getStateName(1);
+print SOAP::Lite->new->getStateName(1)->result;

@@ -64,8 +64,10 @@ FEATURES
 
 PREREQUISITES
 
-This library has been tested by the author on Perl version 5.005 
-(it should work with 5.6.0 also). 
+This library has been tested by the author with Perl versions 5.005 
+and 5.6.0 on different platforms: Windows 98/2K, Solaris 2.6, Linux 2.2. 
+Should run everywhere where Perl 5.004 or later runs.
+
 Some modules within this package depend on other packages that are
 distributed separately from Perl. It supposes that you have the
 following distributions installed before you install SOAP::Lite:
@@ -84,6 +86,7 @@ Following modules will be loaded on demand only:
   IO::File (for FTP client and IO server)
   Net::FTP (for FTP client)
   MIME::Parser (for MIME attachment support)
+  Compress::Zlib (for compression support)
 
 Following modules will be used for HTTP protocol only:
 
@@ -116,10 +119,6 @@ otherwise
    make test
    make install
 
-During the "make test" phase, there is an optional test that makes a
-live SOAP call over HTTP to an example server running on Internet. 
-If you aren't connected to the Internet, you should skip this test.
-
 DOCUMENTATION
 
 See lib/SOAP/Lite.pm for an overview of the library. Documentation is 
@@ -150,11 +149,6 @@ AVAILABILITY
 You can download the latest version SOAP::Lite for Unix or SOAP::Lite for 
 Win32 from http://www.geocities.com/paulclinger/soap.html. 
 SOAP::Lite should be available also from CPAN. 
-
-SEE ALSO
-
-SOAP/Perl library from Keith Brown (http://www.develop.com/soap/) or
-(http://search.cpan.org/search?dist=SOAP)
 
 COPYRIGHT
 

@@ -37,7 +37,7 @@ implementations running in your environment.
 
 DISCLAIMER
 
-print STDERR "All tests may take up to ", %dests * %tests * $testnum * $testtime, " sec\n";
+print STDERR "All tests may take up to ", keys(%dests) * keys(%tests) * $testnum * $testtime, " sec\n";
 
 foreach my $dest (keys %dests) {
   my($proxy, $uri) = @{$dests{$dest}};
@@ -47,7 +47,7 @@ foreach my $dest (keys %dests) {
     eval {$tests{$test}->()}; warn('skipped, ', $@), next if $@;
     my($tps) = 0;
     for (1..$testnum) {
-      my $r = Benchmark::runfor($tests{$test}, $testtime);
+      my $r = Benchmark::countit($testtime => $tests{$test});
       my($pu, $ps, $n) = @{$r}[1,2,5];
       $tps += $n / ($pu + $ps);
       print STDERR ".";

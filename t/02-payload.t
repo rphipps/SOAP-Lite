@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 37 }
+BEGIN { plan tests => 46 }
 
 use SOAP::Lite;
 
@@ -48,6 +48,7 @@ my($a, $s, $r, $serialized, $deserialized);
 ');
 
   ok($deserialized->result->[2] == 60);
+  ok((my @array = $deserialized->paramsall) == 1);
   ok(ref $deserialized->body eq 'Body');
 }
 
@@ -75,7 +76,7 @@ my($a, $s, $r, $serialized, $deserialized);
   ok(ref $deserialized->valueof('/Struct') eq ref $deserialized->valueof('//b'));
 
   ok($deserialized->dataof('/Struct')->attr->{'prefix:id'} == 123);
-  ok(! exists $deserialized->dataof('/Struct')->attr->{'id'});
+  ok(exists $deserialized->dataof('/Struct')->attr->{'id'});
 }
 
 { # check SOAP::SOM 
@@ -195,10 +196,15 @@ my($a, $s, $r, $serialized, $deserialized);
   my $t1 = $deserialized->match(SOAP::SOM::header)->dataof('t1');
   my $t2 = $deserialized->dataof('t2');
   my @paramsin = $deserialized->paramsin;
+  my @paramsall = $deserialized->paramsall;
 
   ok($t2->type eq 'xsd:int');
   ok($t2->mustUnderstand == 1);
   ok(@paramsin == 3);
+  ok(@paramsall == 3);
+
+  eval { $deserialized->result(1) };
+  ok($@ =~ /Method 'result' is readonly/);
 
   $serialized = SOAP::Serializer->method( # same as ->envelope(method =>
       SOAP::Data->name('mymethod')->attr({something => 'value'}), 1, 2, 3, 
@@ -236,3 +242,60 @@ my($a, $s, $r, $serialized, $deserialized);
   ok(UNIVERSAL::isa($a => 'HASH'));
   ok(ref $a && $a->{$key} == 456);
 }
+
+{ # Stringified type serialization
+  print "Stringified type serialization test(s)...\n";
+
+  $serialized = SOAP::Serializer->serialize(bless { a => 1, _current => [] } => 'SOAP::SOM');
+  ok($serialized =~ m!<SOAP__SOM xsi:type="SOAP-ENC:SOAP__SOM"><a xsi:type="xsd:int">1</a><_current(?: SOAP-ENC:arrayType="xsd:ur-type\[0\]"| xsi:type="SOAP-ENC:Array"){2}/></SOAP__SOM>!);
+}
+
+{ # Serialization of non-allowed element
+  print "Serialization of non-allowed element test(s)...\n";
+
+  eval { $serialized = SOAP::Serializer->serialize(SOAP::Data->name('---' => 'aaa')) };
+
+  ok($@ =~ /^Element/);
+}
+
+{ # Custom serialization of blessed reference
+  print "Custom serialization of blessed reference test(s)...\n";
+
+  eval q!
+    sub SOAP::Serializer::as_my__own__class {
+      my $self = shift;
+      my($value, $name, $type, $attr) = @_;
+      return [$name, {%{$attr || {}}, 'xsi:type' => 'xsd:string'}, join ', ', map {"$_ => $value->{$_}"} sort keys %$value];
+    }
+    1;
+  ! or die;
+
+  $serialized = SOAP::Serializer->serialize(bless {a => 1, b => 2} => 'My::Own::Class');
+  ok($serialized eq '<My__Own__Class xsi:type="xsd:string">a => 1, b => 2</My__Own__Class>');
+}
+
+{ # Multirefs serialization
+  print "Multirefs serialization test(s)...\n";
+
+  my $b = { b => 2 };
+  my $a = { a => $b };
+  my $c = { c1 => $a, c2 => $a };
+
+  $serialized = SOAP::Serializer->autotype(0)->method(a => $c);
+  ok($serialized =~ m!<SOAP-ENV:Body><a><c-gensym(\d+)><c1 href="#ref-(\d+)"/><c2 href="#ref-\2"/></c-gensym\1></a><c-gensym(\d+) id="ref-(\d+)"><b>2</b></c-gensym\3><c-gensym(\d+) id="ref-\2"><a href="#ref-\4"/></c-gensym\5></SOAP-ENV:Body>! ||
+     $serialized =~ m!<SOAP-ENV:Body><a><c-gensym(\d+)><c1 href="#ref-(\d+)"/><c2 href="#ref-\2"/></c-gensym\1></a><c-gensym(\d+) id="ref-\2"><a href="#ref-(\d+)"/></c-gensym\3><c-gensym(\d+) id="ref-\4"><b>2</b></c-gensym\5></SOAP-ENV:Body>!);
+
+  $serialized = SOAP::Serializer->autotype(0)->serialize($c);
+  ok($serialized =~ m!<c-gensym(\d+)><c1 href="#ref-(\d+)"/><c2 href="#ref-\2"/></c-gensym\1><c-gensym(\d+) id="ref-(\d+)"><b>2</b></c-gensym\3><c-gensym(\d+) id="ref-\2"><a href="#ref-\4"/></c-gensym\5>! ||
+     $serialized =~ m!<c-gensym(\d+)><c1 href="#ref-(\d+)"/><c2 href="#ref-\2"/></c-gensym\1><c-gensym(\d+) id="ref-\2"><a href="#ref-(\d+)"/></c-gensym\3><c-gensym(\d+) id="ref-\4"><b>2</b></c-gensym\5>!);
+}
+
+{ # Serialization of multirefs shared between Header and Body
+  print "Serialization of multirefs shared between Header and Body test(s)...\n";
+
+  $a = { b => 2 };
+
+  $serialized = SOAP::Serializer->autotype(0)->method(a => SOAP::Header->value($a), $a);
+  ok($serialized =~ m!<SOAP-ENV:Header><c-gensym(\d+) id="ref-(\d+)"><b>2</b></c-gensym\1></SOAP-ENV:Header><SOAP-ENV:Body><a><c-gensym\d+ href="#ref-\2"/></a><c-gensym\d+ href="#ref-\2"/></SOAP-ENV:Body>!);
+}
+

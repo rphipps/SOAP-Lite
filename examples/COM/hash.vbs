@@ -2,7 +2,11 @@
 
 ' Connect to local ASP/Daemon server
 
-MsgBox CreateObject("SOAP.Lite").new( _
+Set hashRes = CreateObject("SOAP.Lite").new( _
   "proxy", "http://localhost/soap.asp", _
   "uri",   "http://www.soaplite.com/My/Examples" _
-).getStateName(1).result
+).getStateStruct(CreateObject("SOAP.Lite").hash("a", 1, "b", 2)) _
+ .result
+
+MsgBox hashRes.a
+MsgBox hashRes.b

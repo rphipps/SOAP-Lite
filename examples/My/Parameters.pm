@@ -5,6 +5,8 @@ use vars qw(@ISA);
 
 sub echo {
   my $self = shift;
+  pop; # last parameter is envelope (SOAP::SOM object)
+       # don't want to echo it
   @_;
 }
 

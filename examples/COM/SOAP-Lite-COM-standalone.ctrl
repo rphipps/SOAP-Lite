@@ -1,23 +1,22 @@
 
 # -- SOAP::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
 
-# used by PerlCtrl for creating COM interface
+# used by PerlCtrl for creating standalone COM interface
 
 package SOAP::Lite::COM;
 
 use SOAP::Lite;
 
-sub required {
-  require URI::_foreign;
-  require URI::http;
-  require URI::https;
-  require LWP::Protocol::http;
-  require LWP::Protocol::https;
-  require LWP::Authen::Basic;
-  require LWP::Authen::Digest;
-  require HTTP::Daemon; 
-  require SOAP::Transport::HTTP;
-}
+use URI::_foreign;
+use URI::http;
+use URI::https;
+use LWP::Protocol::http;
+use LWP::Protocol::https;
+use LWP::Authen::Basic;
+use LWP::Authen::Digest;
+use HTTP::Daemon; 
+use Compress::Zlib;
+use SOAP::Transport::HTTP;
 
 __END__
 
@@ -30,8 +29,8 @@ __END__
 	TypeLibGUID     => '{35794C5E-478D-4746-81FA-CF0194CC2417}', # do NOT edit this line
 	ControlGUID     => '{A0FE6F60-95D4-435B-98AE-93475FDCAA83}', # do NOT edit this line either
 	DispInterfaceIID=> '{23767C1D-DA9B-4FAC-A6B3-3639F8CC0C29}', # or this one
-	ControlName     => 'SOAP::Lite for COM',
-	ControlVer      => 0.46,  # increment if new object with same ProgID
+	ControlName     => 'SOAP.Lite',
+	ControlVer      => 0.47,  # increment if new object with same ProgID
 	ProgID          => 'SOAP.Lite',
 	DefaultMethod   => 'new',
 	Methods         => {
@@ -48,6 +47,18 @@ __END__
 		ParamList           =>[ ]
 	    },
 	    'server' => {
+		RetType             =>  VT_DISPATCH,
+		TotalParams         =>  0,
+		NumOptionalParams   =>  0,
+		ParamList           =>[ ]
+	    },
+	    'instanceof' => {
+		RetType             =>  VT_DISPATCH,
+		TotalParams         =>  0,
+		NumOptionalParams   =>  0,
+		ParamList           =>[ ]
+	    },
+	    'hash' => {
 		RetType             =>  VT_DISPATCH,
 		TotalParams         =>  0,
 		NumOptionalParams   =>  0,

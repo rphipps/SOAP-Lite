@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::TCP.pm,v 0.46 2001/01/31 16:30:24 $
+# $Id: SOAP::Transport::TCP.pm,v 0.47 2001/02/21 17:11:12 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::TCP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.46';
+$VERSION = '0.47';
 
 use IO::Socket;
 

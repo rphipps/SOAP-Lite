@@ -2,62 +2,89 @@ Changes
 MANIFEST
 Makefile.PL
 README
-lib/SOAP/Lite.pm                   Main SOAP::Lite module
-lib/SOAP/Test.pm                   Simple test framework
-lib/SOAP/Transport/HTTP.pm         HTTP transport, client and server
-lib/SOAP/Transport/MAILTO.pm       SMTP/sendmail transport, client
-lib/SOAP/Transport/POP3.pm         POP3 transport, server
-lib/SOAP/Transport/LOCAL.pm        LOCAL transport, client and server
-lib/SOAP/Transport/TCP.pm          TCP transport, client and server
-lib/UDDI/Lite.pm                   Main UDDI::Lite module
-bin/SOAPsh.pl                      SOAP shell
-bin/stubmaker.pl                   Script for creating stubs from schema description
-examples/allclients.pl             Different client implementations
-examples/soapmark.pl               Simple test for different implementations
-examples/tcpclient.pl              Simple test for local TCP client
-examples/chat.pl                   Client side for Chat implementation 
-examples/iterator.pl               Example for Session/Persistent iterators
-examples/parametersbyname.pl       Example for passing parameters-by-name 
-examples/authentication.pl         Example for Basic/Digest server authentication
-examples/autoexamples.pl           Script for My::Examples with autodispatching
-examples/pingpong.pl               Example for local/remote access to the same object
-examples/soapsmtp.pl               Example for SMTP/sendmail message sending
-examples/cookie.pl                 Fortune cookie for you
-examples/oo-apache.pl              Example of object interoperability
-examples/oneliners                 Couple of one-line SOAP calls
-examples/XML/customxml.pl          Example for XML processing (SOAP::Custom::XML)
-examples/SOAP/simple1.pl           Example for SOAP interface
-examples/SOAP/simple2.pl           Example for SOAP interface
-examples/SOAP/Transport/HTTP/ForkingDaemon.pm   
-examples/server/soap.cgi           SOAP server, CGI implementation
-examples/server/soap.daemon        SOAP server, daemon implementation
-examples/server/soap.forkingdaemon SOAP server, forking daemon implementation
-examples/server/soap.pop3          SOAP server, POP3 implementation
-examples/server/soap.tcp           SOAP server, TCP implementation
-examples/server/soap.mod_cgi       SOAP server, Apache::Registry implementation
-examples/server/soap.io            SOAP server, IO implementation
-examples/server/soap.asp           SOAP server, ASP implementation
-examples/server/soap.vbs           SOAP server, VB running Daemon implementation
-examples/server/Apache.pm          Module for SOAP server, mod_perl implementation
-examples/WSDL/stub1.pl             Example for WSDL stub interface
-examples/WSDL/stub2.pl             Example for WSDL stub interface
-examples/WSDL/stub3.pl             Example for WSDL stub interface
-examples/WSDL/dynamic1.pl          Example for WSDL dynamic interface
-examples/WSDL/dynamic2.pl          Example for WSDL dynamic interface
-examples/WSDL/dynamic3.pl          Example for WSDL dynamic interface
-examples/UDDI/simple1.pl           Example for UDDI interface
-examples/UDDI/simple2.pl           Example for UDDI interface
-examples/UDDI/publish1.pl          Example for UDDI publishing interface
-examples/UDDI/inquire1.pl          Example for UDDI inquire interface
-examples/UDDI/syntax1.pl           Example for UDDI publishing interface
-examples/UDDI/syntax2.pl           Example for UDDI publishing interface
-examples/UDDI/syntax3.pl           Example for UDDI publishing interface
-examples/COM/README                Examples and description for COM interface
-examples/forms/style.html          Example for form-data parsing, client side
-examples/forms/style.cgi           Example for form-data parsing, server side
-examples/My/Chat.pm                Module with Chat server implementation 
-examples/My/Examples.pm            Module with Examples backend
-examples/My/PingPong.pm            Module with PingPong backend
-examples/My/Parameters.pm          Module with Paramaters backend
-examples/My/SessionIterator.pm     Module with Session Iterator backend
-examples/My/PersistentIterator.pm  Module with Persistent Iterator backend
+bin/SOAPsh.pl			SOAP shell
+bin/stubmaker.pl		Script for creating stubs from schema description
+examples/COM/README		Examples and description for COM interface
+examples/COM/SOAP-Lite-COM-perl-required.ctrl
+examples/COM/SOAP-Lite-COM-standalone.ctrl
+examples/COM/hash.vbs           Example in VBScript, hash manipulation
+examples/COM/local.vbs          Example in VBScript, client for local service
+examples/COM/make-com-perl-required.bat
+examples/COM/make-com-standalone.bat
+examples/COM/remote.cs          Example in C#, client for remote service
+examples/COM/remote.vbs         Example in VB, client for remote service
+examples/COM/service.vbs        Example in VB, client with WSDL
+examples/COM/soap.asp           SOAP server, ASP/VBScript implementation
+examples/COM/soap.vbs           SOAP server, VB/Daemon implementation
+examples/COM/soap_perl.asp      SOAP server, ASP/PerlScript implementation
+examples/COM/states.html        Example in JavaScript, client for local service
+examples/COM/states.pl          Example in Perl, client for local service
+examples/COM/states.vba         Source code for macroses in states.xls
+examples/COM/states.vbs         Example in VBScript, client for local service
+examples/COM/states.xls         Example in Excel/VBA, client for local service
+examples/COM/temper.vbs         Example in VB, client for remote service
+examples/My/Chat.pm		Module with Chat server implementation 
+examples/My/Examples.pm		Module with Examples backend
+examples/My/Parameters.pm	Module with Paramaters backend
+examples/My/PersistentIterator.pm	Module with Persistent Iterator backend
+examples/My/PingPong.pm		Module with PingPong backend
+examples/My/SessionIterator.pm	Module with Session Iterator backend
+examples/SOAP/Transport/HTTP/Daemon/ForkAfterProcessing.pm
+examples/SOAP/Transport/HTTP/Daemon/ForkOnAccept.pm
+examples/SOAP/simple1.pl	Example for SOAP interface
+examples/SOAP/simple2.pl	Example for SOAP interface
+examples/UDDI/inquire1.pl	Example for UDDI inquire interface
+examples/UDDI/publish1.pl	Example for UDDI publishing interface
+examples/UDDI/simple1.pl	Example for UDDI interface
+examples/UDDI/simple2.pl	Example for UDDI interface
+examples/UDDI/syntax1.pl	Example for UDDI publishing interface
+examples/UDDI/syntax2.pl	Example for UDDI publishing interface
+examples/UDDI/syntax3.pl	Example for UDDI publishing interface
+examples/WSDL/dynamic1.pl	Example for WSDL dynamic interface
+examples/WSDL/dynamic2.pl	Example for WSDL dynamic interface
+examples/WSDL/dynamic3.pl	Example for WSDL dynamic interface
+examples/WSDL/stub1.pl		Example for WSDL stub interface
+examples/WSDL/stub2.pl		Example for WSDL stub interface
+examples/WSDL/stub3.pl		Example for WSDL stub interface
+examples/XML/customxml.pl	Example for XML processing (SOAP::Custom::XML)
+examples/allclients.pl		Different client implementations
+examples/authentication.pl	Example for Basic/Digest server authentication
+examples/autoexamples.pl	Script for My::Examples with autodispatching
+examples/chat.pl		Client side for Chat implementation 
+examples/cookie.pl		Fortune cookie for you
+examples/compress.pl            Example for compression options
+examples/cookieauth.pl          Example for cookie-based authentication
+examples/forms/style.cgi	Example for form-data parsing, server side
+examples/forms/style.html	Example for form-data parsing, client side
+examples/iterator.pl		Example for Session/Persistent iterators
+examples/oneliners		Couple of one-line SOAP calls
+examples/oo-apache.pl		Example of object interoperability
+examples/parametersbyname.pl	Example for passing parameters-by-name 
+examples/pingpong.pl		Example for local/remote access to the same object
+examples/server/Apache.pm	Module for SOAP server, mod_perl implementation
+examples/server/mod_soap.htaccess  .htaccess file, configuration for mod_soap
+examples/server/soap.asp	SOAP server, ASP/VBScript implementation
+examples/server/soap.cgi	SOAP server, CGI implementation
+examples/server/soap.daemon	SOAP server, daemon implementation
+examples/server/soap.daemon.forkafterprocessing  SOAP server, forking daemon implementation
+examples/server/soap.daemon.forkonaccept         SOAP server, forking daemon implementation
+examples/server/soap.io		SOAP server, IO implementation
+examples/server/soap.mod_cgi	SOAP server, Apache::Registry implementation
+examples/server/soap.pop3	SOAP server, POP3 implementation
+examples/server/soap.tcp	SOAP server, TCP implementation
+examples/server/soap.vbs	SOAP server, VB/Daemon implementation
+examples/server/soap_perl.asp   SOAP server, ASP/PerlScript implementation
+examples/soapmark.pl		Simple test for different implementations
+examples/soapsmtp.pl		Example for SMTP/sendmail message sending
+examples/tcpclient.pl		Simple test for local TCP client
+lib/Apache/SOAP.pm              mod_soap module
+lib/SOAP/Lite.pm		Main SOAP::Lite module
+lib/SOAP/Test.pm		Simple test framework
+lib/SOAP/Transport/FTP.pm       FTP transport, client 
+lib/SOAP/Transport/HTTP.pm	HTTP transport, client and server
+lib/SOAP/Transport/IO.pm        IO transport, client
+lib/SOAP/Transport/LOCAL.pm	LOCAL transport, client and server
+lib/SOAP/Transport/MAILTO.pm	SMTP/sendmail transport, client
+lib/SOAP/Transport/POP3.pm	POP3 transport, server
+lib/SOAP/Transport/TCP.pm	TCP transport, client and server
+lib/UDDI/Lite.pm		Main UDDI::Lite module

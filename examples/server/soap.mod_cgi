@@ -14,5 +14,7 @@ SOAP::Transport::HTTP::CGI
   -> dispatch_to('/Your/Path/To/Deployed/Modules',
                  qw(My::PersistentIterator My::SessionIterator My::Chat 
                     My::Examples My::Parameters My::PingPong)) 
+  # enable compression support
+  -> options({compress_threshold => 10000})
   -> handle
 ;

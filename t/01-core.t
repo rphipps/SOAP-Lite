@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 20 }
+BEGIN { plan tests => 22 }
 
 use SOAP::Lite;
 
@@ -29,25 +29,47 @@ my($a, $s, $r, $serialized, $deserialized);
 
   $serialized = join '', SOAP::Serializer->serialize(1, [1,2], {a=>3}, \4);
 
-  ok($serialized =~ m!<c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENC:Array(?: xsi:type="SOAP-ENC:Array"| SOAP-ENC:arrayType="xsd:int\[2\]"){2}><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\2><c-gensym\2 xsi:type="xsd:int">2</c-gensym\2></SOAP-ENC:Array><c-gensym(\d+) xsi:type="SOAPStruct"><a xsi:type="xsd:int">3</a></c-gensym\3><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\5></c-gensym\4>!);
+  ok($serialized =~ m!<c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENC:Array(?: xsi:type="SOAP-ENC:Array"| SOAP-ENC:arrayType="xsd:int\[2\]"){2}><item xsi:type="xsd:int">1</item><item xsi:type="xsd:int">2</item></SOAP-ENC:Array><c-gensym(\d+) xsi:type="namesp\d+:SOAPStruct"><a xsi:type="xsd:int">3</a></c-gensym\2><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\4></c-gensym\3>!);
 }  
 
 { # check simple circular references
   print "Simple circular references (\$a=\\\$a) serialization test(s)...\n";
 
   $a = \$a;
-  $serialized = join '', SOAP::Serializer->serialize($a);
+  $serialized = SOAP::Serializer->serialize($a);
 
   ok($serialized =~ m!<c-gensym(\d+) id="ref-(\w+)"><c-gensym(\d+) href="#ref-\2"/></c-gensym\1>!);
+
+  $a = SOAP::Deserializer->deserialize($serialized)->root;
+  ok(0+$a == 0+(values%$a)[0]);
 }
 
 { # check complex circlular references
   print "Complex circlular references serialization test(s)...\n";
 
-  $a = { a => 1 }; my $b = { b => $a }; $a->{a} = $b;
-  $serialized = join '', SOAP::Serializer->serialize($a);
+  $a = SOAP::Deserializer->deserialize(<<'EOX')->root;
+<root>
+<a id='id1'>
+   <x>1</x>
+   <next id='id2'>
+     <x>7</x>
+     <next href='#id3'/>
+   </next>
+</a>
+<item id='id3'>
+  <x>8</x>
+  <next href='#id1'/>
+</item>
+</root>
+EOX
 
-  ok($serialized =~ m!<c-gensym(\d+)(?: xsi:type="SOAPStruct"| id="ref-(\w+)"){2}><a(?: xsi:type="SOAPStruct"| id="ref-\w+"){2}><b(?: xsi:type="SOAPStruct"| href="#ref-\2"){2}/></a></c-gensym\1>!);
+  ok($a->{a}->{next}->{next}->{next}->{next}->{x} == 
+     $a->{a}->{next}->{x});
+
+  $a = { a => 1 }; my $b = { b => $a }; $a->{a} = $b;
+  $serialized = SOAP::Serializer->autotype(0)->serialize($a);
+
+  ok($serialized =~ m!<c-gensym(\d+) id="ref-(\w+)"><a id="ref-\w+"><b href="#ref-\2"/></a></c-gensym\1>!);
 }
 
 { # check multirefs
@@ -81,9 +103,9 @@ my($a, $s, $r, $serialized, $deserialized);
 { # check objects and SOAP::Data 
   print "Blessed references and SOAP::Data encoding test(s)...\n";
 
-  $serialized = join '', SOAP::Serializer->serialize(SOAP::Data->uri('some_urn' => bless {a => 1} => 'ObjectType'));
+  $serialized = SOAP::Serializer->serialize(SOAP::Data->uri('some_urn' => bless {a => 1} => 'ObjectType'));
 
-  ok($serialized =~ m!<namesp(\d+):ObjectType xsi:type="namesp\1:ObjectType" xmlns:namesp\1="some_urn"><a xsi:type="xsd:int">1</a></namesp\1:ObjectType>!);
+  ok($serialized =~ m!<namesp(\d+):ObjectType(:? xsi:type="SOAP-ENC:ObjectType"| xmlns:namesp\1="some_urn"){2}><a xsi:type="xsd:int">1</a></namesp\1:ObjectType>!);
 }
 
 { # check for serialization with SOAPStruct (for interoperability with ApacheSOAP)

@@ -37,7 +37,7 @@ unless (defined $r && defined $r->envelope) {
 }
 # ------------------------------------------------------
 
-plan tests => 11;
+plan tests => 15;
 
 {
 # XMethod's JavaSOAP server (http://xmethods.com/detail.html?id=11)
@@ -105,30 +105,25 @@ plan tests => 11;
   ];
   $r = $s->echoStructArray(SOAP::Data->name(something => $a))->result;
   ok(ref $r && join('', map { sort values %$_ } @$r) eq join('', map { sort values %$_ } @$a)); 
-}
-
-if (0) { # will be allowed as soon as these tests will available on XMethods
-  $s = SOAP::Lite 
-    -> uri('urn:xmethodsInterop')
-    -> proxy($proxy)
-  ;
 
   my $key = "\0\1";
   my $value = 456;
 
-  local $^W;
-
-  # implicit, warning with -w
-  $a = $s->echoMap({a => 123, $key => $value})->result;
-  ok($a->{$key} == $value);
+  { local $^W;
+    # implicit, warning with -w
+    $a = $s->echoMap({a => 123, $key => $value})->result;
+    ok($a->{$key} == $value);
+  }
 
   # explicit
   $a = $s->echoMap(SOAP::Data->type(map => {a => 123, $key => $value}))->result;
   ok($a->{$key} == $value);
 
-  # implicit, warning with -w
-  $a = $s->echoMapArray([{a => 123, $key => $value}, {b => 123, $key => 789}])->result;
-  ok($a->[0]->{$key} == $value);
+  { local $^W;
+    # implicit, warning with -w
+    $a = $s->echoMapArray([{a => 123, $key => $value}, {b => 123, $key => 789}])->result;
+    ok($a->[0]->{$key} == $value);
+  }
 
   # explicit
   $a = $s->echoMapArray([SOAP::Data->type(map => {a => 123, $key => $value}), SOAP::Data->type(map => {b => 123, $key => 789})])->result;

@@ -36,6 +36,9 @@ IO server (SOAP::Transport::IO::Server)                                  [yes]
 MIME messages, required for POP3, optional for HTTP (SOAP::MIMEParser)    [no]
                               MIME::Parser 5.22 [MIME Tools]
 ----------------------------- ----------------- ----------------------- -------
+Compression support for HTTP transport (SOAP::Transport::HTTP)            [no]
+                              Compress::Zlib    
+----------------------------- ----------------- ----------------------- -------
 Core SOAP package (SOAP::Lite)                                            yes 
                               XML::Parser 2.23
                               MIME::Base64
@@ -64,9 +67,18 @@ foreach (split /(^[-\s]+$)/m, $prerequisites) {
   } 
 }
 
+my $noncoretests = ExtUtils::MakeMaker::prompt('
+During "make test" phase we may run tests with several SOAP servers 
+that may take long and may fail due to server/connectivity problems. 
+
+Do you want to perform these tests in addition to core tests?', 'no') =~ /^\s*(y)/i;
+
+my $tests = $noncoretests ? 't/*.t' : 't/0*.t';
+
 WriteMakefile(
     'NAME'	   => 'SOAP::Lite',
-    'VERSION_FROM' => 'lib/SOAP/Lite.pm', # finds $VERSION
+    'VERSION_FROM' => 'lib/SOAP/Lite.pm', 
     'PREREQ_PM'    => \%prerequisites,
-    'EXE_FILES'     => [ "bin/SOAPsh.pl", "bin/stubmaker.pl" ],
+    'EXE_FILES'    => ['bin/SOAPsh.pl', 'bin/stubmaker.pl'],
+    test           => {TESTS => $tests},
 );

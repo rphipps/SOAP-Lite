@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::MAILTO.pm,v 0.46 2001/01/31 16:30:24 $
+# $Id: SOAP::Transport::MAILTO.pm,v 0.47 2001/02/21 17:11:12 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::MAILTO;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.46';
+$VERSION = '0.47';
 
 use MIME::Lite; 
 use URI;
@@ -31,7 +31,12 @@ sub new {
 
   unless (ref $self) {
     my $class = ref($self) || $self;
-    $self = bless {@_} => $class;
+    my(@params, @methods);
+    while (@_) { $class->can($_[0]) ? push(@methods, shift() => shift) : push(@params, shift) }
+    $self = bless {@params} => $class;
+    while (@methods) { my($method, $params) = splice(@methods,0,2);
+      $self->$method(ref $params eq 'ARRAY' ? @$params : $params) 
+    }
     SOAP::Trace::objects('()');
   }
   return $self;
@@ -44,24 +49,25 @@ sub send_receive {
 
   $endpoint ||= $self->endpoint;
   my $uri = URI->new($endpoint);
-  %parameters = (%$self, map {URI::Escape::uri_unescape($_)} map {split/=/,$_,2} split /[&;]/, $uri->query);
+  %parameters = (%$self, map {URI::Escape::uri_unescape($_)} map {split/=/,$_,2} split /[&;]/, $uri->query || '');
 
   my $msg = MIME::Lite->new(
-    From       => $parameters{From},
     To         => $uri->to,
-    'Reply-To' => $parameters{'Reply-To'} || $parameters{From},
-    Subject    => $parameters{Subject},
     Type       => 'text/xml',
     Encoding   => 'base64',
     Data       => $envelope,
+    $parameters{From}       ? (From       => $parameters{From}) : (),
+    $parameters{'Reply-To'} ? ('Reply-To' => $parameters{'Reply-To'}) : (),
+    $parameters{Subject}    ? (Subject    => $parameters{Subject}) : (),
   );
+  $msg->replace('X-Mailer' => join '/', 'SOAP::Lite', 'Perl', SOAP::Transport::MAILTO->VERSION);
   $msg->add(SOAPAction => $action);
 
   SOAP::Trace::transport($msg);
   SOAP::Trace::debug($msg->as_string);
     
   MIME::Lite->send(map {exists $parameters{$_} ? ($_ => $parameters{$_}) : ()} 'smtp', 'sendmail');
-  eval { local $SIG{__DIE__}; $msg->send };
+  eval { local $SIG{__DIE__}; $MIME::Lite::AUTO_CC = 0; $msg->send };
   (my $code = $@) =~ s/ at .*\n//;
 
   $self->code($code);
