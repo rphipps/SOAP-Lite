@@ -7,9 +7,9 @@ BEGIN { warn "Started...\n" }
 
 # import interface. All methods from loaded service are imported by default
 use SOAP::Lite
-  service => 'http://www.xmethods.net/sd/StockQuoteService.wsdl',
-  # service => 'file:/your/local/path/StockQuoteService.wsdl',
-  # service => 'file:./StockQuoteService.wsdl',
+  service => 'http://services.xmethods.net/soap/urn:xmethods-delayed-quotes.wsdl',
+  # service => 'file:/your/local/path/xmethods-delayed-quotes.wsdl',
+  # service => 'file:./xmethods-delayed-quotes.wsdl',
 ;
 
 warn "Loaded...\n";

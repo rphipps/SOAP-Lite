@@ -13,13 +13,13 @@ $SOAP::Constants::DO_NOT_USE_CHARSET = 1;
 
 my $terra = SOAP::Lite
   ->proxy('http://terraserver.microsoft.net/TerraService.asmx')
-  ->on_action(sub { join '', @_ })
+  ->on_action(sub { join '/', 'http://terraservice.net/terraserver', $_[1] })
   ->uri('http://tempuri.org/')
 ;
 
 my $response = $terra->GetTheme(SOAP::Data->name(theme => 'Photo'));
 
-if($response->fault) {
+if ($response->fault) {
   die $response->faultstring;
 } else {
   my %result = %{$response->result};
@@ -37,7 +37,7 @@ my @params = (
 
 $response = $terra->call($method => @params);
 
-if($response->fault) {
+if ($response->fault) {
   print $response->faultcode, " ", $response->faultstring, "\n";
 } else {
   foreach ($response->valueof('//PlaceFacts')) {

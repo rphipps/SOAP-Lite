@@ -10,6 +10,6 @@ use UDDI::Lite +autodispatch =>
 my $list = find_business(name => 'microsoft');
 my $bis = $list->businessInfos;
 for ($bis->businessInfo) {
-  my $s = $_->serviceInfos->serviceInfo;
+  my $s = $_->serviceInfos->serviceInfo or next; # skip if no service information
   print $s->name, ' ', $s->businessKey, "\n";
 }

@@ -9,5 +9,5 @@ use UDDI::Lite
   proxy => 'http://uddi.microsoft.com/inquire'
 ;
 
-print find_business(name('microsoft'))
+print find_business(name('xmethods'))
   -> businessInfos->businessInfo->serviceInfos->serviceInfo->name;                         

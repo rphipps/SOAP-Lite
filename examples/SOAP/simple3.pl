@@ -5,7 +5,7 @@
 
 use SOAP::Lite;
 
-# object interface
+# using WSDL
 print SOAP::Lite
-  -> service('http://services.xmethods.net/soap/urn:xmethods-delayed-quotes.wsdl')
-  -> getQuote('MSFT'), "\n";
+  -> service('http://soap.4s4c.com/ssss4c/soap.asp?WSDL')
+  -> doubler([10,20,30,50,100])->[2], "\n";

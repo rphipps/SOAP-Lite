@@ -7,6 +7,6 @@ use SOAP::Lite;
 
 # object interface
 my $service = SOAP::Lite
-  -> service('http://www.xmethods.net/sd/StockQuoteService.wsdl');
+  -> service('http://services.xmethods.net/soap/urn:xmethods-delayed-quotes.wsdl');
 
 print $service->getQuote('MSFT'), "\n";

@@ -9,4 +9,4 @@ use SOAP::Lite +autodispatch =>
   proxy => 'http://soap.4s4c.com/ssss4c/soap.asp'
 ;
 
-print doubler([10,20,30,50,100])->[2];                             
+print doubler(SOAP::Data->name(nums => [10,20,30,50,100]))->[2];                             

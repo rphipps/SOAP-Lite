@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 127 }
+BEGIN { plan tests => 128 }
 
 use SOAP::Lite;
 
@@ -253,8 +253,8 @@ my($a, $s, $r, $serialized, $deserialized);
     my $implicit = SOAP::Serializer->method(aa => SOAP::Data->name(maaap => {a => 123, $key => 456}));
     ok($implicit eq $serialized);
   }
-  ok($serialized =~ /xmlsoap:Map/);
-  ok($serialized =~ m!xmlns:xmlsoap="http://xml.apache.org/xml-soap"!);
+  ok($serialized =~ /apachens:Map/);
+  ok($serialized =~ m!xmlns:apachens="http://xml.apache.org/xml-soap"!);
 
   $deserialized = SOAP::Deserializer->deserialize($serialized);
   $a = $deserialized->valueof('//maaap');
@@ -492,6 +492,15 @@ my($a, $s, $r, $serialized, $deserialized);
   ok(! defined $deserialized->[2]);
   ok(! defined $deserialized->[3]);
   ok($deserialized->[5] eq '');
+}
+
+{
+  print "Serialization of list with undef elements test(s)...\n";
+
+  $serialized = SOAP::Serializer->method(a => undef, 1, undef, 2);
+  my(@r) = SOAP::Deserializer->deserialize($serialized)->paramsall;
+
+  ok(2 == grep {!defined} @r);
 }
 
 {

@@ -316,7 +316,7 @@ Revision history for Perl extension SOAP::Lite.
         + added option to not generate XML declaration
         + added encoding for ']]>' (thanks to Matt Sergeant and James Amrhein)
         + added '\r' => '&#xd;' conversion in strings
-        + added complain on incorrect simple types
+        + added complaint on incorrect simple types
         + added byNameOrOrder and byName functions for SOAP::Server::Parameters
           (thanks to Matt Stum)
         + added handling relative locations in <import> in WSDL
@@ -324,3 +324,24 @@ Revision history for Perl extension SOAP::Lite.
         + added documentation for SSL certificate authentication
         + added more examples (terraserver.pl, joke.pl, weblog.pl)
         + added more tests
+
+0.55 Mon Apr 15 22:20:39 2002
+        ! fixed security vulnerability with fully qualified method names
+          (thanks to Randal Schwartz, Ilya Martynov and many others)
+        ! fixed problem with TCP transport and SSL (thanks to Chris Hurd)
+        ! fixed TCP transport to specify correct length with utf8 strings
+          (thanks to Robin Fuller)
+        ! fixed incorrect encoding when parameters list includes undefined values
+          (thanks to Chris Radcliff)
+        ! updated 'xmlsoap' prefix (thanks to Pierre Denis)
+        ! updated MIME parser to accept messages that start with 'From'
+          (thanks to Chris Davies)
+        + added check for TCP transport on Mac (thanks to Robin Fuller)
+        + added check for shutdown() method on AIX (thanks to Jos Clijmans)
+        + added check for blocking() method in TCP transport 
+          (thanks to Jos Clijmans)
+        + optimized parsing strings with entity encoding (thanks to Mathieu Longtin)
+        + added check for entity size for CGI transport ($SOAP::Constant::MAX_CONTENT_SIZE)
+          (thanks to J. Klunder)
+        + added example (google.pl)
+        + updated tests and examples with new endpoints

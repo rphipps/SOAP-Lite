@@ -42,6 +42,7 @@ examples/SOAP/Transport/HTTP/Daemon/ForkAfterProcessing.pm
 examples/SOAP/Transport/HTTP/Daemon/ForkOnAccept.pm
 examples/SOAP/simple1.pl	Example for SOAP interface
 examples/SOAP/simple2.pl	Example for SOAP interface
+examples/SOAP/simple3.pl	Example for SOAP interface
 examples/UDDI/inquire1.pl	Example for UDDI inquire interface
 examples/UDDI/publish1.pl	Example for UDDI publishing interface
 examples/UDDI/simple1.pl	Example for UDDI interface
@@ -73,6 +74,7 @@ examples/forms/style.cgi	Example for form-data parsing, server side
 examples/forms/style.html	Example for form-data parsing, client side
 examples/fullsearch.pl
 examples/getdom.pl
+examples/google.pl              Example for Google Web API
 examples/inline.daemon
 examples/iterator.pl		Example for Session/Persistent iterators
 examples/joke.pl

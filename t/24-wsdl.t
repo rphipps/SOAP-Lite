@@ -41,11 +41,12 @@ plan tests => 12;
 # Service description (WSDL) (http://www.xmethods.net/)
   print "Service description (WSDL) test(s)...\n";
   $s = SOAP::Lite
-    -> service('http://www.xmethods.net/sd/StockQuoteService.wsdl');
+    -> service('http://services.xmethods.net/soap/urn:xmethods-delayed-quotes.wsdl');
 
   ok($s->getQuote('MSFT') > 1);
+
   ok(SOAP::Lite
-    -> service('http://www.xmethods.net/sd/StockQuoteService.wsdl')
+    -> service('http://services.xmethods.net/soap/urn:xmethods-delayed-quotes.wsdl')
     -> getQuote('MSFT') > 1);
 
   # WSDL with <import> element and multiple ports (non-SOAP bindings)
@@ -54,35 +55,40 @@ plan tests => 12;
     -> getQuote('MSFT') > 1);
 
   my $schema = SOAP::Schema
-    -> schema('http://www.xmethods.net/sd/StockQuoteService.wsdl')
-    -> parse('StockQuoteService');
+    -> schema('http://services.xmethods.net/soap/urn:xmethods-delayed-quotes.wsdl')
+    -> parse('net.xmethods.services.stockquote.StockQuoteService');
 
   foreach (keys %{$schema->services}) {
     eval { $schema->stub($_) } or die;
   }
 
+  # SOAP::Schema converts
+  # net.xmethods.services.stockquote.StockQuoteService
+  # into
+  # net_xmethods_services_stockquote_StockQuoteService
+
   print "Service description static stub test(s)...\n";
-  ok(StockQuoteService->getQuote('MSFT') > 1);
+  ok(net_xmethods_services_stockquote_StockQuoteService->getQuote('MSFT') > 1);
 
-  ok(defined StockQuoteService->self);
+  ok(defined net_xmethods_services_stockquote_StockQuoteService->self);
 
-  ok(StockQuoteService->self->call);
+  ok(net_xmethods_services_stockquote_StockQuoteService->self->call);
 
   print "Service description static stub with import test(s)...\n";
-  StockQuoteService->import(':all');
+  net_xmethods_services_stockquote_StockQuoteService->import(':all');
 
   ok(getQuote('MSFT') > 1);
 
-  ok(defined StockQuoteService->self);
+  ok(defined net_xmethods_services_stockquote_StockQuoteService->self);
 
-  ok(StockQuoteService->self->call);
+  ok(net_xmethods_services_stockquote_StockQuoteService->self->call);
 
   # ok, now we'll test for passing SOAP::Data and SOAP::Headers as a parameters
 
   my @params;
   {
     package TestStockQuoteService; 
-    @TestStockQuoteService::ISA = 'StockQuoteService';
+    @TestStockQuoteService::ISA = 'net_xmethods_services_stockquote_StockQuoteService';
     sub call { shift; @params = @_; new SOAP::SOM }
   }
 
