@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::POP3.pm,v 0.38 2000/10/05 22:06:20 $
+# $Id: SOAP::Transport::POP3.pm,v 0.39 2000/10/08 22:55:20 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::POP3;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.38';
+$VERSION = '0.39';
 
 # ======================================================================
 

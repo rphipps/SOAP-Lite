@@ -74,3 +74,7 @@ Revision history for Perl extension SOAP::Lite.
         + added generic class for server support SOAP::Server
         + added Actor attribute
         + added more examples, documentation and tests (88 for now)
+
+0.39 Sun Oct  8 22:55:20 2000
+        ! fixed incompatibility with Perl 5.005
+        + added interactive Makefile.PL for CPAN installation

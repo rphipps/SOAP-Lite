@@ -597,8 +597,8 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'no') =~ /^
   # Password should be wrong. Put yours if you have it. 
   # Remember: this is the real server
 
-# Public server with Apache SOAP implementation (http://www.xmethods.com/)
-  print "Apache SOAP server test(s)...\n";
+# Public server with SOAP::Lite/ApacheSOAP implementations (http://www.xmethods.com/)
+  print "XMethods (SOAP::Lite/ApacheSOAP) server test(s)...\n";
   $s = SOAP::Lite                             
     -> uri('urn:xmethods-BNPriceCheck')                
     -> proxy('http://services.xmethods.com:8080/soap/servlet/rpcrouter');
@@ -650,7 +650,7 @@ if (ExtUtils::MakeMaker::prompt('Do you want me to skip this test?', 'no') =~ /^
     -> pingHost(name SOAP::Data hostname => 'www.yahoo.com')
     -> result == 1 ? "ok $test\n" : "not ok $test\n";
 
-  print "BabelFish translator SOAP::Lite server test(s)...\n";
+  print "BabelFish translator server test(s)...\n";
   $test++; print SOAP::Lite                             
     -> uri('urn:xmethodsBabelFish')                
     -> proxy('http://www.xmethods.com/perl/soaplite.cgi')

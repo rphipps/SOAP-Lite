@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.38 2000/10/05 22:06:20 $
+# $Id: SOAP::Transport::HTTP.pm,v 0.39 2000/10/08 22:55:20 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.38';
+$VERSION = '0.39';
 
 # ======================================================================
 
@@ -129,7 +129,7 @@ sub BEGIN {
 sub handle {
   my $self = shift->new;
 
-  return $self->response(new HTTP::Response 400) # BAD_REQUEST
+  return $self->response(HTTP::Response->new(400)) # BAD_REQUEST
     unless $self->request->method eq 'POST';
 
   return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Request' => 'Content-Type must be text/xml')
@@ -139,21 +139,21 @@ sub handle {
 
   my $response = $self->SUPER::handle($self->request->content) or return;
 
-  $self->response(new HTTP::Response
+  $self->response(HTTP::Response->new( 
      $SOAP::Constants::HTTP_ON_SUCCESS_CODE => undef, 
      HTTP::Headers->new('Content-Type' => 'text/xml', 'Content-Length' => length $response), 
      $response,
-  );
+  ));
 }
 
 sub make_fault {
   my $self = shift;
   my $response = $self->SUPER::make_fault(@_);
-  $self->response(new HTTP::Response 
+  $self->response(HTTP::Response->new(
      $SOAP::Constants::HTTP_ON_FAULT_CODE => undef,
      HTTP::Headers->new('Content-Type' => 'text/xml', 'Content-Length' => length $response),
      $response,
-  );
+  ));
   return;
 }
 
@@ -177,14 +177,14 @@ sub handle {
   my $self = shift->new;
 
   my $content; read(STDIN,$content,$ENV{'CONTENT_LENGTH'});  
-  $self->request(new HTTP::Request 
+  $self->request(HTTP::Request->new( 
     $ENV{'REQUEST_METHOD'} => $ENV{'SCRIPT_NAME'},
     HTTP::Headers->new(
       map { (my $http = uc $_) =~ s/-/_/g; $_ => $ENV{"HTTP_$http"} || $ENV{$http};
           } qw(Content-Type SOAPAction),
     ),
     $content,
-  );
+  ));
   $self->SUPER::handle;
 
   my $code = $self->response->code;
@@ -206,7 +206,7 @@ sub new { eval "use HTTP::Daemon"; die if $@;
   my $class = ref($self) || $self;
   unless (ref $self) {
     $self = bless $class->SUPER::new() => $class;
-    $self->{_daemon} = new HTTP::Daemon(@_);
+    $self->{_daemon} = HTTP::Daemon->new(@_);
   }
   return $self;
 }
@@ -503,12 +503,12 @@ Apache.pm:
  Crypt::SSLeay             for HTTPS/SSL
  SOAP::Lite, URI           for SOAP::Transport::HTTP::Server
  LWP::UserAgent, URI       for SOAP::Transport::HTTP::Client
- HTTP::Daemon              for SOAP::Transport::HTTP::Deamon
+ HTTP::Daemon              for SOAP::Transport::HTTP::Daemon
  Apache, Apache::Constants for SOAP::Transport::HTTP::Apache
 
 =head1 SEE ALSO
 
- See ::CGI, ::Deamon and ::Apache for implementation details.
+ See ::CGI, ::Daemon and ::Apache for implementation details.
  See examples/soap.cgi as SOAP::Transport::HTTP::CGI example.
  See examples/soap.daemon as SOAP::Transport::HTTP::Daemon example.
  See examples/My/Apache.pm as SOAP::Transport::HTTP::Apache example.
