@@ -1,4 +1,4 @@
-#!./perl
+#!/bin/env perl 
 
 BEGIN {
   unless(grep /blib/, @INC) {
@@ -24,13 +24,17 @@ my($a, $s, $r, $serialized, $deserialized);
 
 my $proxy = 'http://localhost:8080/examples/rpcrouter/rpcrouter.jsp';
 
+# ------------------------------------------------------
+use SOAP::Test;
+
 $s = SOAP::Lite->uri('http://something/somewhere')->proxy($proxy)->on_fault(sub{});
-eval { $s->transport->timeout(3) };
+eval { $s->transport->timeout($SOAP::Test::TIMEOUT = $SOAP::Test::TIMEOUT) };
 $r = $s->test_connection;
 
 unless ($s->transport->is_success || $s->transport->status =~ /Internal Server Error/i) {
   print "1..0 # Skip: ", $s->transport->status, "\n"; exit;
 }
+# ------------------------------------------------------
 
 plan tests => 2;
 

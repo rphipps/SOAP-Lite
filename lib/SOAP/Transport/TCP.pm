@@ -1,10 +1,10 @@
 # ======================================================================
 #
-# Copyright (C) 2000 Paul Kulchenko (paulclinger@yahoo.com)
+# Copyright (C) 2000-2001 Paul Kulchenko (paulclinger@yahoo.com)
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::TCP.pm,v 0.44 2000/12/12 23:52:12 $
+# $Id: SOAP::Transport::TCP.pm,v 0.45 2001/01/16 00:38:04 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::TCP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.44';
+$VERSION = '0.45';
 
 use IO::Socket;
 
@@ -120,9 +120,21 @@ __END__
 
 SOAP::Transport::TCP - Server/Client side TCP support for SOAP::Lite
 
+=head1 SYNOPSIS
+
+  use SOAP::Transport::TCP;
+
+  my $daemon = SOAP::Transport::TCP::Server
+    -> new (LocalAddr => 'localhost', LocalPort => 82, Listen => 5, Reuse => 1)
+    -> objects_by_reference(qw(My::PersistentIterator My::SessionIterator My::Chat))
+    -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
+  ;
+  print "Contact to SOAP server at ", join(':', $daemon->sockhost, $daemon->sockport), "\n";
+  $daemon->handle;
+
 =head1 COPYRIGHT
 
-Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2001 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

@@ -1,4 +1,4 @@
-#!./perl
+#!/bin/env perl 
 
 BEGIN {
   unless(grep /blib/, @INC) {
@@ -21,7 +21,7 @@ my($a, $s, $r, $serialized, $deserialized);
 
   $serialized = join '', SOAP::Serializer->serialize(1, [1,2], {a=>3}, \4);
 
-  ok($serialized =~ m!<c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENV:Array(?: xsi:type="SOAP-ENV:Array"| SOAP-ENC:arrayType="xsd:int\[2\]"){2}><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\2><c-gensym\2 xsi:type="xsd:int">2</c-gensym\2></SOAP-ENV:Array><SOAP-ENV:Struct xsi:type="SOAP-ENV:SOAPStruct"><a xsi:type="xsd:int">3</a></SOAP-ENV:Struct><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\4></c-gensym\3>!);
+  ok($serialized =~ m!<c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENC:Array(?: xsi:type="SOAP-ENC:Array"| SOAP-ENC:arrayType="xsd:int\[2\]"){2}><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\2><c-gensym\2 xsi:type="xsd:int">2</c-gensym\2></SOAP-ENC:Array><SOAP-ENC:Struct xsi:type="SOAP-ENC:SOAPStruct"><a xsi:type="xsd:int">3</a></SOAP-ENC:Struct><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\4></c-gensym\3>!);
 }  
 
 { # check simple circular references
@@ -39,7 +39,7 @@ my($a, $s, $r, $serialized, $deserialized);
   $a = { a => 1 }; my $b = { b => $a }; $a->{a} = $b;
   $serialized = join '', SOAP::Serializer->serialize($a);
 
-  ok($serialized =~ m!<SOAP-ENV:Struct(?: xsi:type="SOAP-ENV:SOAPStruct"| id="ref-0x(\w+)"){2}><a(?: xsi:type="SOAP-ENV:SOAPStruct"| id="ref-0x\w+"){2}><b(?: xsi:type="SOAP-ENV:SOAPStruct"| href="#ref-0x\1"){2}/></a></SOAP-ENV:Struct>!);
+  ok($serialized =~ m!<SOAP-ENC:Struct(?: xsi:type="SOAP-ENC:SOAPStruct"| id="ref-0x(\w+)"){2}><a(?: xsi:type="SOAP-ENC:SOAPStruct"| id="ref-0x\w+"){2}><b(?: xsi:type="SOAP-ENC:SOAPStruct"| href="#ref-0x\1"){2}/></a></SOAP-ENC:Struct>!);
 }
 
 { # check multirefs

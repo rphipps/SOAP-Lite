@@ -1,10 +1,10 @@
 # ======================================================================
 #
-# Copyright (C) 2000 Paul Kulchenko (paulclinger@yahoo.com)
+# Copyright (C) 2000-2001 Paul Kulchenko (paulclinger@yahoo.com)
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::LOCAL.pm,v 0.44 2000/12/12 23:52:12 $
+# $Id: SOAP::Transport::LOCAL.pm,v 0.45 2001/01/16 00:38:04 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::LOCAL;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.44';
+$VERSION = '0.45';
 
 # ======================================================================
 
@@ -62,7 +62,7 @@ SOAP::Transport::LOCAL - Client side no-transport support for SOAP::Lite
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2001 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

@@ -1,10 +1,10 @@
 # ======================================================================
 #
-# Copyright (C) 2000 Paul Kulchenko (paulclinger@yahoo.com)
+# Copyright (C) 2000-2001 Paul Kulchenko (paulclinger@yahoo.com)
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::POP3.pm,v 0.44 2000/12/12 23:52:12 $
+# $Id: SOAP::Transport::POP3.pm,v 0.45 2001/01/16 00:38:04 $
 #
 # ======================================================================
 
@@ -12,10 +12,9 @@ package SOAP::Transport::POP3;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.44';
+$VERSION = '0.45';
 
 use Net::POP3; 
-use MIME::Parser; 
 use URI::Escape; 
 
 # ======================================================================
@@ -54,12 +53,7 @@ sub handle {
   my $self = shift->new;
   my $messages = $self->list or return;
   foreach my $msgid (keys %$messages) {
-    my $entity = MIME::Parser->new(output_to_core => 'ALL')
-      -> parse_data($self->get($msgid)) or next;
-
-    next unless $entity->head->get('Content-type') =~ m!^text/xml$!;
-    $self->action($entity->head->get('SOAPAction'));
-    $self->SUPER::handle($entity->bodyhandle->as_string);
+    $self->SUPER::handle($self->get($msgid));
   } continue {
     $self->delete($msgid);
   }
@@ -78,9 +72,29 @@ __END__
 
 SOAP::Transport::POP3 - Server side POP3 support for SOAP::Lite
 
+=head1 SYNOPSIS
+
+  use SOAP::Transport::POP3;
+
+  my $server = SOAP::Transport::POP3::Server
+    -> new('pop.mail.server')
+    # if you want to have all in one place
+    # -> new('user:password@pop.mail.server') 
+    # specify list of objects-by-reference here 
+    -> objects_by_reference(qw(My::PersistentIterator My::SessionIterator My::Chat))
+    # specify path to My/Examples.pm here
+    -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
+  ;
+  # you don't need to use next line if you specified your password in new()
+  $server->login('user' => 'password') or die "Can't authenticate to SMTP server\n";
+
+  # handle will return number of processed mails
+  # you can organize loop if you want
+  $server->handle while sleep 10;
+
 =head1 COPYRIGHT
 
-Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2001 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

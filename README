@@ -81,6 +81,9 @@ Following modules will be loaded on demand only:
   Apache (for mod_perl server implementation, included with mod_perl) 
   Net::POP3 and MIME::Parser (for POP3 server implementation)
   MIME::Lite (for SMTP client implementation)
+  IO::File (for FTP client and IO server)
+  Net::FTP (for FTP client)
+  MIME::Parser (for MIME attachment support)
 
 Following modules will be used for HTTP protocol only:
 

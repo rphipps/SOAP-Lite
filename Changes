@@ -84,8 +84,7 @@ Revision history for Perl extension SOAP::Lite.
         ! fixed misbehavior on Mac platform (thanks to Carl K. Cunningham)
         + added default namespace processing [xmlns] (thanks to Petr Janata)
         + added objects-by-reference, simple garbage collection and activation
-        + added full access to envelope on server side (see examples in 
-          My::ParametersByName.pm and parametersbyname.pl)
+        + added full access to envelope on server side
         + added versionMismatch reaction
         + added local: protocol for local binding without any transport
         + added examples for objects-by-reference: persistent/session
@@ -110,7 +109,7 @@ Revision history for Perl extension SOAP::Lite.
         + added session cache for M-POSTs and redirects
         + added conversion of all objects to o-b-r in parameters
         + changed passing envelope into method
-        + allowed \x0d and \x0a in strings (will not base64 encode)
+        + allowed \x0d and \x0a in strings (will not do base64 encode)
         + added die with object that lets specify complex Fault detail
         + optimized XML encoding
         + allowed function call with autodispatch
@@ -137,7 +136,7 @@ Revision history for Perl extension SOAP::Lite.
 0.44 Tue Dec 12 23:52:12 2000
         ! fixed mod_perl server to return '500 Server Error' in case of error
         ! fixed CGI server to work under PerlIS and PerlEx (thanks to Murray Nesbitt)
-        + tested publishing API for UDDI::Lite, examples provided 
+        + tested publishing API for UDDI::Lite, examples provided
           (thanks to Petr Janata for access to UDDI server and provided help)
         + added bidirectional TCP client/server, examples and tests provided
         + enabled de/serializer overloading on server side (in addition to client)
@@ -147,3 +146,19 @@ Revision history for Perl extension SOAP::Lite.
         + added SOAP::Test as simple test framework
         + added documentation for UDDI publishing API
         + redesigned examples and tests (~240 tests for now)
+
+0.45 Tue Jan 16 00:38:04 2001
+        ! fixed interoperability problem with incorrect Array prefix for Apache SOAP
+        + added interoperability tests for Apache SOAP
+        + added interoperability tests with MS SOAP, 4s4c and Lucin implementations
+        + added attachment parsing (singlepart/multipart MIME) 
+          Content-ID and Content-Location are supported
+          text/xml fragments are supported and parsed
+          all implementations support MIME encoded messages
+        + added IO server implementation (for pipes, mail handlers, FTP and file processing)
+        + added FTP client implementation
+        + added global settings, shareable between objects
+        + allowed empty URI and nonprefixed method (documentation included)
+        + added tests for xml, xml with headers, single and multipart MIME
+        + updated documentation and added examples
+        + more that 300 tests in test suite

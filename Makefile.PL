@@ -17,6 +17,10 @@ Client HTTPS/SSL support (SOAP::Transport::HTTP::Client, require OpenSSL) [no]
 Client SMTP/sendmail support (SOAP::Transport::MAILTO::Client)           [yes]
                               MIME::Lite
 ----------------------------- ----------------- ----------------------- -------
+Client FTP support (SOAP::Transport::FTP::Client)                        [yes]
+                              Net::FTP          [libnet]
+                              IO::File          [IO]
+----------------------------- ----------------- ----------------------- -------
 Standalone server (SOAP::Transport::HTTP::Daemon)                        [yes]
                               HTTP::Daemon
 ----------------------------- ----------------- ----------------------- -------
@@ -25,7 +29,12 @@ Apache/mod_perl server (SOAP::Transport::HTTP::Apache, require Apache)    [no]
 ----------------------------- ----------------- ----------------------- -------
 POP3 server (SOAP::Transport::POP3::Server)                              [yes]
                               Net::POP3         [libnet]
-                              MIME::Parser      [MIME Tools]
+----------------------------- ----------------- ----------------------- -------
+IO server (SOAP::Transport::IO::Server)                                  [yes]
+                              IO::File          [IO]
+----------------------------- ----------------- ----------------------- -------
+MIME messages, required for POP3, optional for HTTP (SOAP::MIMEParser)    [no]
+                              MIME::Parser 5.22 [MIME Tools]
 ----------------------------- ----------------- ----------------------- -------
 Core SOAP package (SOAP::Lite)                                            yes 
                               XML::Parser 2.23

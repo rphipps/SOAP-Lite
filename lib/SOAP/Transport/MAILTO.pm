@@ -1,10 +1,10 @@
 # ======================================================================
 #
-# Copyright (C) 2000 Paul Kulchenko (paulclinger@yahoo.com)
+# Copyright (C) 2000-2001 Paul Kulchenko (paulclinger@yahoo.com)
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::MAILTO.pm,v 0.44 2000/12/12 23:52:12 $
+# $Id: SOAP::Transport::MAILTO.pm,v 0.45 2001/01/16 00:38:04 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::MAILTO;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.44';
+$VERSION = '0.45';
 
 use MIME::Lite; 
 use URI;
@@ -80,9 +80,29 @@ sub send_receive {
 
 SOAP::Transport::MAILTO - Client side SMTP/sendmail support for SOAP::Lite
 
+=head1 SYNOPSIS
+
+  use SOAP::Lite;
+
+  SOAP::Lite
+    -> uri('http://soaplite.com/My/Examples')                
+    -> proxy('mailto:destination.email@address', smtp => 'smtp.server', From => 'your.email', Subject => 'SOAP message')
+
+    # or 
+    # -> proxy('mailto:destination.email@address?From=your.email&Subject=SOAP%20message', smtp => 'smtp.server')
+
+    # or if you want to send with sendmail
+    # -> proxy('mailto:destination.email@address?From=your.email&Subject=SOAP%20message')
+
+    # or if your sendmail is in undiscoverable place
+    # -> proxy('mailto:destination.email@address?From=your.email&Subject=SOAP%20message', sendmail => 'command to run your sendmail')
+
+    -> getStateName(12)
+  ;
+
 =head1 COPYRIGHT
 
-Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2001 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

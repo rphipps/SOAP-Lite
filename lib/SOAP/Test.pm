@@ -1,18 +1,20 @@
 # ======================================================================
 #
-# Copyright (C) 2000 Paul Kulchenko (paulclinger@yahoo.com)
+# Copyright (C) 2000-2001 Paul Kulchenko (paulclinger@yahoo.com)
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Test.pm,v 0.44 2000/12/12 23:52:12 $
+# $Id: SOAP::Test.pm,v 0.45 2001/01/16 00:38:04 $
 #
 # ======================================================================
 
 package SOAP::Test;
 
 use 5.004;
-use vars qw($VERSION);
-$VERSION = '0.44';
+use vars qw($VERSION $TIMEOUT);
+$VERSION = '0.45';
+
+$TIMEOUT = 5;
 
 # ======================================================================
 
@@ -45,15 +47,17 @@ use SOAP::Lite on_fault => sub{ref $_[1] ? $_[1] : new SOAP::SOM};
 sub run_for {
   my $proxy = shift or die "Proxy/endpoint is not specified";
 
+  # ------------------------------------------------------
   my $s = SOAP::Lite->uri('http://something/somewhere')->proxy($proxy)->on_fault(sub{});
-  eval { $s->transport->timeout(3) };
+  eval { $s->transport->timeout($SOAP::Test::TIMEOUT) };
   my $r = $s->test_connection;
 
   unless ($s->transport->is_success || $s->transport->status =~ /Internal Server Error/i) {
     print "1..0 # Skip: ", $s->transport->status, "\n"; exit;
   }
+  # ------------------------------------------------------
 
-  plan tests => 19;
+  plan tests => 30;
 
   print "Perl SOAP server test(s)...\n";
 
@@ -139,7 +143,7 @@ sub run_for {
     skip('No persistent objects (o-b-r) supported on server side' => undef);
   }
 
-  { local $^W; # discable warnings about deprecated AUTOLOADing for nonmethods
+  { local $^W; # disable warnings about deprecated AUTOLOADing for nonmethods
     print "Parameters-by-name test(s)...\n";
     print "You can see warning about AUTOLOAD for non-method...\n" if $^W;
 
@@ -185,6 +189,68 @@ sub run_for {
     my $detail = $s->die_with_object()->dataof(SOAP::SOM::faultdetail . '/[1]');
     ok(ref $detail && $detail->name =~ /(^|:)something$/);
   }
+
+  print "Method with attributes test(s)...\n";
+
+  $s = SOAP::Lite
+    -> uri('urn:/My/Examples')                
+    -> proxy($proxy)
+  ;
+
+  ok($s->call(SOAP::Data->name('getStateName')->attr({xmlns => 'urn:/My/Examples'}), 1)->result eq 'Alabama');
+
+  print "Call with empty uri test(s)...\n";
+  $s = SOAP::Lite
+    -> uri('')                
+    -> proxy($proxy)
+  ;
+
+  ok($s->getStateName(1)->faultdetail =~ /Denied access to method \(getStateName\) in class \(main\)/);
+
+  ok($s->call('a:getStateName' => 1)->faultdetail =~ /Denied access to method \(getStateName\) in class \(main\)/);
+
+  print "Memory refresh test(s)...\n";
+
+  # Funny test. 
+  # Let's forget about ALL settings we did before with 'use SOAP::Lite...'
+  SOAP::Lite->self(undef); 
+  ok(!defined SOAP::Lite->self);
+
+  print "Call without uri test(s)...\n";
+  $s = SOAP::Lite
+    -> proxy($proxy)
+  ;
+
+  ok($s->getStateName(1)->faultdetail =~ /Denied access to method \(getStateName\) in class \(main\)/);
+
+  print "Different settings for method and namespace test(s)...\n";
+
+  ok($s->call(SOAP::Data
+    ->name('getStateName')
+    ->attr({xmlns => 'urn:/My/Examples'}), 1)->result eq 'Alabama');
+
+  ok($s->call(SOAP::Data
+    ->name('a:getStateName')
+    ->attr({'xmlns:~' => 'urn:/My/Examples'}), 1)->result eq 'Alabama');
+
+  ok($s->call(SOAP::Data
+    ->name('a:getStateName')
+    ->attr({'xmlns:a' => 'urn:/My/Examples'}), 1)->result eq 'Alabama');
+
+  eval { $s->call(SOAP::Data->name('a:getStateName')) };
+
+  ok($@ =~ /Can't find namespace for method \(a:getStateName\)/);
+
+  $s->serializer->attr->{xmlns} = 'urn:/My/Examples';
+  ok($s->getStateName(1)->result eq 'Alabama');
+
+  eval "use SOAP::Lite 
+    uri => 'urn:/My/Examples', proxy => '$proxy'; 1" or die;
+
+  print "Global settings test(s)...\n";
+  $s = new SOAP::Lite;
+
+  ok($s->getStateName(1)->result eq 'Alabama');
 }
 
 # ======================================================================
@@ -211,7 +277,7 @@ See t/1*.t for examples.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2001 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

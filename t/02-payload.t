@@ -1,4 +1,4 @@
-#!./perl
+#!/bin/env perl 
 
 BEGIN {
   unless(grep /blib/, @INC) {
@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 28 }
+BEGIN { plan tests => 32 }
 
 use SOAP::Lite;
 
@@ -69,10 +69,13 @@ my($a, $s, $r, $serialized, $deserialized);
   print "Deserialization of circular references test(s)...\n";
 
   $deserialized = SOAP::Deserializer->deserialize('<?xml version="1.0"?>
-<SOAP-ENV:Struct id="ref-0xb61350"><a id="ref-0xb61374"><b href="#ref-0xb61350"/></a></SOAP-ENV:Struct>
+<SOAP-ENV:Struct prefix:id="123" xmlns:prefix="aaa" id="ref-0xb61350"><a id="ref-0xb61374"><b href="#ref-0xb61350"/></a></SOAP-ENV:Struct>
 ');
 
   ok(ref $deserialized->valueof('/Struct') eq ref $deserialized->valueof('//b'));
+
+  ok($deserialized->dataof('/Struct')->attr->{'prefix:id'} == 123);
+  ok(! exists $deserialized->dataof('/Struct')->attr->{'id'});
 }
 
 { # check SOAP::SOM 
@@ -205,5 +208,12 @@ my($a, $s, $r, $serialized, $deserialized);
   $serialized = SOAP::Serializer
     -> namespace('')
     -> method('mymethod');
-  ok($serialized =~ m!<Envelope(?: xmlns="http://schemas.xmlsoap.org/soap/envelope/"| encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:xsd="http://www.w3.org/1999/XMLSchema")+/>!);
+  ok($serialized =~ m!<Envelope(?: xmlns="http://schemas.xmlsoap.org/soap/envelope/"| encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:xsd="http://www.w3.org/1999/XMLSchema")+><Body><mymethod/></Body></Envelope>!);
+
+  $deserialized = SOAP::Deserializer->deserialize('<?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/1999/XMLSchema"><SOAP-ENV:Body><getStateName><c-gensym5 xsi:type="xsd:int">1</c-gensym5></getStateName></SOAP-ENV:Body></SOAP-ENV:Envelope>');
+  ok(! defined $deserialized->namespaceuriof('//getStateName'));
+
+  $deserialized = SOAP::Deserializer->deserialize('<?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns="a" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/1999/XMLSchema"><SOAP-ENV:Body><getStateName><c-gensym5 xsi:type="xsd:int">1</c-gensym5></getStateName></SOAP-ENV:Body></SOAP-ENV:Envelope>');
+  ok($deserialized->namespaceuriof('//getStateName') eq 'a');
+
 }

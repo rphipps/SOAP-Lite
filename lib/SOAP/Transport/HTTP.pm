@@ -1,10 +1,10 @@
 # ======================================================================
 #
-# Copyright (C) 2000 Paul Kulchenko (paulclinger@yahoo.com)
+# Copyright (C) 2000-2001 Paul Kulchenko (paulclinger@yahoo.com)
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.44 2000/12/12 23:52:12 $
+# $Id: SOAP::Transport::HTTP.pm,v 0.45 2001/01/16 00:38:04 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.44';
+$VERSION = '0.45';
 
 # ======================================================================
 
@@ -105,7 +105,7 @@ sub send_receive {
     SOAP::Trace::debug($resp->as_string);
 
     # 100 OK, continue to read?
-    if (($resp->code == 510 || $resp->code == 501 || $resp->code == 405) && 
+    if (($resp->code == 510 || $resp->code == 501) && 
         $method ne 'M-POST') { 
       $mpost{$endpoint} = 1;
     } else {
@@ -121,7 +121,8 @@ sub send_receive {
   $self->is_success($resp->is_success);
   $self->status($resp->status_line);
 
-  $resp->content;
+  join '', $resp->content_type eq 'multipart/related' ? ($resp->headers_as_string, "\n") : '',
+           $resp->content;
 }
 
 # ======================================================================
@@ -177,12 +178,17 @@ sub handle {
     return $self->response(HTTP::Response->new(405)) # METHOD NOT ALLOWED
   }
 
+  my $content_type = $self->request->content_type;
   # in some environments (PerlEx?) content_type could be empty, so allow it also
   # anyway it'll blow up inside ::Server::handle if something wrong with message
+  # TBD: but what to do with MIME encoded messages in THESE environments?
   return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Request' => 'Content-Type must be text/xml')
-    if $self->request->content_type && $self->request->content_type ne 'text/xml';
+    if $content_type && $content_type ne 'text/xml' && $content_type ne 'multipart/related';
 
-  my $response = $self->SUPER::handle($self->request->content) or return;
+  my $response = $self->SUPER::handle(
+    join '', $content_type eq 'multipart/related' ? ($self->request->headers_as_string, "\n") : '', 
+             $self->request->content
+  ) or return;
 
   $self->make_response($SOAP::Constants::HTTP_ON_SUCCESS_CODE, $response);
 }
@@ -301,7 +307,7 @@ use vars qw(@ISA);
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
-sub new { require Apache; require Apache::Constants;
+sub new { require Apache;
   my $self = shift;
 
   unless (ref $self) {
@@ -349,13 +355,53 @@ SOAP::Transport::HTTP - Server/Client side HTTP support for SOAP::Lite
 
 =head1 SYNOPSIS
 
-  use SOAP::Transport::HTTP;            
-  my $server = SOAP::Transport::HTTP::Server->new; # create new server
-# set path for deployed modules (see explanation below)
-  $server->dispatch_to('/Path/To/Deployed/Modules');
-  $server->request(new HTTP::Request); # set request object  HTTP::Request
-  $server->handle($content);           # handle request
-  $server->response;                   # get response object HTTP::Response
+=over 4
+
+=item Client
+
+  use SOAP::Lite 
+    uri => 'http://my.own.site.com/My/Examples',
+    proxy => 'http://localhost/', 
+  # proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
+  # proxy => 'http://localhost/',                 # local daemon server
+  # proxy => 'http://localhost/soap',             # local mod_perl server
+  # proxy => 'https://localhost/soap',            # local mod_perl SECURE server
+  # proxy => 'http://login:password@localhost/cgi-bin/soap.cgi', # local CGI server with authentication
+  ;
+
+  print getStateName(1);
+
+=item CGI server
+
+  use SOAP::Transport::HTTP;
+
+  SOAP::Transport::HTTP::CGI
+    # specify path to My/Examples.pm here
+    -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
+    -> handle
+  ;
+
+=item Daemon server
+
+  use SOAP::Transport::HTTP;
+
+  # change LocalPort to 81 if you want to test it with soapmark.pl
+
+  my $daemon = SOAP::Transport::HTTP::Daemon
+    -> new (LocalAddr => 'localhost', LocalPort => 80)
+    # specify list of objects-by-reference here 
+    -> objects_by_reference(qw(My::PersistentIterator My::SessionIterator My::Chat))
+    # specify path to My/Examples.pm here
+    -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
+  ;
+  print "Contact to SOAP server at ", $daemon->url, "\n";
+  $daemon->handle;
+
+=item Apache mod_perl server
+
+See F<examples/server/Apache.pm> and L</EXAMPLES> section for more information.
+
+=back
 
 =head1 DESCRIPTION
 
@@ -499,10 +545,10 @@ httpd.conf:
 
   Alias /mod_perl/ "/Apache/mod_perl/"
   <Location /mod_perl>
-   SetHandler perl-script
-   PerlHandler Apache::Registry
-   PerlSendHeader On
-   Options +ExecCGI
+    SetHandler perl-script
+    PerlHandler Apache::Registry
+    PerlSendHeader On
+    Options +ExecCGI
   </Location>
 
 soap.mod_cgi (put it in /Apache/mod_perl/ directory mentioned above)
@@ -521,7 +567,7 @@ module will be loaded dynamically only for the first time. After that
 it is already in the memory, that will bypass dynamic deployment and 
 produces error about denied access. Specify both PATH/ and MODULE name 
 in dispatch_to() and module will be loaded dynamically and then will work 
-as under static deployment. See examples/soap.mod_cgi for example.
+as under static deployment. See examples/server/soap.mod_cgi for example.
 
 =head1 TROUBLESHOOTING
 
@@ -567,13 +613,13 @@ explaining this weird behavior.
 =head1 SEE ALSO
 
  See ::CGI, ::Daemon and ::Apache for implementation details.
- See examples/soap.cgi as SOAP::Transport::HTTP::CGI example.
- See examples/soap.daemon as SOAP::Transport::HTTP::Daemon example.
+ See examples/server/soap.cgi as SOAP::Transport::HTTP::CGI example.
+ See examples/server/soap.daemon as SOAP::Transport::HTTP::Daemon example.
  See examples/My/Apache.pm as SOAP::Transport::HTTP::Apache example.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2001 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

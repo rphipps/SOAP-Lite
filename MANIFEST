@@ -12,6 +12,7 @@ lib/SOAP/Transport/TCP.pm          TCP transport, client and server
 lib/UDDI/Lite.pm                   Main UDDI::Lite module
 bin/SOAPsh.pl                      SOAP shell
 bin/stubmaker.pl                   Script for creating stubs from schema description
+examples/allclients.pl             Different client implementations
 examples/soapmark.pl               Simple test for different implementations
 examples/tcpclient.pl              Simple test for local TCP client
 examples/chat.pl                   Client side for Chat implementation 
@@ -21,6 +22,7 @@ examples/authentication.pl         Example for Basic/Digest server authenticatio
 examples/autoexamples.pl           Script for My::Examples with autodispatching
 examples/pingpong.pl               Example for local/remote access to the same object
 examples/soapsmtp.pl               Example for SMTP/sendmail message sending
+examples/cookie.pl                 Fortune cookie for you
 examples/oneliners                 Couple of one-line SOAP calls
 examples/XML/customxml.pl          Example for XML processing (SOAP::Custom::XML)
 examples/SOAP/simple1.pl           Example for SOAP interface
@@ -32,6 +34,7 @@ examples/server/soap.forkingdaemon SOAP server, forking daemon implementation
 examples/server/soap.pop3          SOAP server, POP3 implementation
 examples/server/soap.tcp           SOAP server, TCP implementation
 examples/server/soap.mod_cgi       SOAP server, Apache::Registry implementation
+examples/server/soap.io            SOAP server, IO implementation
 examples/server/Apache.pm          Module for SOAP server, mod_perl implementation
 examples/WSDL/stub1.pl             Example for WSDL stub interface
 examples/WSDL/stub2.pl             Example for WSDL stub interface

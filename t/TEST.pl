@@ -10,6 +10,6 @@ BEGIN {
 
 use Test::Harness;
 
-@ARGV = <*.t> unless @ARGV;
+@ARGV = sort <*.t> unless @ARGV;
 
-runtests(sort @ARGV);
+runtests(@ARGV);

@@ -1,10 +1,10 @@
 # ======================================================================
 #
-# Copyright (C) 2000 Paul Kulchenko (paulclinger@yahoo.com)
+# Copyright (C) 2000-2001 Paul Kulchenko (paulclinger@yahoo.com)
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: UDDI::Lite.pm,v 0.44 2000/12/12 23:52:12 $
+# $Id: UDDI::Lite.pm,v 0.45 2001/01/16 00:38:04 $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package UDDI::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.44';
+$VERSION = '0.45';
 
 use SOAP::Lite;
 
@@ -626,7 +626,7 @@ L<UDDI> ( http://search.cpan.org/search?dist=UDDI )
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2001 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
