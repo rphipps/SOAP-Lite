@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: UDDI::Lite.pm,v 0.45 2001/01/16 00:38:04 $
+# $Id: UDDI::Lite.pm,v 0.46 2001/01/31 16:30:24 $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package UDDI::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.45';
+$VERSION = '0.46';
 
 use SOAP::Lite;
 

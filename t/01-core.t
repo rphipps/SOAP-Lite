@@ -10,18 +10,26 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 19 }
+BEGIN { plan tests => 20 }
 
 use SOAP::Lite;
 
 my($a, $s, $r, $serialized, $deserialized);
+
+{ # check 'use ...'
+  print "'use SOAP::Lite ...' test(s)...\n";
+
+  eval 'use SOAP::Lite 99.99'; # hm, definitely should fail
+
+  ok($@ =~ /99\.99 required/);
+}
 
 { # check serialization
   print "Arrays, structs, refs serialization test(s)...\n";
 
   $serialized = join '', SOAP::Serializer->serialize(1, [1,2], {a=>3}, \4);
 
-  ok($serialized =~ m!<c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENC:Array(?: xsi:type="SOAP-ENC:Array"| SOAP-ENC:arrayType="xsd:int\[2\]"){2}><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\2><c-gensym\2 xsi:type="xsd:int">2</c-gensym\2></SOAP-ENC:Array><SOAP-ENC:Struct xsi:type="SOAP-ENC:SOAPStruct"><a xsi:type="xsd:int">3</a></SOAP-ENC:Struct><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\4></c-gensym\3>!);
+  ok($serialized =~ m!<c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\1><SOAP-ENC:Array(?: xsi:type="SOAP-ENC:Array"| SOAP-ENC:arrayType="xsd:int\[2\]"){2}><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\2><c-gensym\2 xsi:type="xsd:int">2</c-gensym\2></SOAP-ENC:Array><c-gensym(\d+) xsi:type="SOAPStruct"><a xsi:type="xsd:int">3</a></c-gensym\3><c-gensym(\d+)><c-gensym(\d+) xsi:type="xsd:int">4</c-gensym\5></c-gensym\4>!);
 }  
 
 { # check simple circular references
@@ -30,7 +38,7 @@ my($a, $s, $r, $serialized, $deserialized);
   $a = \$a;
   $serialized = join '', SOAP::Serializer->serialize($a);
 
-  ok($serialized =~ m!<c-gensym(\d+) id="ref-0x(\w+)"><c-gensym(\d+) href="#ref-0x\2"/></c-gensym\1>!);
+  ok($serialized =~ m!<c-gensym(\d+) id="ref-(\w+)"><c-gensym(\d+) href="#ref-\2"/></c-gensym\1>!);
 }
 
 { # check complex circlular references
@@ -39,7 +47,7 @@ my($a, $s, $r, $serialized, $deserialized);
   $a = { a => 1 }; my $b = { b => $a }; $a->{a} = $b;
   $serialized = join '', SOAP::Serializer->serialize($a);
 
-  ok($serialized =~ m!<SOAP-ENC:Struct(?: xsi:type="SOAP-ENC:SOAPStruct"| id="ref-0x(\w+)"){2}><a(?: xsi:type="SOAP-ENC:SOAPStruct"| id="ref-0x\w+"){2}><b(?: xsi:type="SOAP-ENC:SOAPStruct"| href="#ref-0x\1"){2}/></a></SOAP-ENC:Struct>!);
+  ok($serialized =~ m!<c-gensym(\d+)(?: xsi:type="SOAPStruct"| id="ref-(\w+)"){2}><a(?: xsi:type="SOAPStruct"| id="ref-\w+"){2}><b(?: xsi:type="SOAPStruct"| href="#ref-\2"){2}/></a></c-gensym\1>!);
 }
 
 { # check multirefs
@@ -49,11 +57,11 @@ my($a, $s, $r, $serialized, $deserialized);
 
   $serialized = join '', SOAP::Serializer->new(multirefinplace=>1)->serialize($b, $b);
 
-  ok($serialized =~ m!<c-gensym(\d+) id="ref-0x(\w+)"><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\3></c-gensym\1><c-gensym\d+ href="#ref-0x\2"/>!);
+  ok($serialized =~ m!<c-gensym(\d+) id="ref-(\w+)"><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\3></c-gensym\1><c-gensym\d+ href="#ref-\2"/>!);
 
   $serialized = join '', SOAP::Serializer->serialize($b, $b);
 
-  ok($serialized =~ m!<c-gensym\d+ href="#ref-0x(\w+)"/><c-gensym\d+ href="#ref-0x\1"/><c-gensym(\d+) id="ref-0x\1"><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\3></c-gensym\2>!);
+  ok($serialized =~ m!<c-gensym\d+ href="#ref-(\w+)"/><c-gensym\d+ href="#ref-\1"/><c-gensym(\d+) id="ref-\1"><c-gensym(\d+) xsi:type="xsd:int">1</c-gensym\3></c-gensym\2>!);
 }
 
 { # check base64, XML encoding of elements and attributes 

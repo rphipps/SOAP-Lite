@@ -1,5 +1,7 @@
 package SOAP::Apache;
 
+# -- SOAP::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
+
 use SOAP::Transport::HTTP;
 
 my $server = SOAP::Transport::HTTP::Apache

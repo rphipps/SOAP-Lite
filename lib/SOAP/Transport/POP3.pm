@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::POP3.pm,v 0.45 2001/01/16 00:38:04 $
+# $Id: SOAP::Transport::POP3.pm,v 0.46 2001/01/31 16:30:24 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::POP3;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.45';
+$VERSION = '0.46';
 
 use Net::POP3; 
 use URI::Escape; 
@@ -91,6 +91,8 @@ SOAP::Transport::POP3 - Server side POP3 support for SOAP::Lite
   # handle will return number of processed mails
   # you can organize loop if you want
   $server->handle while sleep 10;
+
+=head1 DESCRIPTION
 
 =head1 COPYRIGHT
 

@@ -29,8 +29,9 @@ $s = SOAP::Lite->uri('http://something/somewhere')->proxy('http://services.xmeth
 eval { $s->transport->timeout($SOAP::Test::TIMEOUT = $SOAP::Test::TIMEOUT) };
 $r = $s->test_connection;
 
-unless ($s->transport->is_success || $s->transport->status =~ /Internal Server Error/i) {
-  print "1..0 # Skip: ", $s->transport->status, "\n"; exit;
+unless (defined $r && defined $r->envelope) {
+  print "1..0 # Skip: ", $s->transport->status, "\n"; 
+  exit;
 }
 # ------------------------------------------------------
 
@@ -40,10 +41,10 @@ plan tests => 2;
 # Service description (WSDL) (http://www.xmethods.com/)
   print "Service description (WSDL) test(s)...\n";
   $s = SOAP::Lite
-    -> schema('http://www.xmethods.net/sd/StockQuoteService.wsdl');
+    -> service('http://www.xmethods.net/sd/StockQuoteService.wsdl');
 
   ok($s->getQuote('MSFT') > 1);
   ok(SOAP::Lite
-    -> schema('http://www.xmethods.net/sd/StockQuoteService.wsdl')
+    -> service('http://www.xmethods.net/sd/StockQuoteService.wsdl')
     -> getQuote('MSFT')  > 1);
 }

@@ -9,5 +9,5 @@ BEGIN {
 
 use SOAP::Test;
 
-SOAP::Test::Server::run_for('http://localhost/mod_perl/soap.mod_cgi');
+SOAP::Test::Server::run_for(shift || 'http://localhost/mod_perl/soap.mod_cgi');
 

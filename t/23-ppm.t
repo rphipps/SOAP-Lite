@@ -29,8 +29,9 @@ $s = SOAP::Lite->uri('http://something/somewhere')->proxy('http://ppm.activestat
 eval { $s->transport->timeout($SOAP::Test::TIMEOUT = $SOAP::Test::TIMEOUT) };
 $r = $s->test_connection;
 
-unless ($s->transport->is_success || $s->transport->status =~ /Internal Server Error/i) {
-  print "1..0 # Skip: ", $s->transport->status, "\n"; exit;
+unless (defined $r && defined $r->envelope) {
+  print "1..0 # Skip: ", $s->transport->status, "\n"; 
+  exit;
 }
 # ------------------------------------------------------
 

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Test.pm,v 0.45 2001/01/16 00:38:04 $
+# $Id: SOAP::Test.pm,v 0.46 2001/01/31 16:30:24 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Test;
 
 use 5.004;
 use vars qw($VERSION $TIMEOUT);
-$VERSION = '0.45';
+$VERSION = '0.46';
 
 $TIMEOUT = 5;
 
@@ -52,12 +52,13 @@ sub run_for {
   eval { $s->transport->timeout($SOAP::Test::TIMEOUT) };
   my $r = $s->test_connection;
 
-  unless ($s->transport->is_success || $s->transport->status =~ /Internal Server Error/i) {
-    print "1..0 # Skip: ", $s->transport->status, "\n"; exit;
+  unless (defined $r && defined $r->envelope) {
+    print "1..0 # Skip: ", $s->transport->status, "\n";
+    exit;
   }
   # ------------------------------------------------------
 
-  plan tests => 30;
+  plan tests => 32;
 
   print "Perl SOAP server test(s)...\n";
 
@@ -105,6 +106,18 @@ sub run_for {
   # should call My::PingPong, not A::B
   my $p = My::PingPong->SOAP::new(10);
   ok(ref $p && $p->SOAP::next+1 == $p->value);
+
+  # forget everything
+  SOAP::Lite->self(undef); 
+
+  $s = SOAP::Lite
+    -> uri('urn:/My/PingPong')                
+    -> proxy($proxy)
+  ;
+
+  # should return object EXACTLY as after My::PingPong->SOAP::new(10)
+  $p = $s->SOAP::new(10); 
+  ok(ref $p && $s->SOAP::next($p)+1 == $p->value);
 
   print "VersionMismatch test(s)...\n";
 
@@ -232,6 +245,10 @@ sub run_for {
   ok($s->call(SOAP::Data
     ->name('a:getStateName')
     ->attr({'xmlns:~' => 'urn:/My/Examples'}), 1)->result eq 'Alabama');
+
+  ok($s->call(SOAP::Data
+    ->name('getStateName')
+    ->uri('urn:/My/Examples'), 1)->result eq 'Alabama');
 
   ok($s->call(SOAP::Data
     ->name('a:getStateName')

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.45 2001/01/16 00:38:04 $
+# $Id: SOAP::Transport::HTTP.pm,v 0.46 2001/01/31 16:30:24 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.45';
+$VERSION = '0.46';
 
 # ======================================================================
 
@@ -121,7 +121,7 @@ sub send_receive {
   $self->is_success($resp->is_success);
   $self->status($resp->status_line);
 
-  join '', $resp->content_type eq 'multipart/related' ? ($resp->headers_as_string, "\n") : '',
+  join '', $resp->content_type =~ m!^multipart/! ? ($resp->headers_as_string, "\n") : '',
            $resp->content;
 }
 
@@ -178,15 +178,15 @@ sub handle {
     return $self->response(HTTP::Response->new(405)) # METHOD NOT ALLOWED
   }
 
-  my $content_type = $self->request->content_type;
+  my $content_type = $self->request->content_type || '';
   # in some environments (PerlEx?) content_type could be empty, so allow it also
   # anyway it'll blow up inside ::Server::handle if something wrong with message
   # TBD: but what to do with MIME encoded messages in THESE environments?
   return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Request' => 'Content-Type must be text/xml')
-    if $content_type && $content_type ne 'text/xml' && $content_type ne 'multipart/related';
+    if $content_type && $content_type ne 'text/xml' && $content_type !~ m!^multipart/!;
 
   my $response = $self->SUPER::handle(
-    join '', $content_type eq 'multipart/related' ? ($self->request->headers_as_string, "\n") : '', 
+    join '', $content_type =~ m!^multipart/! ? ($self->request->headers_as_string, "\n") : '', 
              $self->request->content
   ) or return;
 
@@ -202,6 +202,7 @@ sub make_fault {
 sub make_response {
   my $self = shift;
   my($code, $response) = @_;
+  $response =~ s!(\?>)!$1<?xml-stylesheet type="text/css"?>! if $self->request->content_type eq 'multipart/form-data';
   $self->response(HTTP::Response->new( 
      $code => undef, 
      HTTP::Headers->new(
@@ -235,9 +236,9 @@ sub new {
 sub handle {
   my $self = shift->new;
 
-  my $content; read(STDIN,$content,$ENV{'CONTENT_LENGTH'});  
+  my $content; read(STDIN,$content,$ENV{'CONTENT_LENGTH'} || 0);  
   $self->request(HTTP::Request->new( 
-    $ENV{'REQUEST_METHOD'} => $ENV{'SCRIPT_NAME'},
+    $ENV{'REQUEST_METHOD'} || '' => $ENV{'SCRIPT_NAME'},
     HTTP::Headers->new(map {(/^HTTP_(.+)/i ? $1 : $_) => $ENV{$_}} keys %ENV),
     $content,
   ));

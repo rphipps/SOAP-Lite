@@ -1,13 +1,15 @@
-#!/bin/env perl 
+#!perl -w
 #!d:\perl\bin\perl.exe 
+
+# -- SOAP::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
 
 BEGIN { warn "Started...\n" }
 
-# import interface. All methods from loaded schema imported by default
+# import interface. All methods from loaded service are imported by default
 use SOAP::Lite
-  schema => 'http://www.xmethods.net/sd/StockQuoteService.wsdl',
-  # schema => 'file:/your/local/path/StockQuoteService.wsdl',
-  # schema => 'file:./StockQuoteService.wsdl',
+  service => 'http://www.xmethods.net/sd/StockQuoteService.wsdl',
+  # service => 'file:/your/local/path/StockQuoteService.wsdl',
+  # service => 'file:./StockQuoteService.wsdl',
 ;
 
 warn "Loaded...\n";

@@ -1,5 +1,7 @@
-#!/bin/env perl 
+#!perl -w
 #!d:\perl\bin\perl.exe 
+
+# -- SOAP::Lite -- soaplite.com -- Copyright (C) 2001 Paul Kulchenko --
 
 # you can do this
 use SOAP::Lite +autodispatch => 

@@ -1,0 +1,70 @@
+                          SOAP::Lite for COM interface
+                          ============================
+
+SOAP::Lite for COM interface gives you ability to access SOAP services
+from your COM applications. Examples in Visual Basic, Excel/VBA, Perl,
+JavaScript and ASP are provided. 
+
+Interface comes in two versions: standalone and minimal.
+Both versions DOES NOT require ROPE.dll, MSXML.dll or listener.asp (for ASP).
+Both versions were tested on Windows 98 and 2K, but should work on Windows 9x, 
+ME, NT, 2K.
+Minimal version requires Perl installation, but comes with minimal size (32k).
+Standalone version doesn't require ANYTHING (including Perl), but comes
+as one big dll (2.5M).
+
+Standalone:    http://www.soaplite.com/download/SOAP-Lite-COM-standalone-0.46.zip
+Perl required: http://www.soaplite.com/download/SOAP-Lite-COM-perl-required-0.46.zip
+
+You may create your own version (all source code and batch files are provided),
+but it'll require PerlCtrl utility that comes as part of Perl Development Kit
+from ActiveState (http://activestate.com/). Interface could be create ONLY on
+Windows NT or 2K, but will work on any Windows.
+
+INSTALLATION
+
+To register the DLL:
+
+  regsvr32 Lite.dll
+
+You can now try out the example programs.
+
+VISUAL BASIC EXAMPLES
+
+remote.vbs and temper.vbs connect to remote services, delayed stock 
+quotes and temperature conversion.
+
+local.vbs connects to local ASP server.
+
+VISUAL BASIC, PERL AND JAVASCRIPT EXAMPLE
+
+These examples (states.vbs, states.pl, states.html) connect to the local 
+SOAP server and call service that will return name of the state.
+
+MICROSOFT EXCEL EXAMPLE
+
+Open the Excel (states.xsl) document. Be warned, this document contains
+macroses, so you can get the warning. 
+If you want to run examples you need to enable macroses. For those who
+don't trust anybody code of macroses is provided in states.vba file, so
+they can disable macroses and add them from this file.
+
+By default this example will connect to local SOAP server 
+(see VISUAL BASIC SERVER EXAMPLE). You may alter the address by 
+changing parameter for proxy() method.
+
+Supply a number of state and click 'Get State Name' button.
+
+VISUAL BASIC SERVER EXAMPLE
+
+You may start local SOAP server by running soap.vbs script. By default
+server will accept requests on 'http://localhost/', but you can modify
+this URL. Probably you'll also need to modify dispatch_to() parameters
+where you can specify path to your Perl modules.
+
+ASP SERVER EXAMPLE
+
+Example of ASP SOAP server is provided. This implementation doesn't 
+require ROPE or MSXML dlls, so all that you need is register Lite.dll 
+and put soap.asp in appropriate place (for example, c:\inetpub\wwwroot\).
+Now you can point your SOAP requests to http://localhost/soap.asp.

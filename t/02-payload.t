@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 32 }
+BEGIN { plan tests => 37 }
 
 use SOAP::Lite;
 
@@ -216,4 +216,23 @@ my($a, $s, $r, $serialized, $deserialized);
   $deserialized = SOAP::Deserializer->deserialize('<?xml version="1.0" encoding="UTF-8"?><SOAP-ENV:Envelope xmlns="a" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/1999/XMLSchema"><SOAP-ENV:Body><getStateName><c-gensym5 xsi:type="xsd:int">1</c-gensym5></getStateName></SOAP-ENV:Body></SOAP-ENV:Envelope>');
   ok($deserialized->namespaceuriof('//getStateName') eq 'a');
 
+}
+
+{ # Map type serialization/deserialization
+  print "Map type serialization/deserialization test(s)...\n";
+
+  my $key = "\0\1";
+  $serialized = SOAP::Serializer->method(aa => SOAP::Data->type(map => {a => 123, $key => 456})->name('maaap'));
+
+  { local $^W; # disable warning on implicit map encoding
+    my $implicit = SOAP::Serializer->method(aa => SOAP::Data->name(maaap => {a => 123, $key => 456}));
+    ok($implicit eq $serialized);
+  }
+  ok($serialized =~ /xmlsoap:Map/);
+  ok($serialized =~ m!xmlns:xmlsoap="http://xml.apache.org/xml-soap"!);
+
+  $deserialized = SOAP::Deserializer->deserialize($serialized);
+  $a = $deserialized->valueof('//maaap');
+  ok(UNIVERSAL::isa($a => 'HASH'));
+  ok(ref $a && $a->{$key} == 456);
 }

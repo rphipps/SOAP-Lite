@@ -24,7 +24,6 @@ http://scriptingnews.userland.com/backissues/2000/06/27#performanceOfSoap
 
 This version of SOAP::Lite supports a subset of the SOAP 1.1 specification.
 See <URL:http://www.w3.org/TR/SOAP> for details. 
-See LIMITATIONS section for SOAP::Lite major limitations.
 
 FEATURES
 
@@ -36,6 +35,7 @@ FEATURES
 - Supports SMTP protocol.
 - Provides POP3 server implementation.
 - Supports Basic/Digest server authentication.
+- Provides COM interface.
 - Supports blessed object references.
 - Contains various reusable components (modules) that can be used 
   independently, as, for instance, SOAP::Serializer and SOAP::Deserializer.
@@ -158,7 +158,7 @@ SOAP/Perl library from Keith Brown (http://www.develop.com/soap/) or
 
 COPYRIGHT
 
-Copyright (C) 2000 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2001 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

@@ -1,0 +1,1 @@
+@perlctrl Lite.ctrl -f -c -i="CompanyName=soaplite.com;FileDescription=SOAP::Lite for Perl;ProductVersion=0.46;LegalCopyright=Copyright (C) 2000-2001 Paul Kulchenko"

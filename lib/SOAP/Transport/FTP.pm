@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::FTP.pm,v 0.45 2001/01/16 00:38:04 $
+# $Id: SOAP::Transport::FTP.pm,v 0.46 2001/01/31 16:30:24 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::FTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.45';
+$VERSION = '0.46';
 
 use Net::FTP;
 use IO::File;
@@ -93,6 +93,8 @@ SOAP::Transport::FTP - Client side FTP support for SOAP::Lite
   ;
 
   print getStateName(1);
+
+=head1 DESCRIPTION
 
 =head1 COPYRIGHT
 

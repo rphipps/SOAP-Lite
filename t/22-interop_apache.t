@@ -22,26 +22,29 @@ use SOAP::Lite
 
 my($a, $s, $r);
 
+my $proxy = 'http://services.xmethods.net:80/soap/servlet/rpcrouter';
+
 # ------------------------------------------------------
 use SOAP::Test;
 
-$s = SOAP::Lite->uri('http://something/somewhere')->proxy('http://services.xmethods.net:80/soap/servlet/rpcrouter')->on_fault(sub{});
+$s = SOAP::Lite->uri('http://something/somewhere')->proxy($proxy)->on_fault(sub{});
 eval { $s->transport->timeout($SOAP::Test::TIMEOUT = $SOAP::Test::TIMEOUT) };
 $r = $s->test_connection;
 
-unless ($s->transport->is_success || $s->transport->status =~ /Internal Server Error/i) {
-  print "1..0 # Skip: ", $s->transport->status, "\n"; exit;
+unless (defined $r && defined $r->envelope) {
+  print "1..0 # Skip: ", $s->transport->status, "\n"; 
+  exit;
 }
 # ------------------------------------------------------
 
-plan tests => 8;
+plan tests => 11;
 
 {
 # XMethod's JavaSOAP server (http://xmethods.com/detail.html?id=11)
   print "XMethod's JavaSOAP server test(s)...\n";
   $s = SOAP::Lite 
     -> uri('urn:xmethodsInterop')
-    -> proxy('http://services.xmethods.net:80/soap/servlet/rpcrouter')
+    -> proxy($proxy)
   ;
 
   $a = 'SOAP::Lite';
@@ -68,6 +71,7 @@ plan tests => 8;
   $r = $s->echoFloatArray($a)->result;
   ok(ref $r && join('', @$r) eq join('', @$a)); 
 
+  # you may specify URI manually (but see maptype() below)
   $a = {varString => 'b', varInt => 2, varFloat => 95.7};
   $r = $s->echoStruct(
     SOAP::Data->type('xx:SOAPStruct' => $a)
@@ -75,15 +79,58 @@ plan tests => 8;
   )->result;
   ok(ref $r && join('', sort values %$r) eq join('', sort values %$a)); 
 
+  # specify mapping to URI
+  $s->maptype({SOAPStruct => 'http://www.xmethods.com/services'});
+
+  $a = {varString => 'b', varInt => 2, varFloat => 95.7};
+  $r = $s->echoStruct($a)->result;
+  ok(ref $r && join('', sort values %$r) eq join('', sort values %$a)); 
+
+  $a = {varString => 'b', varInt => 2, varFloat => 95.7};
+  $r = $s->echoStruct(SOAP::Data->name(something => $a))->result;
+  ok(ref $r && join('', sort values %$r) eq join('', sort values %$a)); 
+
   $a = [
     {varString => 'b', varInt => 2, varFloat => 95.7}, 
     {varString => 'c', varInt => 3, varFloat => 85.7},
     {varString => 'd', varInt => 4, varFloat => 75.7},
   ];
-  $r = $s->echoStructArray(SOAP::Data->attr({'xmlns:xx' => 'http://www.xmethods.com/services'} =>
-      [map {SOAP::Data->type('xx:SOAPStruct' => $_)    
-                      ->attr({'xmlns:xx' => 'http://www.xmethods.com/services'}) 
-           } @$a])
-  )->result;
+  $r = $s->echoStructArray($a)->result;
   ok(ref $r && join('', map { sort values %$_ } @$r) eq join('', map { sort values %$_ } @$a)); 
+
+  $a = [
+    {varString => 'b', varInt => 2, varFloat => 95.7}, 
+    {varString => 'c', varInt => 3, varFloat => 85.7},
+    {varString => 'd', varInt => 4, varFloat => 75.7},
+  ];
+  $r = $s->echoStructArray(SOAP::Data->name(something => $a))->result;
+  ok(ref $r && join('', map { sort values %$_ } @$r) eq join('', map { sort values %$_ } @$a)); 
+}
+
+if (0) { # will be allowed as soon as these tests will available on XMethods
+  $s = SOAP::Lite 
+    -> uri('urn:xmethodsInterop')
+    -> proxy($proxy)
+  ;
+
+  my $key = "\0\1";
+  my $value = 456;
+
+  local $^W;
+
+  # implicit, warning with -w
+  $a = $s->echoMap({a => 123, $key => $value})->result;
+  ok($a->{$key} == $value);
+
+  # explicit
+  $a = $s->echoMap(SOAP::Data->type(map => {a => 123, $key => $value}))->result;
+  ok($a->{$key} == $value);
+
+  # implicit, warning with -w
+  $a = $s->echoMapArray([{a => 123, $key => $value}, {b => 123, $key => 789}])->result;
+  ok($a->[0]->{$key} == $value);
+
+  # explicit
+  $a = $s->echoMapArray([SOAP::Data->type(map => {a => 123, $key => $value}), SOAP::Data->type(map => {b => 123, $key => 789})])->result;
+  ok($a->[0]->{$key} == $value);
 }

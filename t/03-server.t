@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 8 }
+BEGIN { plan tests => 11 }
 
 use SOAP::Lite;
 
@@ -115,7 +115,7 @@ EOM
 );
 
 my $is_mimeparser = eval { SOAP::MIMEParser->new; 1 };
-my $reason = $@ unless $is_mimeparser;
+(my $reason = $@) =~ s/ at .+// unless $is_mimeparser;
 print "MIME tests will be skipped: $reason" if defined $reason;
 my $package = 'package Calculator; sub add { $_[1] + $_[2] }; 1';
 
@@ -123,6 +123,7 @@ my $package = 'package Calculator; sub add { $_[1] + $_[2] }; 1';
   print "Server handler test(s)...\n";
 
   my $server = SOAP::Server->dispatch_to('Calculator');
+
   foreach (keys %tests) {
     my $result = SOAP::Deserializer->deserialize($server->handle($tests{$_}));
     $_ =~ /XML/ || $is_mimeparser ? ok(($result->faultdetail || '') =~ /Failed to access class \(Calculator\)/) 
@@ -133,8 +134,25 @@ my $package = 'package Calculator; sub add { $_[1] + $_[2] }; 1';
 
   foreach (keys %tests) {
     my $result = SOAP::Deserializer->deserialize($server->handle($tests{$_}));
-    print "$_: ", $result->result || $result->faultdetail, "\n";
     $_ =~ /XML/ || $is_mimeparser ? ok(($result->result || 0) == 7) 
                                   : skip($reason => undef);
   }
+}
+
+{
+  print "Error handling in server test(s)...\n";
+
+  $a = SOAP::Server->handle('<a></a>');
+  ok($a =~ /Can't find Envelope/);
+
+  $a = SOAP::Server->handle('<Envelope></Envelope>');
+  ok($a =~ /Bad Version/);
+
+  $a = SOAP::Server->handle('<SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" 
+                   SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" 
+                   xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" 
+                   xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" 
+                   xmlns:xsd="http://www.w3.org/1999/XMLSchema">
+<SOAP-ENV:Body></SOAP-ENV:Body></SOAP-ENV:Envelope>');
+  ok($a =~ /Can't find method/);
 }

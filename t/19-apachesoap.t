@@ -22,7 +22,7 @@ use SOAP::Lite
 
 my($a, $s, $r, $serialized, $deserialized);
 
-my $proxy = 'http://localhost:8080/examples/rpcrouter/rpcrouter.jsp';
+my $proxy = 'http://localhost:8080/soap/servlet/rpcrouter';
 
 # ------------------------------------------------------
 use SOAP::Test;
@@ -31,8 +31,9 @@ $s = SOAP::Lite->uri('http://something/somewhere')->proxy($proxy)->on_fault(sub{
 eval { $s->transport->timeout($SOAP::Test::TIMEOUT = $SOAP::Test::TIMEOUT) };
 $r = $s->test_connection;
 
-unless ($s->transport->is_success || $s->transport->status =~ /Internal Server Error/i) {
-  print "1..0 # Skip: ", $s->transport->status, "\n"; exit;
+unless (defined $r && defined $r->envelope) {
+  print "1..0 # Skip: ", $s->transport->status, "\n"; 
+  exit;
 }
 # ------------------------------------------------------
 

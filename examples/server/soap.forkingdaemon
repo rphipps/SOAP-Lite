@@ -1,4 +1,4 @@
-#!/bin/env perl 
+#!perl -w
 #!d:\perl\bin\perl.exe 
 
 eval { require SOAP::Transport::HTTP::ForkingDaemon } or die <<EOW;

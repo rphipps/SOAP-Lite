@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::IO.pm,v 0.45 2001/01/16 00:38:04 $
+# $Id: SOAP::Transport::IO.pm,v 0.46 2001/01/31 16:30:24 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::IO;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.45';
+$VERSION = '0.46';
 
 use IO::File;
 
@@ -112,6 +112,8 @@ SOAP::Transport::IO - Server side IO support for SOAP::Lite
     -> dispatch_to('/Your/Path/To/Deployed/Modules', 'Module::Name', 'Module::method') 
     -> handle
   ;
+
+=head1 DESCRIPTION
 
 =head1 COPYRIGHT
 

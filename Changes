@@ -162,3 +162,22 @@ Revision history for Perl extension SOAP::Lite.
         + added tests for xml, xml with headers, single and multipart MIME
         + updated documentation and added examples
         + more that 300 tests in test suite
+
+0.46 Wed Jan 31 16:30:24 2001
+        ! fixed SOAP:: prefix with SOAP::Lite objects
+        ! fixed documentation installation on Unix
+        ! changed interface of schema() method. Use service() instead
+        + added COM interface
+          single dll (standalone or minimal version, downloadable separately)
+          doesn't require ROPE.dll, MSXML.dll or listener.asp
+          tested on Windows 98/2K, and should work on Windows 9x, Me, NT, 2K
+          ASP and daemon server implementations
+          examples in VB/VBS, Excel/VBA, JavaScript, Perl and ASP
+        + added parsing multipart/form-data
+          SOAP server can accept SOAP requests directly from web form
+          examples are provided (examples/forms/*)
+        + added Map type for hash encoding. Tested with ApacheSOAP
+        + added function that maps classes to URI (maptype)
+        + allowed multiple ports in WSDL
+        + tested object interoperability with Apache SOAP
+        + optimized internal functions
