@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::POP3.pm,v 0.43 2000/11/28 01:47:02 $ 
+# $Id: SOAP::Transport::POP3.pm,v 0.44 2000/12/12 23:52:12 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::POP3;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.43';
+$VERSION = '0.44';
 
 use Net::POP3; 
 use MIME::Parser; 
@@ -22,20 +22,20 @@ use URI::Escape;
 
 package SOAP::Transport::POP3::Server;
 
-use Carp;
+use Carp ();
 use SOAP::Lite;
 use vars qw(@ISA $AUTOLOAD);
 @ISA = qw(SOAP::Server);
 
 sub new {
   my $self = shift;
-  my $class = ref($self) || $self;
     
   unless (ref $self) {
+    my $class = ref($self) || $self;
     my($server, $auth) = reverse split /@/, URI::Escape::uri_unescape(shift);
     $self = $class->SUPER::new(@_);
-    $self->{_pop3server} = Net::POP3->new($server) or croak "Can't connect to $server: $!";
-    $self->{_pop3server}->login(split /:/, $auth) or croak "Can't authenticate to $server"
+    $self->{_pop3server} = Net::POP3->new($server) or Carp::croak "Can't connect to $server: $!";
+    $self->{_pop3server}->login(split /:/, $auth) or Carp::croak "Can't authenticate to $server"
       if defined $auth;
   }
   return $self;

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: UDDI::Lite.pm,v 0.43 2000/11/28 01:47:02 $ 
+# $Id: UDDI::Lite.pm,v 0.44 2000/12/12 23:52:12 $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package UDDI::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.43';
+$VERSION = '0.44';
 
 use SOAP::Lite;
 
@@ -35,10 +35,12 @@ sub result { # result should point to immediate child of Body
 
 package UDDI::Data;
 
+use Carp ();
+
 use vars qw(@ISA $AUTOLOAD @EXPORT_OK %EXPORT_TAGS);
 @ISA = qw(SOAP::Data);
 
-my @elements = (qw/accessPoint address addressLine authInfo authToken bindingDetail bindingKey bindingTemplate bindingTemplates businessDetail businessDetailExt businessEntity businessEntityExt businessInfo businessInfos businessKey businessList businessService businessServices categoryBag contact contacts description discoveryURL discoveryURLs dispositionReport email errInfo findQualifier findQualifiers hostingRedirector identifierBag instanceDetails instanceParms keyValue keyedReference name overviewDoc overviewURL personName phone registeredInfo result serviceDetail serviceInfo serviceInfos serviceKey serviceList tModel tModelBag tModelDetail tModelInfo tModelInfos tModelInstanceDetails tModelInstanceInfo tModelKey tModelList uploadRegister/);
+my @elements = (with => qw/accessPoint address addressLine authInfo authToken bindingDetail bindingKey bindingTemplate bindingTemplates businessDetail businessDetailExt businessEntity businessEntityExt businessInfo businessInfos businessKey businessList businessService businessServices categoryBag contact contacts description discoveryURL discoveryURLs dispositionReport email errInfo findQualifier findQualifiers hostingRedirector identifierBag instanceDetails instanceParms keyValue keyedReference name overviewDoc overviewURL personName phone registeredInfo result serviceDetail serviceInfo serviceInfos serviceKey serviceList tModel tModelBag tModelDetail tModelInfo tModelInfos tModelInstanceDetails tModelInstanceInfo tModelKey tModelList uploadRegister/);
 @EXPORT_OK = (@elements);
 %EXPORT_TAGS = ('all' => [@EXPORT_OK]);
 
@@ -58,36 +60,63 @@ sub new {
   return $self;
 }
 
+sub with {
+  my $self = shift;
+  $self = (__PACKAGE__->can($self) || Carp::croak "Don't know what to do with '$self'")->()
+    unless ref $self && UNIVERSAL::isa($self => __PACKAGE__);
+
+  my $name = $self->SUPER::name;
+  my @values;
+  while (@_) {
+    my $data = shift;
+    my($method, @value) = UNIVERSAL::isa($data => __PACKAGE__)
+      ? ($data->SUPER::name, $data->value)
+      : ($data, shift);
+    exists $attributes{$name}{$method}
+      ? $self->$method(@value)
+      : push(@values, ($self->can($method) || Carp::croak "Don't know what to do with '$method'")->(@value));
+  }
+  $self->set_value([@values]);
+}
+
 sub _compileit {
   no strict 'refs';
   my $method = shift;
   *$method = sub { 
-    my $uddi = UNIVERSAL::isa($_[0] => 'UDDI::Data');
+
+    # GENERATE element if no parameters: businessInfo()
+    return __PACKAGE__->SUPER::name($method) 
+      if !@_ && exists $elements{$method};
 
     die "Expected element (UDDI::Data) as parameter for $method()\n"
       if !ref $_[0] && exists $elements{$method};
 
+    my $uddi = UNIVERSAL::isa($_[0] => __PACKAGE__);
+
     # MAKE ELEMENT: name('old')
-    return UDDI::Data->SUPER::name($method => @_) 
+    return __PACKAGE__->SUPER::name($method => @_) 
       if !$uddi;
+
+    my $name = $_[0]->SUPER::name;
 
     # GET/SET ATTRIBUTE: businessInfo->businessKey
     return @_ > 1 
-        ? ($_[0]->attr->{$method} = $_[1], $_[0])                    # SET
-        : UDDI::Data->SUPER::name($method => $_[0]->attr->{$method}) # GET
-      if exists $attributes{$_[0]->SUPER::name}{$method};
+        ? scalar($_[0]->attr->{$method} = $_[1], $_[0])               # SET
+        : __PACKAGE__->SUPER::name($method => $_[0]->attr->{$method}) # GET
+      if exists $attributes{$name} && exists $attributes{$name}{$method};
 
     # GET ELEMENT: businessInfos->businessInfo
-    my @elems = grep {UNIVERSAL::isa($_ => 'UDDI::Data') && $_->SUPER::name eq $method} $_[0]->value;
+    my @elems = grep {
+      ref $_ && UNIVERSAL::isa($_ => __PACKAGE__) && $_->SUPER::name eq $method
+    } map {ref $_ eq 'ARRAY' ? @$_ : $_} $_[0]->value;
     return wantarray? @elems : $elems[0]
-      if exists $elements{$_[0]->SUPER::name}{$method};
+      if exists $elements{$name} && exists $elements{$name}{$method};
 
     # MAKE ELEMENT: businessInfos(businessInfo('something'))
-    return UDDI::Data->SUPER::name($method => @_) 
-      if exists $elements{$method}{$_[0]->SUPER::name};
+    return __PACKAGE__->SUPER::name($method => @_) 
+      if exists $elements{$method} && exists $elements{$method}{$name};
 
-    use Carp ();
-    Carp::croak "Don't know what to do with '$method' and '@{[$_[0]->SUPER::name]}' elements";
+    Carp::croak "Don't know what to do with '$method' and '$name' elements";
   }
 }
 
@@ -122,12 +151,15 @@ sub new {
   return $self;
 }
 
+use overload; # protect from stringification in UDDI::Data
+sub gen_id { overload::StrVal($_[1]) =~ /\((0x\w+)\)/o; $1 }
+
 sub as_uddi { 
   my $self = shift;
   my($value, $name, $type, $attr) = @_;
-  return $self->encode_array($value, $name) if ref $value eq 'ARRAY';
-  return $self->encode_hash($value, $name) if ref $value eq 'HASH';
-  [$name, {%{$attr || {}}}, ref $value ? [$self->encode_object($value)] : $value, SOAP::Serializer::gen_id($value)];
+  return $self->encode_array($value, $name, undef, $attr) if ref $value eq 'ARRAY';
+  return $self->encode_hash($value, $name, undef, $attr) if ref $value eq 'HASH';
+  [$name, {%{$attr || {}}}, ref $value ? ([$self->encode_object($value)], $self->gen_id($value)) : $value];
 }                                                                                          
 
 sub encode_array {
@@ -175,14 +207,14 @@ use Carp ();
 BEGIN { # handle exports
   %EXPORT_TAGS = (
     'delete'   => [qw/delete_binding delete_business delete_service delete_tModel/],
-    'discard'  => ['discard_authToken'],
+    'auth'     => [qw/get_authToken discard_authToken get_registeredInfo/],
     'save'     => [qw/save_binding save_business save_service save_tModel/],
-    'validate' => ['validate_categorization'],
+    'validate' => [qw/validate_categorization/],
     'find'     => [qw/find_binding find_business find_service find_tModel/],
-    'get'      => [qw/get_bindingDetail get_businessDetail get_businessDetailExt get_registeredInfo get_serviceDetail get_tModelDetail/],
+    'get'      => [qw/get_bindingDetail get_businessDetail get_businessDetailExt get_serviceDetail get_tModelDetail/],
   );
   $EXPORT_TAGS{inquire} = [map {@{$EXPORT_TAGS{$_}}} qw/find get/];
-  $EXPORT_TAGS{publish} = [map {@{$EXPORT_TAGS{$_}}} qw/delete discard save validate/];
+  $EXPORT_TAGS{publish} = [map {@{$EXPORT_TAGS{$_}}} qw/delete auth save validate/];
   $EXPORT_TAGS{all} =     [map {@{$EXPORT_TAGS{$_}}} qw/inquire publish/];
   Exporter::export_ok_tags('all');
 }
@@ -260,30 +292,55 @@ UDDI::Lite - Library for UDDI clients in Perl
 
   use UDDI::Lite;
   print UDDI::Lite
-    -> proxy('http://test.uddi.microsoft.com/inquire')
+    -> proxy('http://uddi.microsoft.com/inquire')
     -> find_business(name => 'old')
     -> result
     -> businessInfos->businessInfo->serviceInfos->serviceInfo->name;
 
-  The same code with autodispatch: 
+The same code with autodispatch: 
 
   use UDDI::Lite +autodispatch => 
-    proxy => 'http://test.uddi.microsoft.com/inquire'
+    proxy => 'http://uddi.microsoft.com/inquire'
   ;
 
   print find_business(name => 'old')
     -> businessInfos->businessInfo->serviceInfos->serviceInfo->name;                         
 
-  Or with importing:
+Or with importing:
 
   use UDDI::Lite 
     'UDDI::Lite' => [':inquire'],
-    proxy => 'http://test.uddi.microsoft.com/inquire'
+    proxy => 'http://uddi.microsoft.com/inquire'
   ;
 
   print find_business(name => 'old')
     -> businessInfos->businessInfo->serviceInfos->serviceInfo->name;                         
 
+Publishing API:
+
+  use UDDI::Lite 
+    import => ['UDDI::Data'], 
+    import => ['UDDI::Lite'],
+    proxy => "https://some.server.com/endpoint_fot_publishing_API";
+
+  my $auth = get_authToken({userID => 'USERID', cred => 'CRED'})->authInfo;
+  my $busent = with businessEntity =>
+    name("Contoso Manufacturing"), 
+    description("We make components for business"),
+    businessKey(''),
+    businessServices with businessService =>
+      name("Buy components"), 
+      description("Bindings for buying our components"),
+      serviceKey(''),
+      bindingTemplates with bindingTemplate =>
+        description("BASDA invoices over HTTP post"),
+        accessPoint('http://www.contoso.com/buy.asp'),
+        bindingKey(''),
+        tModelInstanceDetails with tModelInstanceInfo =>
+          description('some tModel'),
+          tModelKey('UUID:C1ACF26D-9672-4404-9D70-39B756E62AB4')
+  ;
+  print save_business($auth, $busent)->businessEntity->businessKey;
 
 =head1 DESCRIPTION
 
@@ -346,7 +403,7 @@ else). This is suitable for stacking these calls like:
 
   $uddi = UDDI::Lite
     -> on_debug(sub{print@_})
-    -> proxy('http://test.uddi.microsoft.com/inquire')
+    -> proxy('http://uddi.microsoft.com/inquire')
   ;
 
 Order is insignificant and you may call new() method first. If you
@@ -355,7 +412,7 @@ gives you additional syntax:
 
   $uddi = new UDDI::Lite
     on_debug => sub {print@_},
-    proxy => 'http://test.uddi.microsoft.com/inquire'
+    proxy => 'http://uddi.microsoft.com/inquire'
   ;
 
 new() accepts hash with method names and values, and will call 
@@ -491,6 +548,38 @@ You can get access to attributes and elements through the same interface:
           "\n";
   }
 
+To match advantages provided by C<with> operator available in other 
+languages (like VB) we provide similar functionality that adds you 
+flexibility:
+
+    with findQualifiers => 
+      findQualifier => 'sortByNameAsc',
+      findQualifier => 'caseSensitiveMatch'
+
+is the same as: 
+
+    with(findQualifiers => 
+      findQualifier('sortByNameAsc'),
+      findQualifier('caseSensitiveMatch'),
+    )
+
+and:
+
+    findQualifiers->with( 
+      findQualifier('sortByNameAsc'),
+      findQualifier('caseSensitiveMatch'),
+    )
+
+will all generate the same code as mentioned above:
+
+    findQualifiers(findQualifier('sortByNameAsc',
+                                 'caseSensitiveMatch')),
+
+Advantage of C<with> syntax is the you can specify both attributes and 
+elements through the same interface. First argument is element where all 
+other elements and attributes will be attached. Provided examples and 
+tests cover different syntaxes.
+
 =head2 AUTODISPATCHING
 
 UDDI::Lite provides autodispatching feature that lets you create 
@@ -499,10 +588,10 @@ code that looks similar for local and remote access.
 For example:
 
   use UDDI::Lite +autodispatch => 
-    proxy => 'http://test.uddi.microsoft.com/inquire';
+    proxy => 'http://uddi.microsoft.com/inquire';
 
 tells autodispatch all UDDI calls to 
-'http://test.uddi.microsoft.com/inquire'. All subsequent calls can look 
+'http://uddi.microsoft.com/inquire'. All subsequent calls can look 
 like:
 
   find_business(name => 'old');
@@ -519,16 +608,15 @@ Interface is still subject to change.
 
 =item *
 
-Publishing API is not tested and though HTTPS/SLL is supported you
-should specify it yourself (with C<proxy> or C<endpoint>) for 
-publishing API calls.
+Though HTTPS/SSL is supported you should specify it yourself (with 
+C<proxy> or C<endpoint>) for publishing API calls.
 
 =back
 
 =head1 AVAILABILITY
 
-For now UDDI::Lite is distributed as part of SOAP::Lite package that 
-you can download from ( http://geocities.com/paulclinger/soap.html ) 
+For now UDDI::Lite is distributed as part of SOAP::Lite package.
+You can download it from ( http://soaplite.com/ ) 
 or from CPAN ( http://search.cpan.org/search?dist=SOAP-Lite ).  
 
 =head1 SEE ALSO

@@ -44,7 +44,7 @@ FEATURES
   serialization/deserialization architecture has been included.
 - Supports serialization/deserialization of sophisticated object graphs
   which may have cycles (a circular queue would serialize just fine,
-  as well as $a=\$a. See test.pl and documentation for more examples).
+  as well as $a=\$a. See tests and documentation for more examples).
 - Supports arrays (both serialization and deserialization with autotyping).
 - Custom/user-defined types (see SOAP::Data::as_ordered_hash for example).
 - Supports ordered hashes (as working example of user-defined data types).

@@ -1,5 +1,5 @@
-#!c:\perl\5.6.0\bin\MSWin32-x86\perl.exe 
 #!/bin/env perl 
+#!d:\perl\bin\perl.exe 
 
 # you'd better don't try to use dynamic deployment with Apache::Registry
 # because it won't work anyway, however you can specify path to your

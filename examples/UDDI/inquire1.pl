@@ -2,11 +2,12 @@
 #!d:\perl\bin\perl.exe 
 
 use strict;
-use UDDI::Lite 
-  import => ['UDDI::Data' => ':all'], 
+use UDDI::Lite;
+UDDI::Lite->import(
+  import => ['UDDI::Data'], 
   import => ['UDDI::Lite' => ':find', ':get'],
-  proxy => 'http://test.uddi.microsoft.com/inquire',
-;
+  proxy => 'http://uddi.microsoft.com/inquire',
+);
 
 my @parameters = (
   findQualifiers([findQualifier('sortByNameAsc'), 

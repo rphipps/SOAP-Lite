@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.43 2000/11/28 01:47:02 $ 
+# $Id: SOAP::Transport::HTTP.pm,v 0.44 2000/12/12 23:52:12 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.43';
+$VERSION = '0.44';
 
 # ======================================================================
 
@@ -49,9 +49,9 @@ sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { require LWP::UserAgent; patch;
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     my(@params, @methods);
     while (@_) { $class->can($_[0]) ? push(@methods, shift() => shift) : push(@params, shift) }
     $self = $class->SUPER::new(@params);
@@ -82,7 +82,7 @@ sub send_receive {
 
     my $req = HTTP::Request->new($method => $endpoint, HTTP::Headers->new, $envelope);
     $req->proxy_authorization_basic($ENV{'HTTP_proxy_user'}, $ENV{'HTTP_proxy_pass'})
-      if ($ENV{'HTTP_proxy_user'} && $ENV{'HTTP_proxy_pass'});
+      if ($ENV{'HTTP_proxy_user'} && $ENV{'HTTP_proxy_pass'}); # by Murray Nesbitt 
 
     if ($method eq 'M-POST') {
       my $prefix = sprintf '%04d', int(rand(1000));
@@ -132,14 +132,15 @@ use vars qw(@ISA);
 @ISA = qw(SOAP::Server);
 
 use SOAP::Lite;
+use URI;
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { require LWP::UserAgent;
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     $self = $class->SUPER::new(@_);
     $self->on_action(sub {
       (my $action = shift) =~ s/^("?)(.*)\1$/$2/;
@@ -165,8 +166,6 @@ sub BEGIN {
 sub handle {
   my $self = shift->new;
 
-  $self->myuri($self->request->uri->canonical);
-
   if ($self->request->method eq 'POST') {
     $self->action($self->request->header('SOAPAction'));
   } elsif ($self->request->method eq 'M-POST') {
@@ -178,8 +177,10 @@ sub handle {
     return $self->response(HTTP::Response->new(405)) # METHOD NOT ALLOWED
   }
 
+  # in some environments (PerlEx?) content_type could be empty, so allow it also
+  # anyway it'll blow up inside ::Server::handle if something wrong with message
   return $self->make_fault($SOAP::Constants::FAULT_CLIENT, 'Bad Request' => 'Content-Type must be text/xml')
-    unless $self->request->content_type eq 'text/xml';
+    if $self->request->content_type && $self->request->content_type ne 'text/xml';
 
   my $response = $self->SUPER::handle($self->request->content) or return;
 
@@ -216,9 +217,9 @@ sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { 
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     $self = $class->SUPER::new(@_);
     SOAP::Trace::objects('()');
   }
@@ -236,9 +237,12 @@ sub handle {
   ));
   $self->SUPER::handle;
 
+  # imitate nph- cgi for IIS (pointed by Murray Nesbitt)
+  my $status = defined($ENV{'SERVER_SOFTWARE'}) && $ENV{'SERVER_SOFTWARE'}=~/IIS/
+    ? $ENV{SERVER_PROTOCOL} || 'HTTP/1.0' : 'Status:';
   my $code = $self->response->code;
   binmode(STDOUT); print STDOUT 
-    "Status: $code ", HTTP::Status::status_message($code), 
+    "$status $code ", HTTP::Status::status_message($code), 
     "\015\012", $self->response->headers_as_string, 
     "\015\012", $self->response->content;
 }
@@ -247,7 +251,7 @@ sub handle {
 
 package SOAP::Transport::HTTP::Daemon;
 
-use Carp;
+use Carp ();
 use vars qw($AUTOLOAD @ISA);
 @ISA = qw(SOAP::Transport::HTTP::Server);
 
@@ -255,11 +259,12 @@ sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { require HTTP::Daemon; 
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     $self = $class->SUPER::new();
-    $self->{_daemon} = HTTP::Daemon->new(@_) or croak "Can't create daemon: $!";
+    $self->{_daemon} = HTTP::Daemon->new(@_) or Carp::croak "Can't create daemon: $!";
+    $self->myuri(URI->new($self->url)->canonical->as_string);
     SOAP::Trace::objects('()');
   }
   return $self;
@@ -298,9 +303,9 @@ sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { require Apache; require Apache::Constants;
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     $self = $class->SUPER::new(@_);
     SOAP::Trace::objects('()');
   }
@@ -318,14 +323,16 @@ sub handler {
   ));
   $self->SUPER::handle;
 
-  my $header = $self->response->is_success ? 'header_out' : 'err_header_out';
-  $r->$header('Content-length' => $self->response->content_length);
-  $r->content_type($self->response->content_type);
-  $r->status($self->response->code); 
-  $r->send_http_header;
-  $r->print($self->response->content) unless $r->header_only;
-
-  &Apache::Constants::OK;
+  if ($self->response->is_success) {
+    $r->header_out('Content-length' => $self->response->content_length);
+    $r->send_http_header($self->response->content_type);
+    $r->print($self->response->content);
+  } else {
+    $r->err_header_out('Content-length' => $self->response->content_length);
+    $r->content_type($self->response->content_type);
+    $r->custom_response($self->response->code, $self->response->content);
+  }
+  $self->response->code;
 }
 
 *handle = \&handler; # just create alias

@@ -9,4 +9,3 @@ print SOAP::Lite
   -> proxy('http://www.razorsoft.net/ssss4c/soap.asp')
   -> doubler([10,20,30,50,100])
   -> result ->[1];
-

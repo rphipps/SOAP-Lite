@@ -6,7 +6,6 @@ use SOAP::Lite +autodispatch =>
   uri => 'http://soaplite.com/My/Examples', 
   proxy => 'http://localhost/', 
 # proxy => 'http://localhost/cgi-bin/soap.cgi', # local CGI server
-# proxy => 'http://localhost/',                 # local daemon server
 # proxy => 'http://localhost/soap',             # local mod_perl server
 # proxy => 'https://localhost/soap',            # local mod_perl SECURE server
   on_fault => sub { my($soap, $res) = @_; 

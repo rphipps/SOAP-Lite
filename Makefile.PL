@@ -59,4 +59,5 @@ WriteMakefile(
     'NAME'	   => 'SOAP::Lite',
     'VERSION_FROM' => 'lib/SOAP/Lite.pm', # finds $VERSION
     'PREREQ_PM'    => \%prerequisites,
+    'EXE_FILES'     => [ "bin/SOAPsh.pl", "bin/stubmaker.pl" ],
 );

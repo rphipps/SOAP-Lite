@@ -28,14 +28,12 @@ my $testnum = 3;
 my $testtime = 5;
 my %result;
 
-print STDERR <<DISCLAYMER;
+print STDERR <<DISCLAIMER;
 
-This test should be used only for comparison different Perl implementations 
-running in your environment. 
+This test should be used only for comparison different Perl server
+implementations running in your environment. 
 
-'tcpip' tests use one-way calls (twice less de/serializations than others)
-
-DISCLAYMER
+DISCLAIMER
 
 print STDERR "All tests may take up to ", %dests * %tests * $testnum * $testtime, " sec\n";
 

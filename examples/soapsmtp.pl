@@ -17,4 +17,3 @@ SOAP::Lite
   # -> proxy('mailto:destination.email@address?From=your.email&Subject=SOAP%20message', sendmail => 'command to run your sendmail')
 
   -> getStateName(12);
-

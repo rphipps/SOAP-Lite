@@ -18,7 +18,7 @@ sub getStateName {
 
 sub getStateNames {
   my $self = shift;
-  join "\n", map {$states[$_]} grep {ref !~ /^SOAP::/} @_;
+  join "\n", map {$states[$_]} @_;
 }
 
 sub getStateList {

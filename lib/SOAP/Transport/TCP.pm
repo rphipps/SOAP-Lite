@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::TCP.pm,v 0.43 2000/11/28 01:47:02 $ 
+# $Id: SOAP::Transport::TCP.pm,v 0.44 2000/12/12 23:52:12 $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::TCP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.43';
+$VERSION = '0.44';
 
 use IO::Socket;
 
@@ -20,7 +20,6 @@ use IO::Socket;
 
 package SOAP::Transport::TCP::Client;
 
-use Carp;
 use vars qw(@ISA);
 @ISA = qw(SOAP::Client);
 
@@ -28,9 +27,9 @@ sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { 
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     my(@params, @methods);
     while (@_) { $class->can($_[0]) ? push(@methods, shift() => shift) : push(@params, shift) }
     $self = bless {@params} => $class;
@@ -49,29 +48,31 @@ sub send_receive {
 
   my($proto, $server, $port) = split /:/, $endpoint ||= $self->endpoint;
 
-  my $sock = new IO::Socket::INET (
+  local $^W; local $@;
+  my $sock;
+  $sock = new IO::Socket::INET (
     PeerAddr => $server, PeerPort => $port, Proto => $proto, %$self
-  ) or croak "Can't open socket: $!";
+  ) 
+   and $sock->autoflush
+   and print $sock $envelope          # write 
+   and shutdown($sock => 1)           # signal stop writing
+   and my $result = join '', <$sock>; # read response
 
-  local $!;
-  $sock->autoflush;
-  print $sock $envelope;
-
-  my $code = $!;
+  my $code = $@;
 
   $self->code($code);
   $self->message($code);
   $self->is_success(!defined $code || $code eq '');
   $self->status($code);
 
-  return;
+  return $result;
 }
 
 # ======================================================================
 
 package SOAP::Transport::TCP::Server;
 
-use Carp;
+use Carp ();
 use vars qw($AUTOLOAD @ISA);
 @ISA = qw(SOAP::Server);
 
@@ -79,14 +80,14 @@ use SOAP::Lite;
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
-sub new { eval "use IO::Socket"; die if $@;
+sub new { 
   my $self = shift;
-  my $class = ref($self) || $self;
 
   unless (ref $self) {
+    my $class = ref($self) || $self;
     $self = $class->SUPER::new();
     $self->{_socket} = IO::Socket::INET->new(@_, Proto => 'tcp') 
-      or croak "Can't open socket: $!";
+      or Carp::croak "Can't open socket: $!";
     SOAP::Trace::objects('()');
   }
   return $self;
@@ -104,7 +105,7 @@ sub AUTOLOAD {
 sub handle {
   my $self = shift->new;
   while (my $sock = $self->accept) {
-    $self->SUPER::handle(join '',<$sock>);
+    print $sock $self->SUPER::handle(join '', <$sock>);
     close($sock);
   }
 }

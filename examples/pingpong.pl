@@ -8,6 +8,7 @@ use SOAP::Lite +autodispatch =>
 # proxy => 'http://localhost/',                 # local daemon server
 # proxy => 'http://localhost/soap',             # local mod_perl server
 # proxy => 'https://localhost/soap',            # local mod_perl SECURE server
+# proxy => 'tcp:localhost:82',                  # local tcp server
   on_fault => sub { my($soap, $res) = @_; 
     die ref $res ? $res->faultdetail : $soap->transport->status, "\n";
   }
@@ -20,5 +21,3 @@ my $p = My::PingPong->new(10);           # local
 print 'remote: ', $p->SOAP::next, "\n";  # remote
 print 'local: ', $p->next, "\n";         # local
 print 'remote: ', $p->SOAP::value, "\n"; # remote
-
-

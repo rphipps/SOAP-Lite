@@ -2,10 +2,10 @@
 #!d:\perl\bin\perl.exe 
 
 use UDDI::Lite +autodispatch =>
-  proxy => 'http://test.uddi.microsoft.com/inquire',
+  proxy => 'http://uddi.microsoft.com/inquire',
 ;
 
-my $list = find_business(name => 'micro');
+my $list = find_business(name => 'microsoft');
 my $bis = $list->businessInfos;
 for ($bis->businessInfo) {
   my $s = $_->serviceInfos->serviceInfo;

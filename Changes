@@ -107,7 +107,7 @@ Revision history for Perl extension SOAP::Lite.
         + added UDDI client (UDDI::Lite) with documentation
         + added M-POST functionality in HTTP::Client
         + added redirect (3??) functionality in HTTP::Client
-        + added session cache for both M-POSTs and redirects
+        + added session cache for M-POSTs and redirects
         + added conversion of all objects to o-b-r in parameters
         + changed passing envelope into method
         + allowed \x0d and \x0a in strings (will not base64 encode)
@@ -122,13 +122,28 @@ Revision history for Perl extension SOAP::Lite.
 0.43 Tue Nov 28 01:47:02 2000
         ! fixed bug in UDDI interface that made UDDI client almost useless
         ! fixed Makefile.PL
-        ! tests confirmed memory leak is gone 
-        + changed syntax for UDDI client to more flexible/convinient
-        + added limited support for WSDL schemas. Dynamic and stub access
+        ! tests confirmed that memory leak is gone 
+        + changed syntax for UDDI client to more flexible/convenient
+        + added limited support for WSDL schemas. Dynamic and stub access supported
         + added script for stub generation (stubmaker.pl)
         + optimized code on server side
         + object interface for SOAP, UDDI and schemas are supported consistently
         + allowed manipulation of method's attributes and namespaces
         + added attributes encoding ('&', '<' and '"' are encoded)
         + updated documentation 
+          (thanks to Robert Barta who basically did this work)
         + added more examples and tests (154 for now)
+
+0.44 Tue Dec 12 23:52:12 2000
+        ! fixed mod_perl server to return '500 Server Error' in case of error
+        ! fixed CGI server to work under PerlIS and PerlEx (thanks to Murray Nesbitt)
+        + tested publishing API for UDDI::Lite, examples provided 
+          (thanks to Petr Janata for access to UDDI server and provided help)
+        + added bidirectional TCP client/server, examples and tests provided
+        + enabled de/serializer overloading on server side (in addition to client)
+        + added optimization for objects-by-reference
+        + added ForkingDaemon server implementation (thanks to Peter Fraenkel)
+        + added SOAP::Custom::XML for XML processing, examples and tests provided
+        + added SOAP::Test as simple test framework
+        + added documentation for UDDI publishing API
+        + redesigned examples and tests (~240 tests for now)

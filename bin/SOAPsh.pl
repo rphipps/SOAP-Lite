@@ -60,14 +60,10 @@ detailed info on SOAP faulure or transport error.
 
 For full list of available methods see documentation for SOAP::Lite.
 
-NB: use on_action(sub{sprintf '"%s"',@_}) before making requests for 
-userland's public server, because they don't like method name in 
-action for some reasons, so this call will drop method name from action. 
-
 Along with methods of SOAP::Lite you'll be able (and that's much more 
 interesting) run any SOAP methods you know about on remote server and
 see processed results. You can even switch on debugging (with call 
-something like: 'on_debug(sub{warn@_})') and see SOAP code with 
+something like: C<on_debug(sub{print@_})>) and see SOAP code with 
 headers sent and recieved.
 
 =head1 COPYRIGHT
