@@ -1,0 +1,25 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         SOAP-Lite
+version:      0.65_3
+version_from: lib/SOAP/Lite.pm
+installdirs:  site
+requires:
+    Compress::Zlib:                0
+    Crypt::SSLeay:                 0
+    Data::UUID:                    0.11
+    DIME::Tools:                   0.03
+    HTTP::Daemon:                  0
+    IO::File:                      0
+    IO::Scalar:                    2.105
+    IO::Socket::SSL:               0
+    MIME::Base64:                  0
+    MIME::Lite:                    0
+    MIME::Parser:                  6.106
+    Net::FTP:                      0
+    Net::POP3:                     0
+    URI:                           0
+    XML::Parser:                   2.23
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.17

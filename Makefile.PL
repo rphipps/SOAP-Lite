@@ -19,7 +19,8 @@ my @PREREQS = (
   ["IO server","SOAP::Transport::IO::Server",{"IO::File" => 0},0],
   ["MQ transport support","SOAP::Transport::MQ",{"MQSeries" => 0},1],
   ["JABBER transport support","SOAP::Transport::JABBER",{"Net::Jabber" => 0},0],
-  ["MIME messages","SOAP::MIMEParser",{"MIME::Parser" => 0},1],
+  ["MIME messages","SOAP::Packager::MIME",{"MIME::Parser" => 0},1],
+  ["DIME messages","SOAP::Packager::DIME",{"IO::Scalar" => "2.105", "DIME::Tools" => 0.03, "Data::UUID" => "0.11"},0],
   ["SSL Support for TCP Transport","SOAP::Transport::TCP",{"IO::Socket::SSL" => 0},0],
   ["Compression support for HTTP","SOAP::Transport::HTTP",{"Compress::Zlib" => 0},0],
   ["MIME interoperability w/ Axis","SOAP::Lite",{"MIME::Parser" => "6.106"},0],
@@ -40,7 +41,6 @@ Possible options are:
 
 EOI
 
-
 # Create config parameters using module names and expand help text
 # We will create a hash (%config) that has each module => (1|0) for install
 my(%options, %config, %has_module_cache);
@@ -58,17 +58,18 @@ foreach my $prereq (@PREREQS) {
   $helptext .= sprintf "  --[no]install-%-28s --[no]%s\n", $dep, $shortcut;
 }
 
-GetOptions(
-  'prompt!'   => \(my $prompt = 1),
-  'alltests!' => \(my $alltests = 0),
-  'help|?'    => \(my $help = 0),
-  %options,
-);
+use vars qw($noprompt $alltests $help $intro);
+#my ($noprompt,$alltests,$help);
 
+GetOptions (
+    "noprompt" => \$noprompt,
+    "alltests" => \$alltests,
+    "help|?" => \$help,
+);
+ 
 $help and print($helptext), exit;
 
-ExtUtils::MakeMaker::prompt(<<EOI . "Press <enter> to see the detailed list.");
-
+$intro = <<EOI;
 We are about to install SOAP::Lite and for your convenience will provide
 you with list of modules and prerequisites, so you'll be able to choose
 only modules you need for your configuration.
@@ -78,15 +79,25 @@ Installed transports can be used for both SOAP::Lite and XMLRPC::Lite.
 
 EOI
 
+if ($noprompt) {
+  print "These are the modules that will get installed:\n\n";
+} else {
+  ExtUtils::MakeMaker::prompt($intro . "Press <enter> to see the detailed list.");
+}
+
 # This hash will contain a list of all perl modules we would like to
 # explicitly depend upon in our Makefile
 my %prereqs;
-my $proceed;
+my $proceed = 0;
 do {
-  print_prereq_table();
+
+  print "\n".generate_prereq_table()."\n";
   # Ask the user if this is the configuration they desire
-  $proceed = $prompt ?
-    ExtUtils::MakeMaker::prompt("\nDo you want to proceed with this configuration?" => 'yes') =~ /^\s*y/i : 1;
+  if ($noprompt) {
+    $proceed = 1;
+  } else {
+    $proceed = ExtUtils::MakeMaker::prompt("Do you want to proceed with this configuration?" => 'yes') =~ /^\s*y/i;
+  }
   # Loop through each prerequisite and ask the user if they wish to
   # install it or not - reset prereqs, cause they change each time
   %prereqs = ();
@@ -100,13 +111,8 @@ do {
   }
 } while (!$proceed);
 
-#foreach my $key (keys %prereqs) {
-#  print "$key=".$prereqs{$key}."\n";
-#}
-#exit;
-
 # Warn the user about the testing that will occur
-my $noncoretests = $prompt ? ExtUtils::MakeMaker::prompt('
+my $noncoretests = !$noprompt ? ExtUtils::MakeMaker::prompt('
 During "make test" phase we may run tests with several SOAP servers
 that may take long and may fail due to server/connectivity problems.
 
@@ -133,7 +139,7 @@ sub has_module {
   # use "require Foo; Exporter::require_version('Foo' => 1)" instead of
   # obvious "use Foo 1". The later doesn't work with MIME::Parser
   # wonder why? --PK
-  return ($has_module_cache{"$mod$version"} ||= eval("require $mod; Exporter::require_version('$mod', $version); 1"));
+  return ($has_module_cache{"$mod$version"} ||= eval("require $mod; Exporter::require_version('$mod', $version) if ($version); 1"));
 }
 
 # Return 1 if all modules contained in the inputed array
@@ -147,24 +153,27 @@ sub has_all_modules {
 }
 
 # Print a single prerequisite to the screen
-sub print_prereq {
+sub generate_prereq {
   my ($feature,$dep,$modules,$install) = @_;
   my $i = 0;
-  foreach my $module (keys %$modules) {
+  my $buf = "";
+    foreach my $module (keys %$modules) {
     my $detected = (has_module($module, $modules->{$module}) ? "*" : " ");
-    printf("%-29s [%s] %-24s %-8s\n",($i++ ? "" : $feature),$detected,$module . ($modules->{$module} ? " (v$modules->{$module})" : ""),($i == 1 ? ($install ? ($install == 2 ? "always" : "[ yes ]") : "[ no ]") : ""));
+    $buf .= sprintf("%-29s [%s] %-24s %-8s\n",($i++ ? "" : $feature),$detected,$module . ($modules->{$module} ? " (v$modules->{$module})" : ""),($i == 1 ? ($install ? ($install == 2 ? "always" : "[ yes ]") : "[ no ]") : ""));
   }
+  return $buf;
 }
 
 # Print the entire prerequisites table
-sub print_prereq_table {
-  printf("%-29s %-28s %-8s\n","Feature","Prerequisites","Install?");
-  printf("%s %s %s\n","-" x 29,"-" x 28,"-" x 8);
+sub generate_prereq_table {
+  my $buf = sprintf("%-29s %-28s %-8s\n","Feature","Prerequisites","Install?");
+  $buf .= sprintf("%s %s %s\n","-" x 29,"-" x 28,"-" x 8);
   foreach my $pre (@PREREQS) {
     my ($feature,$dep,$modules,$default) = @{$pre};
-    print_prereq(@{$pre});
+    $buf .= generate_prereq(@{$pre});
   }
-  print "--- An asterix '[*]' indicates if the module is currently installed.\n";
+  $buf .= "--- An asterix '[*]' indicates if the module is currently installed.\n";
+  return $buf;
 }
 
 1;
