@@ -110,14 +110,14 @@ if (0) { # doesn't seem to be working on 2001/01/31
     -> uri('http://tempuri.org/')
     -> proxy('http://beta.search.microsoft.com/search/MSComSearchService.asmx', timeout => $SOAP::Test::TIMEOUT)
     -> on_action(sub{join'',@_})
-    -> GetVocabulary(SOAP::Data->name('{http://tempuri.org/}Query' => 'something_very_unusual'))
+    -> GetVocabulary(SOAP::Data->name(Query => 'something_very_unusual')->uri('http://tempuri.org/'))
     -> valueof('//Found') || '') eq 'false');
 
   $r = SOAP::Lite 
     -> uri('http://tempuri.org/')
     -> proxy('http://beta.search.microsoft.com/search/MSComSearchService.asmx', timeout => $SOAP::Test::TIMEOUT)
     -> on_action(sub{join'',@_})
-    -> GetBestBets(SOAP::Data->name('{http://tempuri.org/}Query' => 'data'))
+    -> GetBestBets(SOAP::Data->name(Query => 'data')->uri('http://tempuri.org/'))
     -> result;
   ok(ref $r && $r->{VocabularyLastcache} =~ /T/);
 

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Test.pm,v 0.51 2001/07/18 15:15:14 $
+# $Id: Test.pm,v 1.8 2001/09/19 22:02:01 paulk Exp $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Test;
 
 use 5.004;
 use vars qw($VERSION $TIMEOUT);
-$VERSION = '0.51';
+$VERSION = eval sprintf("%d.%s", q$Name: release-0_52-public $ =~ /-(\d+)_([\d_]+)/);
 
 $TIMEOUT = 5;
 
@@ -58,7 +58,7 @@ sub run_for {
   }
   # ------------------------------------------------------
 
-  plan tests => 49;
+  plan tests => 53;
 
   eval q!use SOAP::Lite on_fault => sub{ref $_[1] ? $_[1] : new SOAP::SOM}; 1! or die;
 
@@ -105,7 +105,13 @@ sub run_for {
   print "mustUnderstand test(s)...\n";
   $s->echo(SOAP::Header->name(somethingelse => 123)
                        ->mustUnderstand(1));
-  ok($s->call->faultstring =~ /Header has mustUnderstand attribute/);
+  ok($s->call->faultstring =~ /[Hh]eader has mustUnderstand attribute/);
+
+  if ($proxy =~ /^http/) {
+    ok($s->transport->status =~ /^500/);
+  } else {
+    skip('No Status checks for non http protocols on server side' => undef);
+  }
 
   $s->echo(SOAP::Header->name(somethingelse => 123)
                        ->mustUnderstand(1)
@@ -216,6 +222,10 @@ sub run_for {
     # switch to 'main' package, because nonqualified methods should be there
     ok(main::byname(@parameters) eq "a=111, b=222, c=333");
 
+    ok(main::bynameororder(@parameters) eq "a=111, b=222, c=333");
+
+    ok(main::bynameororder(111, 222, 333) eq "a=111, b=222, c=333");
+
     print "Function call test(s)...\n";
     print "You can see warning about AUTOLOAD for non-method...\n" if $^W;
     ok(main::echo(11) == 11);
@@ -234,6 +244,20 @@ sub run_for {
 
     $s->on_action(sub{'"wrong_SOAPAction_here"'});
     ok($s->getStateName(1)->faultstring =~ /SOAPAction shall match/); 
+  }
+
+  print "UTF8 test(s)...\n";
+  if (!eval "pack('U*', 0)") {
+    for (1) {skip('No UTF8 test. No support for pack("U*") modifier' => undef)}
+  } else {
+    $s = SOAP::Lite
+      -> uri('http://my.own.site.com/My/Parameters')                
+      -> proxy($proxy);
+
+     my $latin1 = 'привет';
+     my $utf8 = pack('U*', unpack('C*', $latin1));
+
+     ok(pack('U0A*', $s->echo(SOAP::Data->type(string => $utf8))->result) eq $utf8);
   }
 
   {
@@ -309,7 +333,7 @@ sub run_for {
 
   ok($s->call(SOAP::Data
     ->name('a:getStateName')
-    ->attr({'xmlns:~' => 'urn:/My/Examples'}), 1)->result eq 'Alabama');
+    ->uri('urn:/My/Examples'), 1)->result eq 'Alabama');
 
   ok($s->call(SOAP::Data
     ->name('getStateName')

@@ -9,6 +9,7 @@ examples/COM/README		Examples and description for COM interface
 examples/COM/SOAP-Lite-COM-minimal.ctrl
 examples/COM/SOAP-Lite-COM-standalone.ctrl
 examples/COM/hash.vbs		Example in VBScript, hash manipulation
+examples/COM/hashecho.vbs
 examples/COM/local.vbs		Example in VBScript, client for local service
 examples/COM/make-com-minimal.bat
 examples/COM/make-com-standalone.bat
@@ -26,6 +27,7 @@ examples/COM/states.vba		Source code for macroses in states.xls
 examples/COM/states.vbs		Example in VBScript, client for local service
 examples/COM/states.xls		Example in Excel/VBA, client for local service
 examples/COM/temper.vbs		Example in VB, client for remote service
+examples/COM/xmlrpc.vbs
 examples/JABBER/jabclient.pl
 examples/JABBER/jabserver.pl
 examples/MQ/mqclient.pl
@@ -56,6 +58,7 @@ examples/WSDL/stub2.pl		Example for WSDL stub interface
 examples/WSDL/stub3.pl		Example for WSDL stub interface
 examples/XML/customxml.pl	Example for XML processing (SOAP::Custom::XML)
 examples/XMLRPC/mod_xmlrpc.htaccess
+examples/XMLRPC/simple1.pl
 examples/XMLRPC/xmlrpc.cgi
 examples/XMLRPC/xmlrpc.daemon
 examples/allclients.pl		Different client implementations
@@ -72,6 +75,7 @@ examples/fullsearch.pl
 examples/getdom.pl
 examples/inline.daemon
 examples/iterator.pl		Example for Session/Persistent iterators
+examples/joke.pl
 examples/oneliners		Couple of one-line SOAP calls
 examples/oo-apache.pl		Example of object interoperability
 examples/parametersbyname.pl	Example for passing parameters-by-name 
@@ -95,6 +99,8 @@ examples/server/soap_perl.asp	SOAP server, ASP/PerlScript implementation
 examples/soapmark.pl		Simple test for different implementations
 examples/soapsmtp.pl		Example for SMTP/sendmail message sending
 examples/tcpclient.pl		Simple test for local TCP client
+examples/terraserver.pl
+examples/weblog.pl
 lib/Apache/SOAP.pm		mod_soap module
 lib/Apache/XMLRPC/Lite.pm
 lib/IO/SessionData.pm
@@ -140,6 +146,8 @@ t/24-wsdl.t
 t/25-uddi.t
 t/26-xmlrpc.t
 t/27-xmlparserlite.t
-t/28-uddi_search.pl
+t/28-uddi_search.t
+t/29-uddi_publishing.t
+t/36-leaks.t
 t/37-mod_xmlrpc.t
 t/TEST.pl

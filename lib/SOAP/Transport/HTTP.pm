@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP::Transport::HTTP.pm,v 0.51 2001/07/18 15:15:14 $
+# $Id: HTTP.pm,v 1.9 2001/10/18 15:23:55 paulk Exp $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.51';
+$VERSION = eval sprintf("%d.%s", q$Name: release-0_52-public $ =~ /-(\d+)_([\d_]+)/);
 
 use SOAP::Lite;
 
@@ -38,7 +38,7 @@ sub patch {
     *collect = sub {          
       if (defined $_[2]->header('Connection') && $_[2]->header('Connection') eq 'Keep-Alive') {
         my $data = $_[3]->(); 
-        my $next = length($$data) == $_[2]->header('Content-Length') ? sub { \'' } : $_[3];
+        my $next = SOAP::Utils::bytelength($$data) == $_[2]->header('Content-Length') ? sub { \'' } : $_[3];
         my $done = 0; $_[3] = sub { $done++ ? &$next : $data };
       }
       goto &$collect;
@@ -67,9 +67,6 @@ sub new { require LWP::UserAgent; patch;
   return $self;
 }
 
-# no more warnings about "used only once"
-$SOAP::Constants::DO_NOT_USE_CHARSET if 0;
-
 sub send_receive {
   my($self, %parameters) = @_;
   my($envelope, $endpoint, $action, $encoding) = 
@@ -87,7 +84,7 @@ sub send_receive {
 
     my $compressed = !exists $nocompress{$endpoint} &&
                      $self->options->{is_compress} && 
-                     ($self->options->{compress_threshold} || 0) < length $envelope;
+                     ($self->options->{compress_threshold} || 0) < SOAP::Utils::bytelength $envelope;
     $envelope = Compress::Zlib::compress($envelope) if $compressed;
 
     while (1) { 
@@ -97,7 +94,26 @@ sub send_receive {
       # check cache for M-POST
       $method = 'M-POST' if exists $mpost{$endpoint};
   
+      # what's this all about? 
+      # unfortunately combination of LWP and Perl 5.6.1 and later has bug
+      # in sending multibyte characters. LWP uses length() to calculate
+      # content-length header and starting 5.6.1 length() calculates chars
+      # instead of bytes. 'use bytes' in THIS file doesn't work, because
+      # it's lexically scoped. Unfortunately, content-length we calculate
+      # here doesn't work either, because LWP overwrites it with 
+      # content-length it calculates (which is wrong) AND uses length()
+      # during syswrite/sysread, so we are in a bad shape anyway.
+
+      # what to do? we calculate proper content-length (using 
+      # bytelength() function from SOAP::Utils) and then drop utf8 mark
+      # from string (doing pack with 'C0A*' modifier) if length and 
+      # bytelength are not the same
+      my $bytelength = SOAP::Utils::bytelength($envelope);
+      $envelope = pack('C0A*', $envelope) 
+        if !$SOAP::Constants::DO_NOT_USE_LWP_LENGTH_HACK && length($envelope) != $bytelength;
+
       my $req = HTTP::Request->new($method => $endpoint, HTTP::Headers->new, $envelope);
+
       $req->proxy_authorization_basic($ENV{'HTTP_proxy_user'}, $ENV{'HTTP_proxy_pass'})
         if ($ENV{'HTTP_proxy_user'} && $ENV{'HTTP_proxy_pass'}); # by Murray Nesbitt 
   
@@ -117,7 +133,7 @@ sub send_receive {
 
       $req->content_type(join '; ', 'text/xml', 
         !$SOAP::Constants::DO_NOT_USE_CHARSET && $encoding ? 'charset=' . lc($encoding) : ());
-      $req->content_length(length($envelope));
+      $req->content_length($bytelength);
   
       SOAP::Trace::transport($req);
       SOAP::Trace::debug($req->as_string);
@@ -153,10 +169,15 @@ sub send_receive {
   my $content = ($resp->content_encoding || '') =~ /\b$COMPRESS\b/o && $self->options->{is_compress} 
     ? Compress::Zlib::uncompress($resp->content) 
     : ($resp->content_encoding || '') =~ /\S/ 
-      ? die "Can't understand returned Content-Encoding (@{[$resp->content_encoding]})\n"
+      ? die "Unexpected Content-Encoding '@{[$resp->content_encoding]}' returned\n"
       : $resp->content;
   $resp->content_type =~ m!^multipart/! 
-    ? join("\n", $resp->headers_as_string, $content) : $content;
+    ? join("\n", $resp->headers_as_string, $content) 
+    : ($resp->content_type eq 'text/xml' ||          # text/xml
+       !$resp->is_success ||                         # failed request
+       $SOAP::Constants::DO_NOT_CHECK_CONTENT_TYPE) 
+      ? $content
+      : die "Unexpected Content-Type '@{[join '; ', $resp->content_type]}' returned\n";
 }
 
 # ======================================================================
@@ -260,7 +281,7 @@ sub make_response {
 
   my $compressed = $self->options->{is_compress} && 
                    grep(/\b($COMPRESS|\*)\b/, $self->request->header('Accept-Encoding')) &&
-                   ($self->options->{compress_threshold} || 0) < length $response;
+                   ($self->options->{compress_threshold} || 0) < SOAP::Utils::bytelength $response;
   $response = Compress::Zlib::compress($response) if $compressed;
 
   $self->response(HTTP::Response->new( 
@@ -270,7 +291,7 @@ sub make_response {
        $compressed ? ('Content-Encoding' => $COMPRESS) : (),
        'Content-Type' => join('; ', 'text/xml', 
          !$SOAP::Constants::DO_NOT_USE_CHARSET && $encoding ? 'charset=' . lc($encoding) : ()),
-       'Content-Length' => length $response), 
+       'Content-Length' => SOAP::Utils::bytelength $response), 
      $response,
   ));
 }
@@ -300,7 +321,7 @@ sub new {
 sub handle {
   my $self = shift->new;
 
-  my $content; read(STDIN,$content,$ENV{'CONTENT_LENGTH'} || 0);  
+  my $content; binmode(STDIN); read(STDIN,$content,$ENV{'CONTENT_LENGTH'} || 0);
   $self->request(HTTP::Request->new( 
     $ENV{'REQUEST_METHOD'} || '' => $ENV{'SCRIPT_NAME'},
     HTTP::Headers->new(map {(/^HTTP_(.+)/i ? $1 : $_) => $ENV{$_}} keys %ENV),
@@ -364,7 +385,7 @@ sub handle {
       $self->SUPER::handle;
       $c->send_response($self->response)
     }
-    $c->close;
+    $c->shutdown(2); # replaced ->close, thanks to Sean Meisner <Sean.Meisner@VerizonWireless.com>
     undef $c;
   }
 }
@@ -378,7 +399,7 @@ use vars qw(@ISA);
 
 sub DESTROY { SOAP::Trace::objects('()') }
 
-sub new { require Apache;
+sub new { require Apache; require Apache::Constants;
   my $self = shift;
 
   unless (ref $self) {
@@ -400,16 +421,17 @@ sub handler {
   ));
   $self->SUPER::handle;
 
-  if ($self->response->is_success) {
-    $self->response->headers->scan(sub { $r->header_out(@_) });
-    $r->send_http_header(join '; ', $self->response->content_type);
-    $r->print($self->response->content);
-  } else {
-    $self->response->headers->scan(sub { $r->err_header_out(@_) });
-    $r->content_type(join '; ', $self->response->content_type);
-    $r->custom_response($self->response->code, $self->response->content);
-  }
-  $self->response->code;
+  # we will specify status manually for Apache, because
+  # if we do it as it has to be done, returning SERVER_ERROR,
+  # Apache will modify our content_type to 'text/html; ....'
+  # which is not what we want.
+  # will emulate normal response, but with custom status code 
+  # which could also be 500.
+  $r->status($self->response->code);
+  $self->response->headers->scan(sub { $r->header_out(@_) });
+  $r->send_http_header(join '; ', $self->response->content_type);
+  $r->print($self->response->content);
+  &Apache::Constants::OK;
 }
 
 sub configure {
@@ -432,7 +454,7 @@ sub configure {
 # Copyright (C) 2001 Single Source oy (marko.asplund@kronodoc.fi)
 # a FastCGI transport class for SOAP::Lite.
 #
-# $Id: FCGI.pm,v 1.14 2001/07/11 07:08:00 aspa Exp $
+# $Id: HTTP.pm,v 1.9 2001/10/18 15:23:55 paulk Exp $
 #
 # ======================================================================
 
@@ -644,6 +666,22 @@ You may also do it in one line:
   $soap->proxy('http://localhost/', 
                cookie_jar => HTTP::Cookies->new(ignore_discard => 1));
 
+=head2 SSL CERTIFICATE AUTHENTICATION
+
+To get certificate authentication working you need to specify three
+environment variables: C<HTTPS_CERT_FILE>, C<HTTPS_KEY_FILE>, and 
+(optionally) C<HTTPS_CERT_PASS>:
+
+  $ENV{HTTPS_CERT_FILE} = 'client-cert.pem';
+  $ENV{HTTPS_KEY_FILE}  = 'client-key.pem';
+
+Crypt::SSLeay (which is used for https support) will take care about 
+everything else. Other options (like CA peer verification) can be specified
+in a similar way. See Crypt::SSLeay documentation for more details.
+
+Those who would like to use encrypted keys may check 
+http://groups.yahoo.com/group/soaplite/message/729 for details. 
+
 =head2 COMPRESSION
 
 SOAP::Lite provides you with the option for enabling compression on the 
@@ -795,7 +833,7 @@ and you are using Apache web server, try to put into your httpd.conf
      PassEnv LD_LIBRARY_PATH
  </IfModule>
 
-=item Apache is crashing with segfaults
+=item Apache is crashing with segfaults (it may looks like "500 unexpected EOF before status line seen" on client side)
 
 If using SOAP::Lite (or XML::Parser::Expat) in combination with mod_perl
 causes random segmentation faults in httpd processes try to configure
@@ -808,8 +846,12 @@ Apache with:
  ./configure --disable-rule=EXPAT
 
 See http://archive.covalent.net/modperl/2000/04/0185.xml for more 
-details and lot of thanks to Robert Barta (rho@bigpond.net.au) for
+details and lot of thanks to Robert Barta <rho@bigpond.net.au> for
 explaining this weird behavior.
+
+If it doesn't help, you may also try -Uusemymalloc
+(or something like that) to get perl to use the system's own malloc.
+Thanks to Tim Bunce <Tim.Bunce@pobox.com>.
 
 =item CGI scripts are not running under Microsoft Internet Information Server (IIS)
 

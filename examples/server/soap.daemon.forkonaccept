@@ -10,6 +10,7 @@ $@
 EOW
 
 $SIG{PIPE} = $SIG{INT} = 'IGNORE'; # don't want to die on 'Broken pipe' or Ctrl-C
+$SIG{CHLD} = 'IGNORE';             # do not create zombies
 
 my $daemon = SOAP::Transport::HTTP::Daemon::ForkOnAccept
   -> new (LocalAddr => 'localhost', LocalPort => 80)

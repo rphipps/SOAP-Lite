@@ -28,7 +28,8 @@ foreach (qw(
   Apache::XMLRPC::Lite
 )) {
   eval "require $_";
-  $@ =~ /Can't locate|XML::Parser::Lite requires/ 
+  print $@;
+  $@ =~ /Can't locate|XML::Parser::Lite requires|this is only version/ 
     ? skip($@ => undef)
     : ok(!$@);
 }

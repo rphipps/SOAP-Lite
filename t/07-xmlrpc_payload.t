@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 7 }
+BEGIN { plan tests => 8 }
 
 use XMLRPC::Lite;
 
@@ -34,7 +34,7 @@ my($a, $s, $r, $serialized, $deserialized);
 
   $deserialized = XMLRPC::Deserializer->deserialize($serialized)->root;
 
-  ok(!defined $deserialized->{param2});
+  ok($deserialized->{param2} eq '');
   ok($deserialized->{param3} == 0);
 
   $serialized = XMLRPC::Serializer->method(a => {param1 => 'value1', param2 => undef, param3 => 'value3'});
@@ -44,4 +44,8 @@ my($a, $s, $r, $serialized, $deserialized);
   $serialized = XMLRPC::Serializer->method(a => {param1 => 'value1'});
 
   ok($serialized eq '<?xml version="1.0" encoding="UTF-8"?><methodCall><methodName>a</methodName><params><param><value><struct><member><name>param1</name><value><string>value1</string></value></member></struct></value></param></params></methodCall>');
+
+  eval { XMLRPC::Serializer->serialize(XMLRPC::Data->type(base63 => 1)) };
+
+  ok($@ =~ /unsupported datatype/);
 }

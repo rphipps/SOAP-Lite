@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: XMLRPC::Test.pm,v 0.51 2001/07/18 15:15:14 $
+# $Id: Test.pm,v 1.4 2001/09/19 18:07:54 paulk Exp $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package XMLRPC::Test;
 
 use 5.004;
 use vars qw($VERSION $TIMEOUT);
-$VERSION = '0.51';
+$VERSION = eval sprintf("%d.%s", q$Name: release-0_52-public $ =~ /-(\d+)_([\d_]+)/);
 
 $TIMEOUT = 5;
 
@@ -58,7 +58,7 @@ sub run_for {
   }
   # ------------------------------------------------------
 
-  plan tests => 16;
+  plan tests => 17;
 
   eval q!use XMLRPC::Lite on_fault => sub{ref $_[1] ? $_[1] : new XMLRPC::SOM}; 1! or die;
 
@@ -144,7 +144,13 @@ sub run_for {
     skip('No Content-Type checks for tcp: protocol on server side' => undef);
   } else {
     ok($s->call('My.Examples.getStateName', 1)->faultstring =~ /Content-Type must be/);
-    1;
+  }
+
+  # check status for fault messages
+  if ($proxy =~ /^http/) {
+    ok($s->transport->status =~ /^200/);
+  } else {
+    skip('No Status checks for non http protocols on server side' => undef);
   }
 }
 

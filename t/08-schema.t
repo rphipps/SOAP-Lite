@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 45 }
+BEGIN { plan tests => 47 }
 
 use SOAP::Lite;
 
@@ -44,6 +44,16 @@ my($a, $s, $r, $serialized, $deserialized);
   ok(ref $deserialized->body eq 'HASH'); # not blessed anymore since 0.51
 }
 
+{ 
+  print "hex encoding test(s)...\n";
+
+  $a = "\0 {a}\1";
+  $serialized = SOAP::Serializer->serialize(SOAP::Data->type(hex => $a));
+
+  ok($serialized =~ />00207B617D01</);
+  ok(SOAP::Deserializer->deserialize($serialized)->root eq $a);
+}
+
 {
   print "Deserialization of 1999/2001 schemas test(s)...\n";
 
@@ -56,7 +66,8 @@ my($a, $s, $r, $serialized, $deserialized);
 <SOAP-ENC:integer xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/">12</SOAP-ENC:integer>
 <i>12</i>
 EOX
-    ok(SOAP::Deserializer->deserialize($_)->root == 12);
+    $deserialized = SOAP::Deserializer->deserialize($_);
+    ok($deserialized->root == 12);
   }
 
   eval { SOAP::Deserializer->deserialize('<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:something">12</i>') };
@@ -71,8 +82,7 @@ EOX
     ok($@ =~ m!Unrecognized type '{http://www.w3.org/1999/XMLSchema}$_'!);
   }
 
-  eval { SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:boolean">true</i>!) };
-  ok($@ =~ m!Wrong boolean value!);
+  ok(SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:boolean">true</i>!)->root eq '1');
 
   eval { SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xsd:boolean">something</i>!) };
   ok($@ =~ m!Wrong boolean value!);
@@ -91,13 +101,8 @@ EOX
   eval { SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:boolean">something</i>!) };
   ok($@ =~ m!Wrong boolean value!);
 
-  eval { SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:boolean">true</i>!) };
-  ok($@ =~ m!Wrong boolean value!);
-
+  ok(SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:boolean">true</i>!)->root eq '1');
   ok(SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:boolean">1</i>!)->root eq '1');
-
-  eval { SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:boolean">false</i>!) };
-  ok($@ =~ m!Wrong boolean value!);
-
+  ok(SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:boolean">false</i>!)->root eq '0');
   ok(SOAP::Deserializer->deserialize(qq!<i xmlns:xsd="http://www.w3.org/1999/XMLSchema" xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance" xsi:type="xsd:boolean">0</i>!)->root eq '0');
 }

@@ -19,7 +19,7 @@ __END__
 	ControlGUID     => '{A0FE6F60-95D4-435B-98AE-93475FDCAA83}', # do NOT edit this line either
 	DispInterfaceIID=> '{23767C1D-DA9B-4FAC-A6B3-3639F8CC0C29}', # or this one
 	ControlName     => 'SOAP.Lite',
-	ControlVer      => 0.50,  # increment if new object with same ProgID
+	ControlVer      => 0.52,  # increment if new object with same ProgID
 	ProgID          => 'SOAP.Lite',
 	DefaultMethod   => 'new',
 	Methods         => {
@@ -30,6 +30,18 @@ __END__
 		ParamList           =>[ ]
 	    },
 	    'create' => {
+		RetType             =>  VT_DISPATCH,
+		TotalParams         =>  0,
+		NumOptionalParams   =>  0,
+		ParamList           =>[ ]
+	    },
+	    'soap' => {
+		RetType             =>  VT_DISPATCH,
+		TotalParams         =>  0,
+		NumOptionalParams   =>  0,
+		ParamList           =>[ ]
+	    },
+	    'xmlrpc' => {
 		RetType             =>  VT_DISPATCH,
 		TotalParams         =>  0,
 		NumOptionalParams   =>  0,

@@ -81,6 +81,16 @@ c:\inetpub\wwwroot\).
 Now you can direct your SOAP requests to http://localhost/soap.asp 
 (VBScript) or http://localhost/soap_perl.asp (PerlScript).
 
+XML-RPC examples (VBScript)
+
+Example of XML-PRC client is provided. You can use XML-RPC in a way you 
+use SOAP protocol, only instead of new() method xmlrpc() method should
+be called to create an object. For example:
+
+  MsgBox CreateObject("SOAP.Lite").xmlrpc( _
+    "proxy", "http://betty.userland.com/RPC2" _
+  ).call("examples.getStateName", 25).result
+
 ISSUES AND LIMITATIONS
 
 HASHES
@@ -97,6 +107,8 @@ Set hash = CreateObject("SOAP.Lite").hash("a", 1, "b", 2)
 hash.c = 3
 
 See hash.vbs for example that moves hashes around.
+
+See hashecho.cvs for hash of hash example.
 
 ARRAYS
 

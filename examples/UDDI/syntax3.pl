@@ -5,8 +5,8 @@
 
 use strict;
 use UDDI::Lite 
-  import => ['UDDI::Data'], 
-  import => ['UDDI::Lite'],
+  import => 'UDDI::Data', 
+  import => 'UDDI::Lite',
   proxy => "https://some.server.com/endpoint_fot_publishing_API",
   on_fault => sub {}, # do nothing for fault, will check it in the code
 ;
@@ -14,10 +14,10 @@ use UDDI::Lite
 print "Authorizing...\n";
 my $auth = get_authToken({userID => 'USERID', cred => 'CRED'})->authInfo;
 
-# will also work without businessKey, serviceKey and bindingKey assignments, 
+# MAY also work without businessKey, serviceKey and bindingKey assignments, 
 # however specification requires them to be assigned to the empty strings
 
-# WARNING! order of elements DOES matter
+# NB! order of elements DOES matter
 
 my $busent = businessEntity([
   name("Contoso Manufacturing"), 

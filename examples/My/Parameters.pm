@@ -41,9 +41,14 @@ sub byorder {
 }
 
 sub byname { # input parameter(s), envelope (SOAP::SOM object)
-  # pop() will return SOAP::SOM object
-  # SOM->method will return structure with parameters {name => value, ...}
-  my($a, $b, $c) = @{pop->method}{qw(a b c)};
+  my $self = shift;
+  my($a, $b, $c) = SOAP::Server::Parameters::byName([qw(a b c)], @_);
+  return "a=$a, b=$b, c=$c";
+}
+
+sub bynameororder { # input parameter(s), envelope (SOAP::SOM object)
+  my $self = shift;
+  my($a, $b, $c) = SOAP::Server::Parameters::byNameOrOrder([qw(a b c)], @_);
   return "a=$a, b=$b, c=$c";
 }
 

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: XML::Parser::Lite.pm,v 0.20 2001/07/18 15:15:14 $
+# $Id: Lite.pm,v 1.4 2001/10/15 21:25:05 paulk Exp $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package XML::Parser::Lite;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.20';
+$VERSION = eval sprintf("%d.%s", q$Name: release-0_52-public $ =~ /-(\d+)_([\d_]+)/);
 
 sub new { 
   my $self = shift;
@@ -31,7 +31,7 @@ sub setHandlers {
   no strict 'refs'; local $^W;
   # clear all handlers if called without parameters
   unless (@_) { foreach (qw(Start End Char Final Init)) { *$_ = sub {} } }
-  while (@_) { my($name => $func) = splice(@_, 0, 2); *$name = $func }
+  while (@_) { my($name => $func) = splice(@_, 0, 2); *$name = defined $func ? $func : sub {} }
   return $self;
 }
 

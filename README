@@ -100,7 +100,7 @@ Following modules will be used for HTTP protocol only:
 
   LWP::UserAgent (included with libwww-perl) 
   HTTP::Request (included with libwww-perl) 
-  HTTP::Header (included with libwww-perl) 
+  HTTP::Headers (included with libwww-perl) 
   HTTP::Status (included with libwww-perl) 
   Crypt::SSLeay (for HTTPS/SSL transfer)
 
@@ -201,7 +201,7 @@ VERSION 0.50 INTRODUCED
 - charset in content-type (DO_NOT_USE_CHARSET)
   Current version will specify charset in content-type header for HTTP
   protocol. Some toolkits don't understand such headers and may fail
-  your resuest. Use:
+  your request. Use:
   $SOAP::Constants::DO_NOT_USE_CHARSET = 1;
   in your client code to disable it. See t/21-public.t for example.
 
@@ -239,6 +239,10 @@ VERSION 0.51 INTRODUCED
 - deprecated encodingspace() and namespace() methods
   Use encprefix() and envprefix().
 
+- prefixes on datatypes check
+  Current version will resolve prefixes on datatypes, so in
+  xsi:type="abc:MyType" abc must be declared somewhere in outer elements.
+
 - updated dispatch for XML-RPC
   Dispatch for XMLRPC servers looks exactly as for SOAP servers.
   In case you would like to restore old behavior (with dispatch to 
@@ -259,6 +263,12 @@ VERSION 0.51 INTRODUCED
     use SOAP::Lite +trace => debug => sub {};
   do
     use SOAP::Lite +trace => [debug => sub {}];
+
+VERSION 0.52 INTRODUCED
+
+- no undef values in XML-RPC
+  elements encoded as <value/> or <value></value> will be deserialized
+  as empty strings rather than 'undef' values as it was before.
 
 COPYRIGHT
 

@@ -22,7 +22,9 @@ use SOAP::Lite
 
 my($a, $s, $r);
 
-my $proxy = 'http://services.xmethods.net:80/soap/servlet/rpcrouter';
+# updated on 2001/08/17
+# http://services.xmethods.net:80/soap/servlet/rpcrouter
+my $proxy = 'http://nagoya.apache.org:5049/axis/servlet/AxisServlet';
 
 # ------------------------------------------------------
 use SOAP::Test;

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: UDDI::Lite.pm,v 0.51 2001/07/18 15:15:14 $
+# $Id: Lite.pm,v 1.6 2001/09/03 03:58:30 paulk Exp $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package UDDI::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.51';
+$VERSION = eval sprintf("%d.%s", q$Name: release-0_52-public $ =~ /-(\d+)_([\d_]+)/);
 
 use SOAP::Lite;
 
@@ -182,7 +182,7 @@ use vars qw(@ISA);
 sub decode_value {
   my $self = shift;
   my $ref = shift;
-  my($name, $attrs, $childs, $value) = @$ref;
+  my($name, $attrs, $children, $value) = @$ref;
 
   # base class knows what to do with elements in SOAP namespace
   return $self->SUPER::decode_value($ref) 
@@ -192,7 +192,7 @@ sub decode_value {
   UDDI::Data
     -> SOAP::Data::name($name)
     -> attr($attrs)
-    -> set_value(ref $childs && @$childs ? map(scalar(($self->decode_object($_))[1]), @$childs) : $value);
+    -> set_value(ref $children && @$children ? map(scalar(($self->decode_object($_))[1]), @$children) : $value);
 }
 
 sub deserialize {
@@ -217,9 +217,9 @@ BEGIN { # handle exports
     'find'     => [qw/find_binding find_business find_service find_tModel/],
     'get'      => [qw/get_bindingDetail get_businessDetail get_businessDetailExt get_serviceDetail get_tModelDetail/],
   );
-  $EXPORT_TAGS{inquire} = [map {@{$EXPORT_TAGS{$_}}} qw/find get/];
+  $EXPORT_TAGS{inquiry} = [map {@{$EXPORT_TAGS{$_}}} qw/find get/];
   $EXPORT_TAGS{publish} = [map {@{$EXPORT_TAGS{$_}}} qw/delete auth save validate/];
-  $EXPORT_TAGS{all} =     [map {@{$EXPORT_TAGS{$_}}} qw/inquire publish/];
+  $EXPORT_TAGS{all} =     [map {@{$EXPORT_TAGS{$_}}} qw/inquiry publish/];
   Exporter::export_ok_tags('all');
 }
 
@@ -316,7 +316,7 @@ The same code with autodispatch:
 Or with importing:
 
   use UDDI::Lite 
-    'UDDI::Lite' => [':inquire'],
+    'UDDI::Lite' => [':inquiry'],
     proxy => 'http://uddi.microsoft.com/inquire'
   ;
 

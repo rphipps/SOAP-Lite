@@ -11,7 +11,7 @@ use strict;
 use Carp;
 use IO::SessionSet;
 use vars '$VERSION';
-$VERSION = 1.00;
+$VERSION = 1.01;
 
 use constant BUFSIZE => 3000;
 
@@ -21,7 +21,7 @@ BEGIN {
     (eval {require Errno} ? map {Errno->can($_)->() => 1} grep {Errno->can($_)} @names : ()),
     (eval {require POSIX} ? map {POSIX->can($_)->() => 1} grep {POSIX->can($_)} @names : ());
 
-  sub WOULDBLOCK { $WOULDBLOCK{shift()} }
+  sub WOULDBLOCK { $WOULDBLOCK{$_[0]+0} }
 }
 
 # Class method: new()
@@ -39,7 +39,7 @@ sub new {
                 write_limit => BUFSIZE,
                 writeonly   => $writeonly,
                 choker      => undef,
-                choked      => undef,
+                choked      => 0,
                },$pack;
   $self->readable(1) unless $writeonly;
   return $self;
@@ -80,8 +80,8 @@ sub set_choke {
 # written. On other errors, returns undef.
 sub write {
   my $self = shift;
-  return unless my $handle = $self->handle;    # no handle
-  return unless defined $self->{outbuffer};  # no buffer for queued data
+  return unless my $handle = $self->handle; # no handle
+  return unless defined $self->{outbuffer}; # no buffer for queued data
 
   $self->{outbuffer} .= $_[0] if defined $_[0];
 

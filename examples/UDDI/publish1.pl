@@ -5,23 +5,22 @@
 
 # You may run these tests/examples for UDDI publishing API against
 # UDDI registry that was kindly provided with following disclamer:
-# "This is just a free demo registry provided by ICZ Prague, IBM Czech
-# Republic and KPNQwest Czechia. Use commercial test registries for 
-# serious work." 
-# Thanks to Petr Janata <petr.janata@i.cz> for help and support
+# "This is a free registry provided by XMethods.net and
+# implemented using GLUE platform (Graham Glass, TheMindElectric)."
+# Thanks to Tony Hong for his help and support
 
 use strict;
 use UDDI::Lite 
-  import => ['UDDI::Data'], 
-  import => ['UDDI::Lite'],
-  proxy => "http://srv.trebic.cz:8080/uddi/servlet/uddi",
+  import => 'UDDI::Data', 
+  import => 'UDDI::Lite',
+  proxy => "https://uddi.xmethods.net:8005/glue/publish/uddi",
 ;
 
 my $name = 'Sample business ' . $$ . time; # just to make it unique
 
 print "Authorizing...\n";
-my $auth = get_authToken({userID => 'wstkDemo', cred => 'wstkPwd'})->authInfo;
-my $busent = businessEntity(name($name))->operator('soaplite.com');
+my $auth = get_authToken({userID => 'soaplite', cred => 'soaplite'})->authInfo;
+my $busent = businessEntity(name($name))->businessKey('');
 
 print "Saving business '$name'...\n";
 my $newent = save_business($auth, $busent)->businessEntity;

@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 22 }
+BEGIN { plan tests => 25 }
 
 use SOAP::Lite;
 
@@ -96,10 +96,10 @@ EOX
   print "base64, XML encoding of elements and attributes test(s)...\n";
 
   $serialized = SOAP::Serializer->serialize(
-    SOAP::Data->name(test => \SOAP::Data->value("\0\1\2\3   \4\5\6", '<123>&amp</123>'))
+    SOAP::Data->name(test => \SOAP::Data->value("\0\1\2\3   \4\5\6", "<123>&amp;\015</123>"))
   );
 
-  ok($serialized =~ m!<c-gensym(\d+) xsi:type="SOAP-ENC:base64">AAECAyAgIAQFBg==</c-gensym\1><c-gensym(\d+) xsi:type="xsd:string">&lt;123>&amp;amp&lt;/123></c-gensym\2>!);
+  ok($serialized =~ m!<c-gensym(\d+) xsi:type="SOAP-ENC:base64">AAECAyAgIAQFBg==</c-gensym\1><c-gensym(\d+) xsi:type="xsd:string">&lt;123>&amp;amp;&#xd;&lt;/123></c-gensym\2>!);
 
   $serialized = SOAP::Serializer->namespaces({})->serialize(
     SOAP::Data->name(name=>'value')->attr({attr => '<123>"&amp"</123>'})
@@ -113,7 +113,7 @@ EOX
 
   $serialized = SOAP::Serializer->serialize(SOAP::Data->uri('some_urn' => bless {a => 1} => 'ObjectType'));
 
-  ok($serialized =~ m!<namesp(\d+):ObjectType(:? xsi:type="SOAP-ENC:ObjectType"| xmlns:namesp\1="some_urn"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"| xmlns:xsd="http://www.w3.org/1999/XMLSchema"){6}><a xsi:type="xsd:int">1</a></namesp\1:ObjectType>!);
+  ok($serialized =~ m!<namesp(\d+):c-gensym(\d+)(:? xsi:type="namesp\d+:ObjectType"| xmlns:namesp\d+="http://namespaces.soaplite.com/perl"| xmlns:namesp\1="some_urn"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"| xmlns:xsd="http://www.w3.org/1999/XMLSchema"){7}><a xsi:type="xsd:int">1</a></namesp\1:c-gensym\2>!);
 }
 
 { # check for serialization with SOAPStruct (for interoperability with ApacheSOAP)
@@ -132,7 +132,7 @@ EOX
 
   $serialized = SOAP::Serializer->serialize(SOAP::Data->type(hex => $a));
 
-  ok($serialized =~ m!<c-gensym(\d+)(?: xsi:type="xsd:hex"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"| xmlns:xsd="http://www.w3.org/1999/XMLSchema"){5}>61626332333478797a</c-gensym(\d+)>!);
+  ok($serialized =~ m!<c-gensym(\d+)(?: xsi:type="xsd:hex"| xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"| xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"| xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"| xmlns:xsd="http://www.w3.org/1999/XMLSchema"){5}>61626332333478797A</c-gensym(\d+)>!);
   ok(SOAP::Deserializer->deserialize($serialized)->root eq $a); 
 
   $a = <<"EOBASE64";
@@ -183,13 +183,35 @@ EOBASE64
       SOAP::Data->type(negativeInteger => $a)
     );
 
-    ok(SOAP::Deserializer->deserialize($serialized)->root == $a);
+    ok(! defined SOAP::Deserializer->deserialize($serialized)->root);
 
     my $type = 'nonstandardtype';
+    eval {
+      $serialized = SOAP::Serializer->serialize(
+        SOAP::Data->type($type => $a)
+      );
+    };
+    ok($@ =~ /for type '$type' is not specified/);
+
     $serialized = SOAP::Serializer->serialize(
-      SOAP::Data->type($type => $a)
+      SOAP::Data->type($type => {})
     );
 
     ok(ref SOAP::Deserializer->deserialize($serialized)->root eq $type);
   }
+}
+
+{
+  print "Check for unspecified Transport module test(s)...\n";
+
+  eval { SOAP::Lite->new->abc() };
+  ok($@ =~ /Transport is not specified/);
+}
+
+{ 
+  print "Deserialization of CDATA test(s)...\n";
+
+  UNIVERSAL::isa(SOAP::Deserializer->parser->parser => 'XML::Parser::Lite') ?
+    skip(q!CDATA decoding is not supported in XML::Parser::Lite! => undef) :
+    ok(SOAP::Deserializer->deserialize('<root><![CDATA[<123>]]></root>')->root eq '<123>');
 }

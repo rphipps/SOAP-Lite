@@ -74,4 +74,3 @@ print $wsdl, "\n";
 my $quote = SOAP::Lite->service($wsdl)->proxy($accessPoint)->getQuote('MSFT');
 ok($quote > 0);
 print $quote, "\n";
-

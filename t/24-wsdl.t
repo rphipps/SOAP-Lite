@@ -35,7 +35,7 @@ unless (defined $r && defined $r->envelope) {
 }
 # ------------------------------------------------------
 
-plan tests => 9;
+plan tests => 12;
 
 {
 # Service description (WSDL) (http://www.xmethods.net/)
@@ -76,4 +76,22 @@ plan tests => 9;
   ok(defined StockQuoteService->self);
 
   ok(StockQuoteService->self->call);
+
+  # ok, now we'll test for passing SOAP::Data and SOAP::Headers as a parameters
+
+  my @params;
+  {
+    package TestStockQuoteService; 
+    @TestStockQuoteService::ISA = 'StockQuoteService';
+    sub call { shift; @params = @_; new SOAP::SOM }
+  }
+
+  my @testparams = (SOAP::Data->name(param1 => 'MSFT'), 
+                    SOAP::Data->name('param2'),
+                    SOAP::Header->name(header1 => 'value'));
+  TestStockQuoteService->new->getQuote(@testparams);
+
+  ok($params[1]->value->name eq 'param1');
+  ok($params[2]->name eq 'param2');
+  ok(ref $params[3] eq 'SOAP::Header' && $params[3]->name eq 'header1');
 }

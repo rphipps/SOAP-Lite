@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: XMLRPC::Lite.pm,v 0.51 2001/07/18 15:15:14 $
+# $Id: Lite.pm,v 1.10 2001/10/14 18:11:27 paulk Exp $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package XMLRPC::Lite;
 use SOAP::Lite;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.51';
+$VERSION = eval sprintf("%d.%s", q$Name: release-0_52-public $ =~ /-(\d+)_([\d_]+)/);
 
 # ======================================================================
 
@@ -25,9 +25,12 @@ BEGIN {
     FAULT_CLIENT FAULT_SERVER 
     HTTP_ON_SUCCESS_CODE HTTP_ON_FAULT_CODE
     DO_NOT_USE_XML_PARSER DO_NOT_USE_CHARSET
+    DO_NOT_USE_LWP_LENGTH_HACK DO_NOT_CHECK_CONTENT_TYPE
   )) {
     *$_ = \${'SOAP::Constants::' . $_}
   }
+  # XML-RPC spec requires content-type to be "text/xml"
+  $XMLRPC::Constants::DO_NOT_USE_CHARSET = 1; 
 }
 
 # ======================================================================
@@ -51,7 +54,7 @@ sub new {
       typelookup => {
         base64 => [10, sub {$_[0] =~ /[^\x09\x0a\x0d\x20-\x7f]/}, 'as_base64'],
         int    => [20, sub {$_[0] =~ /^[+-]?\d+$/}, 'as_int'],
-        double => [30, sub {$_[0] =~ /^(-?(?:\d+(?:\.\d*)?|\.\d+|NaN|INF)|([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?)$/}, 'as_double'],
+        double => [30, sub {$_[0] =~ /^(-?(?:\d+(?:\.\d*)?|\.\d+)|([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?)$/}, 'as_double'],
         dateTime => [35, sub {$_[0] =~ /^\d{8}T\d\d:\d\d:\d\d$/}, 'as_dateTime'],
         string => [40, sub {1}, 'as_string'],
       },
@@ -181,6 +184,15 @@ sub as_boolean {
   return ['boolean', {}, $value ? 1 : 0];
 }
 
+sub typecast {
+  my $self = shift;
+  my($value, $name, $type, $attr) = @_;
+
+  die "Wrong/unsupported datatype '$type' specified\n" if defined $type;
+
+  $self->SUPER::typecast(@_);
+}
+
 # ======================================================================
 
 package XMLRPC::SOM;
@@ -236,6 +248,13 @@ package XMLRPC::Deserializer;
 
 @XMLRPC::Deserializer::ISA = qw(SOAP::Deserializer);
 
+BEGIN {
+  no strict 'refs';
+  for my $method (qw(o_child o_qname o_chars)) { # import from SOAP::Utils
+    *$method = \&{'SOAP::Utils::'.$method};
+  }
+}
+
 sub deserialize {
   bless shift->SUPER::deserialize(@_) => 'XMLRPC::SOM';
 }
@@ -243,29 +262,29 @@ sub deserialize {
 sub decode_value {
   my $self = shift;
   my $ref = shift;
-  my($name, $attrs, $childs, $value) = @$ref;
+  my($name, $attrs, $children, $value) = @$ref;
 
   if ($name eq 'value') {
-    $childs ? $self->decode_value($childs->[0]) : $value;
+    $children ? scalar(($self->decode_object($children->[0]))[1]) : $value;
   } elsif ($name eq 'array') {
-    return [map {scalar(($self->decode_object($_))[1])} @{$childs->[0]->[2] || []}];
+    return [map {scalar(($self->decode_object($_))[1])} @{o_child($children->[0]) || []}];
   } elsif ($name eq 'struct') { 
     return {map {
-      my %hash = map {$_->[0] => $_} @{$_->[2] || []};
+      my %hash = map {o_qname($_) => $_} @{o_child($_) || []};
                          # v----- scalar is required here, because 5.005 evaluates 'undef' in list context as empty array
-      ($hash{name}->[3] => scalar(($self->decode_object($hash{value}))[1]));
-    } @{$childs || []}};
+      (o_chars($hash{name}) => scalar(($self->decode_object($hash{value}))[1]));
+    } @{$children || []}};
   } elsif ($name eq 'base64') {
     require MIME::Base64; 
     MIME::Base64::decode_base64($value);
   } elsif ($name =~ /^(?:int|i4|boolean|string|double|dateTime\.iso8601|methodName)$/) {
     return $value;
   } elsif ($name =~ /^(?:params)$/) {
-    return [map {scalar(($self->decode_object($_))[1])} @{$childs || []}];
+    return [map {scalar(($self->decode_object($_))[1])} @{$children || []}];
   } elsif ($name =~ /^(?:methodResponse|methodCall)$/) {
-    return +{map {$self->decode_object($_)} @{$childs || []}};
+    return +{map {$self->decode_object($_)} @{$children || []}};
   } elsif ($name =~ /^(?:param|fault)$/) {
-    return scalar(($self->decode_object($childs->[0]))[1]);
+    return scalar(($self->decode_object($children->[0]))[1]);
   } else {
     die "wrong element '$name'\n";
   }
@@ -282,7 +301,7 @@ sub initialize {
     deserializer => XMLRPC::Deserializer->new,
     serializer => XMLRPC::Serializer->new,
     on_action => sub {},
-    on_dispatch => sub { return map {s!\.!/!; $_} shift->method =~ /^(?:(.*)\.)?(\w+)$/ },
+    on_dispatch => sub { return map {s!\.!/!g; $_} shift->method =~ /^(?:(.*)\.)?(\w+)$/ },
   );
 }
 

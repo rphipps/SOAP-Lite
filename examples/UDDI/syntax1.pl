@@ -5,8 +5,8 @@
 
 use strict;
 use UDDI::Lite 
-  import => ['UDDI::Data'], 
-  import => ['UDDI::Lite'],
+  import => 'UDDI::Data', 
+  import => 'UDDI::Lite',
   proxy => "https://some.server.com/endpoint_fot_publishing_API",
 ;
 
@@ -21,10 +21,7 @@ my $bindtmpl = bindingTemplate([accessPoint('someurl'), $tmodels]);
 my $bindtmpls = bindingTemplates($bindtmpl);
 my $bussvc = businessService([name('Test Service'), $bindtmpls]);
 my $bussvcs = businessServices($bussvc);
-my $busent = businessEntity([name($name), $bussvcs]);
-
-# you may also specify empty businessKey (it's optional) 
-# my $busent = businessEntity([name($name), $bussvcs])->businessKey('');
+my $busent = businessEntity([name($name), $bussvcs])->businessKey('');
 
 print "Saving business '$name'...\n";
 my $newent = save_business($auth, $busent)->businessEntity;

@@ -10,7 +10,7 @@ BEGIN {
 use strict;
 use Test;
 
-BEGIN { plan tests => 26 }
+BEGIN { plan tests => 30 }
 
 use SOAP::Lite;
 
@@ -120,7 +120,8 @@ print "MIME tests will be skipped: $reason" if defined $reason;
 my $package = '
   package Calculator; 
   sub new { bless {} => ref($_[0]) || $_[0] }
-  sub add { $_[1] + $_[2] }; 
+  sub add { $_[1] + $_[2] }
+  sub schema { $SOAP::Constants::DEFAULT_XML_SCHEMA } 
 1';
 
 { 
@@ -129,6 +130,7 @@ my $package = '
   my $server = SOAP::Server->dispatch_to('Calculator');
 
   foreach (keys %tests) {
+    print "$_\n";
     my $result = SOAP::Deserializer->deserialize($server->handle($tests{$_}));
     $_ =~ /XML/ || $is_mimeparser ? ok(($result->faultstring || '') =~ /Failed to access class \(Calculator\)/) 
                                   : skip($reason => undef);
@@ -137,6 +139,7 @@ my $package = '
   eval $package or die;
 
   foreach (keys %tests) {
+    print "$_\n";
     my $result = SOAP::Deserializer->deserialize($server->handle($tests{$_}));
     $_ =~ /XML/ || $is_mimeparser ? ok(($result->result || 0) == 7) 
                                   : skip($reason => undef);
@@ -162,10 +165,13 @@ my $package = '
     # dispatch URI to object
     SOAP::Server->dispatch_with({'http://www.soaplite.com/Calculator' => Calculator->new}),
 
-    # dispatch SOAPAction to class
+    # dispatch quoted SOAPAction to class
+    SOAP::Server->action('"http://action/#method"')->dispatch_with({'http://action/#method' => 'Calculator'}),
+
+    # dispatch non-quoted SOAPAction to class
     SOAP::Server->action('http://action/#method')->dispatch_with({'http://action/#method' => 'Calculator'}),
 
-    # dispatch to class and BAD regexp. May fail, but shouldn't
+    # dispatch to class and BAD regexp.
     SOAP::Server->dispatch_to('\protocols', 'Calculator')
   ) {
     my $result = SOAP::Deserializer->deserialize($_->handle($tests{'XML only'}));
@@ -213,14 +219,12 @@ my $package = '
                    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" 
                    xmlns:xsd="http://www.w3.org/1999/XMLSchema">
 <SOAP-ENV:Body>
-<namesp1:add xmlns:namesp1="http://www.soaplite.com/Calculator">
-  <c-gensym5 xsi:type="xsd:int">2</c-gensym5>
-  <c-gensym7 xsi:type="xsd:int">5</c-gensym7>
-</namesp1:add>
+<namesp1:schema xmlns:namesp1="http://www.soaplite.com/Calculator"/>
 </SOAP-ENV:Body></SOAP-ENV:Envelope>');
 
   ok($a =~ m!xsi="http://www.w3.org/1999/XMLSchema-instance"!);
   ok($a =~ m!xsd="http://www.w3.org/1999/XMLSchema"!);
+  ok($a =~ m!>http://www.w3.org/1999/XMLSchema<!);
 
   $a = $server->handle('<SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" 
                    SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" 
@@ -228,14 +232,14 @@ my $package = '
                    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" 
                    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 <SOAP-ENV:Body>
-<namesp1:add xmlns:namesp1="http://www.soaplite.com/Calculator">
+<namesp1:schema xmlns:namesp1="http://www.soaplite.com/Calculator">
   <c-gensym5 xsi:type="xsd:int">2</c-gensym5>
-  <c-gensym7 xsi:type="xsd:int">5</c-gensym7>
-</namesp1:add>
+</namesp1:schema>
 </SOAP-ENV:Body></SOAP-ENV:Envelope>');
 
   ok($a =~ m!xsi="http://www.w3.org/2001/XMLSchema-instance"!);
   ok($a =~ m!xsd="http://www.w3.org/2001/XMLSchema"!);
+  ok($a =~ m!>http://www.w3.org/2001/XMLSchema<!);
 
   $a = $server->handle('<SOAP-ENV:Envelope xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" 
                    SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" 
@@ -243,12 +247,12 @@ my $package = '
                    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" 
                    xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 <SOAP-ENV:Body>
-<namesp1:add xmlns:namesp1="http://www.soaplite.com/Calculator">
+<namesp1:schema xmlns:namesp1="http://www.soaplite.com/Calculator">
   <c-gensym5 xsi:type="xsd:int">2</c-gensym5>
-  <c-gensym7 xsi:type="SOAP-ENC:int">5</c-gensym7>
-</namesp1:add>
+</namesp1:schema>
 </SOAP-ENV:Body></SOAP-ENV:Envelope>');
 
   ok($a =~ m!xsi="http://www.w3.org/2001/XMLSchema-instance"!);
   ok($a =~ m!xsd="http://www.w3.org/2001/XMLSchema"!);
+  ok($a =~ m!>http://www.w3.org/2001/XMLSchema<!);
 }
