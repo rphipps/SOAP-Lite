@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: HTTP.pm,v 1.14 2004/11/14 19:30:50 byrnereese Exp $
+# $Id: HTTP.pm,v 1.15 2005/03/30 08:58:34 byrnereese Exp $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-#$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name:  $ =~ /-(\d+)_([\d_]+)/);
+#$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name: release-0_65-beta4 $ =~ /-(\d+)_([\d_]+)/);
 $VERSION = $SOAP::Lite::VERSION;
 
 use SOAP::Lite;
@@ -401,7 +401,8 @@ sub handle {
     my $content; binmode(STDIN); read(STDIN,$content,$length);
     $self->request(HTTP::Request->new( 
       $ENV{'REQUEST_METHOD'} || '' => $ENV{'SCRIPT_NAME'},
-      HTTP::Headers->new(map {(/^HTTP_(.+)/i ? $1 : $_) => $ENV{$_}} keys %ENV),
+#      HTTP::Headers->new(map {(/^HTTP_(.+)/i ? $1 : $_) => $ENV{$_}} keys %ENV),
+      HTTP::Headers->new(map {(/^HTTP_(.+)/i ? ($1=~m/SOAPACTION/) ?('SOAPAction'):($1) : $_) => $ENV{$_}} keys %ENV),
       $content,
     ));
     $self->SUPER::handle;
@@ -413,7 +414,7 @@ sub handle {
   my $code = $self->response->code;
   binmode(STDOUT); print STDOUT 
     "$status $code ", HTTP::Status::status_message($code), 
-    "\015\012", $self->response->headers_as_string, 
+    "\015\012", $self->response->headers_as_string("\015\012"), 
     "\015\012", $self->response->content;
 }
 
@@ -484,7 +485,7 @@ sub handle {
     # replaced ->close, thanks to Sean Meisner <Sean.Meisner@VerizonWireless.com>
     # shutdown() doesn't work on AIX. close() is used in this case. Thanks to Jos Clijmans <jos.clijmans@recyfin.be>
     UNIVERSAL::isa($c, 'shutdown') ? $c->shutdown(2) : $c->close(); 
-    undef $c;
+    $c->close;
   }
 }
 

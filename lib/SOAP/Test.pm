@@ -12,7 +12,7 @@ package SOAP::Test;
 
 use 5.004;
 use vars qw($VERSION $TIMEOUT);
-$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name:  $ =~ /-(\d+)_([\d_]+)/);
+$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name: release-0_65-beta4 $ =~ /-(\d+)_([\d_]+)/);
 
 $TIMEOUT = 5;
 

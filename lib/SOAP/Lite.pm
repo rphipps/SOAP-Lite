@@ -1,10 +1,10 @@
 # ======================================================================
 #
-# Copyright (C) 2000-2004 Paul Kulchenko (paulclinger@yahoo.com)
+# Copyright (C) 2000-2005 Paul Kulchenko (paulclinger@yahoo.com)
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm,v 1.32 2005/02/22 01:47:28 byrnereese Exp $
+# $Id: Lite.pm,v 1.34 2005/04/03 08:30:58 byrnereese Exp $
 #
 # ======================================================================
 
@@ -13,9 +13,9 @@ package SOAP::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-#$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name:  $ =~ /-(\d+)_([\d_]+)/)
+#$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name: release-0_65-beta4 $ =~ /-(\d+)_([\d_]+)/)
 #  or warn "warning: unspecified/non-released version of ", __PACKAGE__, "\n";
-$VERSION = '0.65_3';
+$VERSION = '0.65_4';
 
 # ======================================================================
 
@@ -2614,9 +2614,6 @@ use vars qw(@ISA);
 
 package SOAP::Schema::WSDL;
 
-# TODO - cache package files that are generated! Parsing takes for frigg'n
-# ever!
-
 use vars qw(%imported @ISA);
 @ISA = qw(SOAP::Schema);
 
@@ -2894,6 +2891,7 @@ EOP
     }
     $self->{'_stub'} .= "    parameters => [\n";
     foreach (@{$services->{$service}{parameters}}) {
+#      next unless $_;
       $self->{'_stub'} .= "      SOAP::Data->new(name => '".$_->name."', type => '".$_->type."', attr => {";
       $self->{'_stub'} .= do { my %attr = %{$_->attr}; 
                                join(', ', map {"'$_' => '$attr{$_}'"} 
@@ -2944,14 +2942,27 @@ EOP
   my $namespaces = $self->deserializer->ids->[1];
   foreach my $key (keys %{$namespaces}) {
       my ($ns,$prefix) = SOAP::Utils::splitqname($key);
-      $self->{'_stub'} .= '$self->serializer->register_ns("'.$namespaces->{$key}.'","'.$prefix.'");'."\n"
+      $self->{'_stub'} .= '  $self->serializer->register_ns("'.$namespaces->{$key}.'","'.$prefix.'");'."\n"
 	  if ($ns eq "xmlns");
   }
   $self->{'_stub'} .= <<'EOP';
   my $som = $self->SUPER::call($method => @parameters); 
+  if ($self->want_som) {
+      return $som;
+  }
   UNIVERSAL::isa($som => 'SOAP::SOM') ? wantarray ? $som->paramsall : $som->result : $som;
 }
 
+sub BEGIN {
+  no strict 'refs';
+  for my $method (qw(want_som)) {
+    my $field = '_' . $method;
+    *$method = sub {
+      my $self = shift->new;
+      @_ ? ($self->{$field} = shift, return $self) : return $self->{$field};
+    }
+  }
+}
 no strict 'refs';
 for my $method (@EXPORT_OK) {
   my %method = %{$methods{$method}};
@@ -2968,8 +2979,7 @@ for my $method (@EXPORT_OK) {
 
 sub AUTOLOAD {
   my $method = substr($AUTOLOAD, rindex($AUTOLOAD, '::') + 2);
-  return if $method eq 'DESTROY';
-
+  return if $method eq 'DESTROY' || $method eq 'want_som';
   die "Unrecognized method '$method'. List of available method(s): @EXPORT_OK\n";
 }
 
@@ -4444,7 +4454,7 @@ an issue, you are welcome to contact Byrne Reese at <byrne at majordojo dot com>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000-2004 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2005 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
