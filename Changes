@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes,v 1.16 2005/03/30 08:58:30 byrnereese Exp $
+# $Id: Changes,v 1.17 2005/05/06 17:16:33 byrnereese Exp $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -11,7 +11,11 @@ a '!'.
 THIS RELEASE
 -----------------------------------------------------------------------
 
-0.65-beta4 In progress
+0.65-beta5 May 6 2005
+
+  ! Fixed critical bug which prevented all XMLRPC servers from working
+
+0.65-beta4 Apr 3 2005
 
   ! Fixed bug 1160881 - HTTP headers are now terminated by \r\n for
     compatibility with .NET and compliance with HTTP spec.
