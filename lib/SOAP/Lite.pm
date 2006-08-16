@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm,v 1.41 2006/07/06 18:11:44 byrnereese Exp $
+# $Id: Lite.pm,v 1.43 2006/08/16 14:49:34 byrnereese Exp $
 #
 # ======================================================================
 
@@ -15,7 +15,7 @@ use strict;
 use vars qw($VERSION);
 #$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name:  $ =~ /-(\d+)_([\d_]+)/)
 #  or warn "warning: unspecified/non-released version of ", __PACKAGE__, "\n";
-$VERSION = '0.68';
+$VERSION = '0.69';
 
 # ======================================================================
 
@@ -104,8 +104,18 @@ sub AUTOLOAD {
   my $export_var = $package . '::EXPORT';
   my @export = @$export_var;
 
-  die "Type '$method' can't be found in a schema class '$package'\n"
-    unless $method =~ s/^as_// && grep {$_ eq $method} @{$export_var};
+# Removed in 0.69 - this is a total hack. For some reason this is failing
+# despite not being a fatal error condition.
+#  die "Type '$method' can't be found in a schema class '$package'\n"
+#    unless $method =~ s/^as_// && grep {$_ eq $method} @{$export_var};
+
+# This was added in its place - it is still a hack, but it performs the 
+# necessary substitution. It just does not die.
+  if ($method =~ s/^as_// && grep {$_ eq $method} @{$export_var}) {
+#      print STDERR "method is now '$method'\n";
+  } else {
+      return;
+  }
 
   $method =~ s/_/-/; # fix ur-type
 

@@ -11,6 +11,11 @@ a '!'.
 THIS RELEASE
 -----------------------------------------------------------------------
 
+0.69 Aug 16 2006
+
+  ! Commented out two lines of code that were causing S::L to die under
+    a non-fatal error condition. This is a HACK.
+
 0.68 July 6 2006
 
   ! Patched support for mod_perl Apache2 (thanks to JT Justman)
