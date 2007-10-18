@@ -1,5 +1,5 @@
 #!/bin/env perl 
-
+use diagnostics;
 BEGIN {
   unless(grep /blib/, @INC) {
     chdir 't' if -d 't';
@@ -60,8 +60,12 @@ plan tests => 10;
     proxy => '$proxy',
   ; 1" or die;
 
-  XMLRPC->getStateName(21);
+  $r = XMLRPC->getStateName(21);
 
+  # Looks like this test requires saving away the result of the 
+  # last call - which introduces a memory leak. 
+  #
+  # 
   $r = XMLRPC::Lite->self->call;
 
   ok(ref $r->fault eq 'HASH');

@@ -1,0 +1,39 @@
+*** Lite.pm.orig 2007-04-13 13:31:11.000000000 -0700
+--- Lite.pm 2007-04-13 13:32:35.000000000 -0700
+***************
+*** 1461,1467 ****
+
+# Find all the SOAP Body elements
+} else {
+! push(@parameters, $_);
+}
+}
+my $header = @header ? SOAP::Data->set_value(@header) : undef;
+--- 1461,1467 ----
+
+# Find all the SOAP Body elements
+} else {
+! push (@parameters, SOAP::Utils::encode_data($_));
+}
+}
+my $header = @header ? SOAP::Data->set_value(@header) : undef;
+***************
+*** 1499,1506 ****
+
+}
+# This is breaking a unit test right now...
+! $body->set_value(SOAP::Utils::encode_data($parameters ? \$parameters
+: ()))
+! if $body;
+} elsif ($type eq 'fault') {
+SOAP::Trace::fault(@parameters);
+$body = SOAP::Data
+--- 1499,1505 ----
+
+}
+# This is breaking a unit test right now...
+! $body->set_value($parameters ? \$parameters : ()) if $body;
+} elsif ($type eq 'fault') {
+SOAP::Trace::fault(@parameters);
+$body = SOAP::Data
+

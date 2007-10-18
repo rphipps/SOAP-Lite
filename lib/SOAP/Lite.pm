@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm,v 1.43 2006/08/16 14:49:34 byrnereese Exp $
+# $Id: Lite.pm,v 1.54 2007/10/18 20:45:01 kutterma Exp $
 #
 # ======================================================================
 
@@ -15,17 +15,18 @@ use strict;
 use vars qw($VERSION);
 #$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name:  $ =~ /-(\d+)_([\d_]+)/)
 #  or warn "warning: unspecified/non-released version of ", __PACKAGE__, "\n";
-$VERSION = '0.69';
+$VERSION = '0.70_01';
 
 # ======================================================================
 
 package SOAP::XMLSchemaSOAP1_1::Deserializer;
 
+# sub as_anyURI; *as_anyURI = \&SOAP::XMLSchemaSOAP1_1::Deserializer::as_anyURI;
 sub anyTypeValue { 'ur-type' }
-
 sub as_boolean { shift; my $value = shift; $value eq '1' || $value eq 'true' ? 1 : $value eq '0' || $value eq 'false' ? 0 : die "Wrong boolean value '$value'\n" }
 sub as_base64 { shift; require MIME::Base64; MIME::Base64::decode_base64(shift) }
 sub as_ur_type { $_[1] }
+sub as_anyURI { $_[1] }
 
 BEGIN {
   no strict 'refs';
@@ -175,12 +176,35 @@ sub as_string {
   return [$name, {'xsi:type' => 'xsd:string', %$attr}, SOAP::Utils::encode_data($value)];
 }
 
+sub as_anyURI {
+  my $self = shift;
+  my($value, $name, $type, $attr) = @_;
+  die "String value expected instead of @{[ref $value]} reference\n" if ref $value;
+  return [$name, {'xsi:type' => 'xsd:anyURI', %$attr}, SOAP::Utils::encode_data($value)];
+}
+
 sub as_undef { $_[1] ? '1' : '0' }
+
+# The 1999 XML schema spec says that (true|false) are allowed values - 
+# so this is wrong.
+#
+#sub as_boolean {
+#  my $self = shift;
+#  my($value, $name, $type, $attr) = @_;
+#  return [$name, {'xsi:type' => 'xsd:boolean', %$attr}, $value ? '1' : '0'];
+#}
+
+# this should be OK:
 
 sub as_boolean {
   my $self = shift;
   my($value, $name, $type, $attr) = @_;
-  return [$name, {'xsi:type' => 'xsd:boolean', %$attr}, $value ? '1' : '0'];
+  # return [$name, {'xsi:type' => 'xsd:boolean', %$attr}, $value ? 'true' : 'false'];
+  # fix [ 1204279 ] Boolean serialization error
+  return [$name, 
+    {'xsi:type' => 'xsd:boolean', %$attr}, 
+    ( $value ne 'false' && $value ) ? 'true' : 'false' 
+  ];
 }
 
 sub as_float {
@@ -196,6 +220,7 @@ package SOAP::XMLSchema1999::Deserializer;
 sub anyTypeValue { 'ur-type' }
 
 sub as_string; *as_string = \&SOAP::XMLSchemaSOAP1_1::Deserializer::as_string;
+# sub as_anyURI; *as_anyURI = \&SOAP::XMLSchemaSOAP1_1::Deserializer::as_anyURI;
 sub as_boolean; *as_boolean = \&SOAP::XMLSchemaSOAP1_1::Deserializer::as_boolean;
 sub as_hex { shift; my $value = shift; $value =~ s/([a-zA-Z0-9]{2})/chr oct '0x'.$1/ge; $value }
 sub as_ur_type { $_[1] }
@@ -244,6 +269,7 @@ sub anyTypeValue { 'anyType' }
 sub as_long;        *as_long = \&SOAP::XMLSchema1999::Serializer::as_long;
 sub as_float;       *as_float = \&SOAP::XMLSchema1999::Serializer::as_float;
 sub as_string;      *as_string = \&SOAP::XMLSchema1999::Serializer::as_string;
+sub as_anyURI;      *as_anyURI = \&SOAP::XMLSchema1999::Serializer::as_anyURI;
 # TODO - QNames still don't work for 2001 schema!
 sub as_QName;       *as_QName = \&SOAP::XMLSchema1999::Serializer::as_string;
 sub as_hex;         *as_hex = \&as_hexBinary;
@@ -267,7 +293,12 @@ sub as_base64Binary {
 sub as_boolean {
   my $self = shift;
   my($value, $name, $type, $attr) = @_;
-  return [$name, {'xsi:type' => 'xsd:boolean', %$attr}, $value ? 'true' : 'false'];
+  # return [$name, {'xsi:type' => 'xsd:boolean', %$attr}, $value ? 'true' : 'false'];
+  # fix [ 1204279 ] Boolean serialization error
+  return [$name, 
+    {'xsi:type' => 'xsd:boolean', %$attr}, 
+    ( $value ne 'false' && $value ) ? 'true' : 'false' 
+  ];
 }
 
 # ----------------------------------------------------------------------
@@ -277,6 +308,7 @@ package SOAP::XMLSchema2001::Deserializer;
 sub anyTypeValue { 'anyType' }
 
 sub as_string; *as_string = \&SOAP::XMLSchema1999::Deserializer::as_string;
+sub as_anyURI; *as_anyURI = \&SOAP::XMLSchemaSOAP1_1::Deserializer::as_anyURI;
 sub as_boolean; *as_boolean = \&SOAP::XMLSchemaSOAP1_2::Deserializer::as_boolean;
 sub as_base64Binary; *as_base64Binary = \&SOAP::XMLSchemaSOAP1_2::Deserializer::as_base64;
 sub as_hexBinary; *as_hexBinary = \&SOAP::XMLSchema1999::Deserializer::as_hex;
@@ -287,7 +319,7 @@ BEGIN {
   for my $method (qw(
     anyType anySimpleType
     float double decimal dateTime timePeriod gMonth gYearMonth gYear century 
-    gMonthDay gDay duration recurringDuration anyURI
+    gMonthDay gDay duration recurringDuration
     language integer nonPositiveInteger negativeInteger long int short byte
     nonNegativeInteger unsignedLong unsignedInt unsignedShort unsignedByte
     positiveInteger date time dateTime
@@ -550,18 +582,19 @@ use overload fallback => 1, '""' => "stringify";
 sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { 
-  my $self = shift;
+    my $self = shift;
 
-  unless (ref $self) {
-    my $class = ref($self) || $self;
-    $self = bless {} => $class;
-    SOAP::Trace::objects('()');
-  }
+    unless (ref $self) {
+        my $class = $self;
+        $self = bless {} => $class;
+        SOAP::Trace::objects('()');
+    }
 
-  Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && (@_ & 1); 
-  while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
+    no strict qw(refs);
+    Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && (@_ & 1); 
+    while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
 
-  return $self;
+    return $self;
 }
 
 sub stringify {
@@ -599,11 +632,11 @@ sub new {
   my $self = shift;
 
   unless (ref $self) {
-    my $class = ref($self) || $self;
+    my $class = $self;
     $self = bless {_attr => {}, _value => [], _signature => []} => $class;
     SOAP::Trace::objects('()');
   }
-
+  no strict qw(refs);
   Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && (@_ & 1); 
   while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
 
@@ -770,10 +803,10 @@ sub BEGIN {
 sub DESTROY { SOAP::Trace::objects('()') }
 
 sub new { 
-  my $self = shift;
-  return $self if ref $self;
-  unless (ref $self) {
-    my $class = ref($self) || $self;
+    my $self = shift;
+    return $self if ref $self;
+
+    my $class = $self;
     $self = bless {
       _level => 0,
       _autotype => 1,
@@ -813,7 +846,7 @@ sub new {
           'boolean' => 
 	      [90, sub { $_[0] =~ /^(true|false)$/i; }, 'as_boolean'],
           'anyURI' => 
-	      [95, sub { $_[0] =~ /^(urn:)|(http:\/\/)/i; }, 'as_anyURI'],
+	      [95, sub { $_[0] =~ /^(urn:|http:\/\/)/i; }, 'as_anyURI'],
           'string' => 
 	      [100, sub {1}, 'as_string'],
       },
@@ -837,12 +870,12 @@ sub new {
 	if $SOAP::Constants::PREFIX_ENV;
     $self->xmlschema($SOAP::Constants::DEFAULT_XML_SCHEMA);
     SOAP::Trace::objects('()');
-  }
 
-  Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && (@_ & 1); 
-  while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
+    no strict qw(refs);
+    Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && (@_ & 1); 
+    while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
 
-  return $self;
+    return $self;
 }
 
 sub ns {
@@ -1095,6 +1128,7 @@ sub encode_object {
 
     my $method = "as_" . ($object->SOAP::Data::type || '-'); # dummy type if not defined
     # try to call method specified for this type
+    no strict qw(refs);
     my @values = map { 
       # store null/nil attribute if value is undef
       local $attr->{SOAP::Utils::qualify(xsi => $self->xmlschemaclass->nilValue)} = $self->xmlschemaclass->as_undef(1)
@@ -1119,9 +1153,10 @@ sub encode_object {
 
     my $method = 'as_' . $class;
     if ($self->can($method)) {
-      my $encoded = $self->$method($object, $name, $type, $attr);
-      return $encoded if ref $encoded;
-      # return only if handled, otherwise handle with default handlers
+        no strict qw(refs);
+        my $encoded = $self->$method($object, $name, $type, $attr);
+        return $encoded if ref $encoded;
+        # return only if handled, otherwise handle with default handlers
     }
   }
 
@@ -1154,6 +1189,7 @@ sub encode_scalar {
   # autodefined type 
   if ($self->autotype) {
     my $lookup = $self->typelookup;
+    no strict qw(refs);
     for (sort {$lookup->{$a}->[0] <=> $lookup->{$b}->[0]} keys %$lookup) {
       my $method = $lookup->{$_}->[2];
       return $self->can($method) && $self->$method($value, $name, $type, $attr)
@@ -1170,6 +1206,14 @@ sub encode_array {
   my($self, $array, $name, $type, $attr) = @_;
   my $items = 'item'; 
 
+  # If typing is disabled, just serialize each of the array items
+  # with no type information, each using the specified name,
+  # and do not crete a wrapper array tag.
+  if (!$self->autotype) {
+      $name ||= gen_name;
+      return map {$self->encode_object($_, $name)} @$array;
+  }
+
   # TODO: add support for multidimensional, partially transmitted and sparse arrays
   my @items = map {$self->encode_object($_, $items)} @$array;
   my $num = @items;
@@ -1177,10 +1221,13 @@ sub encode_array {
   for (@items) { $arraytype = $_->[1]->{'xsi:type'} || '-'; $types{$arraytype}++ }
   $arraytype = sprintf "%s\[$num]", keys %types > 1 || $arraytype eq '-' ? SOAP::Utils::qualify(xsd => $self->xmlschemaclass->anyTypeValue) : $arraytype;
 
-  $type = SOAP::Utils::qualify($self->encprefix => 'Array') if $self->autotype && !defined $type;
-
+  # $type = SOAP::Utils::qualify($self->encprefix => 'Array') if $self->autotype && !defined $type;
+  $type = qualify($self->encprefix => 'Array') if !defined $type;
   return [$name || SOAP::Utils::qualify($self->encprefix => 'Array'), 
-          {SOAP::Utils::qualify($self->encprefix => 'arrayType') => $arraytype, 'xsi:type' => $self->maptypetouri($type), %$attr},
+          {     
+              SOAP::Utils::qualify($self->encprefix => 'arrayType') => $arraytype, 
+              'xsi:type' => $self->maptypetouri($type), %$attr
+          },
           [@items], 
           $self->gen_id($array)
   ];
@@ -1214,25 +1261,6 @@ sub encode_literal_array {
   ];
 }
 
-sub encode_hash_old {
-#sub encode_hash {
-  my($self, $hash, $name, $type, $attr) = @_;
-
-  if ($self->autotype && grep {!/$SOAP::Constants::ELMASK/o} keys %$hash) {
-    warn qq!Cannot encode @{[$name ? "'$name'" : 'unnamed']} element as 'hash'. Will be encoded as 'map' instead\n! if $^W;
-    return $self->as_map($hash, $name || gen_name, $type, $attr);
-  }
-
-  $type = 'SOAPStruct' 
-    if $self->autotype && !defined($type) && exists $self->maptype->{SOAPStruct};
-  return [$name || gen_name, 
-          {'xsi:type' => $self->maptypetouri($type), %$attr},
-          [map {$self->encode_object($hash->{$_}, $_)} keys %$hash], 
-          $self->gen_id($hash)
-  ];
-}
-
-#sub encode_hash_lexi_patch {
 sub encode_hash {
   my($self, $hash, $name, $type, $attr) = @_;
 
@@ -1461,7 +1489,9 @@ sub envelope {
 
     # Find all the SOAP Body elements
     } else {
-      push(@parameters, $_);
+      # proposed resolution for [ 1700326 ] encode_data called incorrectly in envelope
+      # push(@parameters, $_);
+      push (@parameters, SOAP::Utils::encode_data($_));
     }
   }
   my $header = @header ? SOAP::Data->set_value(@header) : undef;
@@ -1499,8 +1529,11 @@ sub envelope {
 
     }
     # This is breaking a unit test right now...
-    $body->set_value(SOAP::Utils::encode_data($parameters ? \$parameters : ()))
-      if $body;
+# proposed resolution for [ 1700326 ] encode_data called incorrectly in envelope
+#    $body->set_value(SOAP::Utils::encode_data($parameters ? \$parameters : ()))
+#      if $body;
+    # must call encode_data on nothing to enforce xsi:nil="true" to be set.
+    $body->set_value($parameters ? \$parameters : SOAP::Utils::encode_data()) if $body;
   } elsif ($type eq 'fault') {
     SOAP::Trace::fault(@parameters);
     $body = SOAP::Data
@@ -1579,7 +1612,7 @@ sub parser {
 sub new { 
   my $self = shift;
   return $self if ref $self;
-  my $class = ref($self) || $self;
+  my $class = $self;
   SOAP::Trace::objects('()');
   return bless {_parser => shift} => $class;
 }
@@ -1860,7 +1893,7 @@ sub BEGIN {
 sub new {
   my $self = shift;
   return $self if ref $self;
-  my $class = ref($self) || $self;
+  my $class = $self;
   SOAP::Trace::objects('()');
   return bless {
        '_ids'        => {},
@@ -2152,38 +2185,40 @@ sub decode_value {
 
     return defined $class && $class ne 'Array' ? bless($res => $class) : $res;
 
-  } elsif ($name =~ /^\{$SOAP::Constants::NS_ENC\}Struct$/ || 
-           !$schemaclass->can($method) && 
-           (ref $children || defined $class && $value =~ /^\s*$/)) {
+  } 
+  elsif ($name =~ /^\{$SOAP::Constants::NS_ENC\}Struct$/ 
+    || !$schemaclass->can($method) 
+       && (ref $children || defined $class && $value =~ /^\s*$/)) {
     my $res = {};
     $self->hrefs->{$id} = $res if defined $id;
     # Patch code introduced in 0.65 - deserializes array properly
-    # %$res = map {$self->decode_object($_)} @{$children || []}; # removed in patch
     # Decode each element of the struct.
+    my %child_count_of = ();    
     foreach my $child (@{$children || []}) {
       my ($child_name, $child_value) = $self->decode_object($child);
       # Store the decoded element in the struct.  If the element name is
       # repeated, replace the previous scalar value with a new array
       # containing both values.
-      my $prev = $res->{$child_name};
-      if (not defined $prev) {
+      if (not $child_count_of{$child_name}) {
         # first time to see this value: use scalar
         $res->{$child_name} = $child_value;
-      } elsif (ref $prev ne "ARRAY") {
+      } 
+      elsif ($child_count_of{$child_name} == 1) {
         # second time to see this value: convert scalar to array
-        $res->{$child_name} = [ $prev, $child_value ];
-      } else {
+        $res->{$child_name} = [ $res->{$child_name}, $child_value ];
+      } 
+      else {
         # already have an array: append to it
         push @{$res->{$child_name}}, $child_value;
       }
+      $child_count_of{$child_name}++;
     }
     # End patch code
     return defined $class && $class ne 'SOAPStruct' ? bless($res => $class) : $res;
   } else {
     my $res;
-    if ($schemaclass->can($method)) {
-      $method = "$schemaclass\::$method" unless ref $schemaclass; 
-      $res = $self->$method($value, $name, $attrs, $children, $type);
+    if (my $method_ref = $schemaclass->can($method)) {
+      $res = $method_ref->($self, $value, $name, $attrs, $children, $type);
     } else {
       $res = $self->typecast($value, $name, $attrs, $children, $type);
       $res = $class ? die "Unrecognized type '$type'\n" : $value
@@ -2212,13 +2247,15 @@ sub typecast { } # typecast is called for both objects AND scalar types
 # ======================================================================
 
 package SOAP::Client;
-
+use vars qw($VERSION);
+$VERSION = '0.70';
 sub BEGIN {
   no strict 'refs';
   for my $method (qw(endpoint code message is_success status options)) {
     my $field = '_' . $method;
     *$method = sub {
-      my $self = shift->new;
+       my $self = ref $_[0] ? shift : shift->new();
+#      my $self = shift->new;
 #      my $self = shift;
       @_ ? ($self->{$field} = shift, return $self) : return $self->{$field};
     }
@@ -2331,7 +2368,7 @@ sub new {
   return $self if ref $self;
 
   unless (ref $self) {
-    my $class = ref($self) || $self;
+    my $class = $self;
     my(@params, @methods);
 
     while (@_) { my($method, $params) = splice(@_,0,2);
@@ -2346,13 +2383,15 @@ sub new {
       _options       => {},
     } => $class;
     unshift(@methods, $self->initialize);
+    no strict qw(refs);    
     while (@methods) { my($method, $params) = splice(@methods,0,2);
       $self->$method(ref $params eq 'ARRAY' ? @$params : $params) 
     }
     SOAP::Trace::objects('()');
   }
 
-  Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && (@_ & 1); 
+  Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && (@_ & 1);
+  no strict qw(refs); 
   while (@_) { my($method, $params) = splice(@_,0,2);
     $self->can($method) 
       ? $self->$method(ref $params eq 'ARRAY' ? @$params : $params)
@@ -2563,7 +2602,8 @@ sub handle {
 
       push @parameters, $request 
         if UNIVERSAL::isa($class => 'SOAP::Server::Parameters');
-
+      
+      no strict qw(refs);
       SOAP::Server::Object->references(
 	  defined $parameters[0] && ref $parameters[0] &&
           UNIVERSAL::isa($parameters[0] => $class) ? do {
@@ -2731,9 +2771,8 @@ sub new {
   my $self = shift;
 
   unless (ref $self) {
-    my $class = ref($self) || $self;
+    my $class = $self;
     $self = $class->SUPER::new(@_);
-#    $self = bless {} => $class;
   }
   return $self;
 }
@@ -2890,7 +2929,7 @@ sub new {
   my $self = shift;
   return $self if ref $self;
   unless (ref $self) {
-    my $class = ref($self) || $self;
+    my $class = $self;
     require LWP::UserAgent;
     $self = bless {
       '_deserializer' => SOAP::Schema::Deserializer->new,
@@ -2901,6 +2940,7 @@ sub new {
   }
 
   Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && (@_ & 1); 
+  no strict qw(refs);
   while (@_) { my $method = shift; $self->$method(shift) if $self->can($method) }
 
   return $self;
@@ -3227,7 +3267,7 @@ sub new {
   my $self = shift;
   return $self if ref $self;
   unless (ref $self) {
-    my $class = ref($self) || $self;
+    my $class = $self;
     # Check whether we can clone. Only the SAME class allowed, no inheritance
     $self = ref($soap) eq $class ? $soap->clone : {
       _transport    => SOAP::Transport->new,
@@ -3245,6 +3285,7 @@ sub new {
   }
 
   Carp::carp "Odd (wrong?) number of parameters in new()" if $^W && (@_ & 1); 
+  no strict qw(refs);
   while (@_) { my($method, $params) = splice(@_,0,2);
     $self->can($method) 
       ? $self->$method(ref $params eq 'ARRAY' ? @$params : $params)
@@ -3319,6 +3360,7 @@ sub BEGIN {
   }
   # SOAP::Transport Shortcuts
   # TODO - deprecate proxy() in favor of new language endpoint_url()
+  no strict qw(refs);
   for my $method (qw(proxy)) {
     *$method = sub { 
       my $self = shift->new;
@@ -3407,14 +3449,17 @@ sub call {
   return $response if $self->outputxml;
 
   # deserialize and store result
-  my $result = $self->{'_call'} = eval { $self->deserializer->deserialize($response) } if $response;
+  # storing causes memory leaks - and _call is never retrieved.
+  my $result = eval { $self->deserializer->deserialize($response) } if $response;
+  # my $result = $self->{'_call'} = eval { $self->deserializer->deserialize($response) } if $response;
 
   if (!$self->transport->is_success || # transport fault
       $@ ||                            # not deserializible
       # fault message even if transport OK
       # or no transport error (for example, fo TCP, POP3, IO implementations)
       UNIVERSAL::isa($result => 'SOAP::SOM') && $result->fault) {
-    return $self->{'_call'} = ($self->on_fault->($self, $@ ? $@ . ($response || '') : $result) || $result);
+      # return $self->{'_call'} = ($self->on_fault->($self, $@ ? $@ . ($response || '') : $result) || $result);
+      return ($self->on_fault->($self, $@ ? $@ . ($response || '') : $result) || $result);
   }
 
   return unless $response; # nothing to do for one-ways
@@ -4597,7 +4642,7 @@ an issue, you are welcome to contact Byrne Reese at <byrne at majordojo dot com>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000-2005 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2007 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
@@ -4613,5 +4658,7 @@ Paul Kulchenko (paulclinger@yahoo.com)
 Randy J. Ray (rjray@blackperl.com)
 
 Byrne Reese (byrne@majordojo.com)
+
+Martin Kutter (martin.kutter@fen-net.de)
 
 =cut

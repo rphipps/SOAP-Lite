@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm,v 1.1 2004/10/16 17:45:17 byrnereese Exp $
+# $Id: Lite.pm,v 1.3 2007/10/09 09:10:44 kutterma Exp $
 #
 # ======================================================================
 
@@ -422,7 +422,7 @@ When use_prefix is set to 'true', serialized XML will look like this:
     </SOAP-ENV:Body>
   </SOAP-ENV:Envelope>
 
-When use_prefix is set to 'true', serialized XML will look like this:
+When use_prefix is set to 'false', serialized XML will look like this:
 
   <SOAP-ENV:Envelope ...attributes skipped>
     <SOAP-ENV:Body>
@@ -1805,7 +1805,7 @@ use fully qualified names for your return values, e.g.:
 
 Use namespace that you specify for URI instead of 'http://tempuri.org/'.
 
-In addition see comment about default incoding in .NET Web Services below.
+In addition see comment about default encoding in .NET Web Services below.
 
 =back
 

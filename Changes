@@ -1,20 +1,37 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes,v 1.21 2006/07/06 18:14:38 byrnereese Exp $
+# $Id: Changes,v 1.26 2007/10/15 22:05:36 kutterma Exp $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
 a '!'.
+Numbers in square brackets are sourceforge tracker IDs from
+https://sourceforge.net/tracker/?group_id=66000&atid=513017
+
+Numbers with # are CPANRT tracker IDs from 
+http://rt.cpan.org/Public/Dist/Display.html?Name=SOAP-Lite
 
 -----------------------------------------------------------------------
 THIS RELEASE
 -----------------------------------------------------------------------
 
-0.69 Aug 16 2006
+0.69_01
 
-  ! Commented out two lines of code that were causing S::L to die under
-    a non-fatal error condition. This is a HACK.
+  + Added LOOPBACK test transport backend.
+  + Added more core tests
+  ! Fixed #14052: 'use base' pragma no longer works for SOAP::Lite
+  ! Fixed #27032: Some debugging-aid patches
+  ! Fixed #22732: Documentation error for use_prefix()
+  ! Fixed [ 1044270 ] Suppress type for array when autotyping off
+  ! Fixed [ 1665916 ] encode_scalar needs "no strict 'refs'"?
+  ! Fixed [ 1481017 ] Typo on CPAN's documentation
+  ! Fixed [ 1750846 ] Error with ENV{EXPECT}
+  ! Fixed [ 887015 ] Memory Leak
+  ! Fixed [ 1700326 ] encode_data called incorrectly in envelope
+  ! Fixed [ 1612405 ] Incorrect deserialization of arrays/vectors
+  ! Fixed [ 1204279 ] Boolean serialization error and added test
+  ! Fixed [ 1569418 ] anyURI Serialization problem
 
 0.68 July 6 2006
 
@@ -311,7 +328,7 @@ PREVIOUS RELEASES
   ! fixed skipping undef elements in arrays under Perl 5.005 (thanks to
     Arne Georg Gleditsch)
   ! fixed warning from undefined type in out parameters (thanks to
-    J†rg Ziefle)
+    Jrg Ziefle)
   ! fixed autovivification warnings on 5.7.x (thanks to Igor Pechersky)
   ! fixed tests on 64bit systems (thanks to Gurusamy Sarathy)
   ! fixed installation problem with long filenames on MacOS (thanks to
