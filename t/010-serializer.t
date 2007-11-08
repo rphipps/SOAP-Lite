@@ -22,7 +22,7 @@ my @types2001 = qw(
     positiveInteger date time dateTime
 );
 
-plan tests => ( scalar(@types1999) + scalar(@types2001) ) * 3 + 12;
+plan tests => ( scalar(@types1999) + scalar(@types2001) ) * 3 + 15;
 
 test_serializer('SOAP::XMLSchema1999::Serializer', @types1999);
 test_serializer('SOAP::XMLSchema2001::Serializer', @types2001);
@@ -69,6 +69,34 @@ ok $enc eq '0';
 $enc = SOAP::XMLSchema1999::Serializer->as_base64(0, 'test', 'string', {});
 ok ($enc->[2] eq 'MA==');
 
+print "# encoding/decoding Euro symbol in base64\n";
+if ($] < 5.008) {
+    print "# Skippng unicode test on perl <5.8 ($])\n";
+    ok(1);
+    ok(1);
+} 
+else {
+    eval {
+        # may fail on old perls
+        my $str = chr(8364);
+        utf8::encode($str);
+        my $enc = SOAP::XMLSchema1999::Serializer->as_base64($str, 'test', 'string', {});
+        my $enc2001 = SOAP::XMLSchema2001::Serializer->as_base64Binary($str, 'test', 'string', {});
+        use MIME::Base64;
+        for ($enc, $enc2001) {
+            if ( decode_base64($_->[2]) eq $str ) {
+                ok(1);
+            }
+            else {
+                print "$str, ", decode_base64($enc->[2]), "\n";
+                ok(0);
+            }
+        }
+    }
+}    
+
+
+
 eval { SOAP::XMLSchema1999::Serializer->as_string([], 'test', 'string', {}) };
 ok $@ =~m{ \A String \s value \s expected }xms;
 
@@ -76,3 +104,11 @@ eval { SOAP::XMLSchema1999::Serializer->as_anyURI([], 'test', 'string', {}) };
 ok $@ =~m{ \A String \s value \s expected }xms;
 
 ok ! SOAP::XMLSchema1999::Serializer->DESTROY();
+
+my $serializer = SOAP::Serializer->new();
+my $fault_envelope = $serializer->envelope( 
+    fault => 'Code', 'string', 'Detail', 'Actor'
+);
+
+# Test fault serialization order
+ok $fault_envelope =~m{ .+(faultcode).+(faultstring).+(faultactor).+(detail)}x;

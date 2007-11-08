@@ -19,7 +19,7 @@ my($a, $s, $r, $serialized, $deserialized);
 { # check 'use ...'
   print "'use SOAP::Lite ...' test(s)...\n";
   eval 'use SOAP::Lite 99.99'; # hm, definitely should fail
-  ok($@ =~ /99\.99 required/);
+  ok(scalar $@ =~ /99.+required/);
 }
 
 # These tests are for backwards compatibility
@@ -294,8 +294,22 @@ EOBASE64
     };
 
     my $xml = $serializer->serialize($hash);
-    
-    ok($xml =~ m|<c-gensym\d+ [^>]*><hash><array>5</array><array>6</array><scalar>4</scalar></hash><array>2</array><array>3</array><scalar>1</scalar></c-gensym\d+>|);
+  
+   ok($xml =~ m{
+	<c-gensym\d+\s[^>]*> 
+	(:?
+            <hash>
+            (:?
+                <array>5</array><array>6</array>
+                |<scalar>4</scalar>
+            ){2}
+            </hash>
+            | <array>2</array><array>3</array>
+            | <scalar>1</scalar>
+        ){3}
+        </c-gensym\d+>
+        }xms 
+    );
 
     # deserialize it and check that a similar object is created
     my $deserializer = SOAP::Deserializer->new;

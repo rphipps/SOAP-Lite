@@ -1,5 +1,3 @@
-.cvsignore
-.project
 bin/SOAPsh.pl
 bin/stubmaker.pl
 bin/XMLRPCsh.pl

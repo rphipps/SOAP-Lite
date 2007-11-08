@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: HTTP.pm,v 1.21 2007/10/06 14:53:25 kutterma Exp $
+# $Id: HTTP.pm,v 1.24 2007/10/30 20:25:43 kutterma Exp $
 #
 # ======================================================================
 
@@ -233,6 +233,8 @@ sub send_receive {
 
             $self->SUPER::env_proxy if $ENV{'HTTP_proxy'};
 
+            # send and receive the stuff.
+            # TODO maybe eval this? what happens on connection close? 
             $self->http_response($self->SUPER::request($self->http_request));
             SOAP::Trace::transport($self->http_response);
             SOAP::Trace::debug($self->http_response->as_string);
@@ -249,7 +251,7 @@ sub send_receive {
 	            $envelope = Compress::Zlib::memGunzip($envelope);
                 $self->http_request
                     ->headers->remove_header('Content-Encoding');
-	           redo COMPRESS; # try again without compression
+	            redo COMPRESS; # try again without compression
             } 
             else {
 	            last;
@@ -266,6 +268,10 @@ sub send_receive {
     $self->is_success($self->http_response->is_success);
     $self->status($self->http_response->status_line);
 
+    # Pull out any cookies from the response headers
+    $self->{'_cookie_jar'}->extract_cookies($self->http_response) if
+        $self->{'_cookie_jar'};
+
     my $content = 
         ($self->http_response->content_encoding || '') 
             =~ /\b$SOAP::Transport::HTTP::Client::COMPRESS\b/o &&
@@ -274,7 +280,8 @@ sub send_receive {
 	    : ($self->http_response->content_encoding || '') =~ /\S/
 		      ? die "Can't understand returned Content-Encoding (@{[$self->http_response->content_encoding]})\n"
 		      : $self->http_response->content;
-    $self->http_response->content_type =~ m!^multipart/!i 
+    
+    return $self->http_response->content_type =~ m!^multipart/!i 
         ? join("\n", $self->http_response->headers_as_string, $content) 
         : $content;
 }
@@ -472,9 +479,12 @@ sub handle {
             print "HTTP/1.1 100 Continue\r\n\r\n";
         }
         
-        my $content; 
+        my $content = q{};
+        my $buffer; 
         binmode(STDIN); 
-        read(STDIN,$content,$length);
+        while (read(STDIN,$buffer,$length)) {
+            $content .= $buffer;
+        }
         
         $self->request(HTTP::Request->new(
             $ENV{'REQUEST_METHOD'} || '' => $ENV{'SCRIPT_NAME'},
