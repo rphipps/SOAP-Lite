@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes,v 1.35 2007/11/08 21:01:17 kutterma Exp $
+# $Id: Changes,v 1.39 2007/11/17 22:53:49 kutterma Exp $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -15,6 +15,19 @@ http://rt.cpan.org/Public/Dist/Display.html?Name=SOAP-Lite
 -----------------------------------------------------------------------
 THIS RELEASE
 -----------------------------------------------------------------------
+0.70_03
+  ! Fixes [ 1816906 ] 7/06_modules.t fails with Apache 1.27
+  ! Fixes [ 1414914 ] longs are serialized into xsd:int by default
+- ! Fixes [ 1833803 ] int numbers serialized as long
+  ! Fixes #21113: sending xml files using SOAP::Transport::HTTP::CGI
+  (actually trapped a documentation error)
+  ! Fixes #3677: Line > 1000 characters breaks perl parser
+  ! Fixes #11797: SOAP::Transport::HTTP::CGI returns HTTP response headers terminated by "\n" instead of "\r\n"
+  ! Fixed #24211: strings with leading zero mistreated as int
+  ! Fixed #25668: cannot build SOAP::Lite with mod_perl 1.29 
+  ! Fixed #16897: SOAP::Lite 0.66 fails with UNIVERSAL::use
+  ! Fixed #30741: SOAP::Transport::HTTP::Apache
+
 0.70_02 
   ! Fixed  [ 1828412 ] SOAP::Lite serializes faults with wrong element order,
     thanks to Tom Fischer.

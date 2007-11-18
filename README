@@ -1,7 +1,7 @@
 #
 # Filename: README
 #
-# $Id: README,v 1.3 2004/10/26 15:26:47 byrnereese Exp $
+# $Id: README,v 1.5 2007/11/16 10:09:44 kutterma Exp $
 
 SOAP::Lite for Perl is a collection of Perl modules which provides a simple 
 and lightweight interface to the Simple Object Access Protocol (SOAP) both 
@@ -43,6 +43,9 @@ Following modules will be loaded on demand only, and are considered optional:
   MIME::Tools       MIME attachment support
   DIME::Tools       DIME attachment support
   Compress::Zlib    HTTP compression support
+
+It has been reported that recent versions of MIME::Tools also need a 
+recent IO::ScalarArray in order to work with SOAP::Lite. 
 
 These modules should be available from CPAN (http://search.cpan.org/).
 
