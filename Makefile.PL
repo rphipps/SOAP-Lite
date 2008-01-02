@@ -1,9 +1,9 @@
-use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 
 require 5.004;
 use strict;
+use ExtUtils::MakeMaker;
 
 my @PREREQS = (
 # ["<feature>","<installed module>",<dependency hash>,<install by default, 2=always>];
@@ -120,13 +120,14 @@ Do you want to perform these tests in addition to core tests?', $alltests ? 'yes
 
 my $tests = join ' ', glob ($noncoretests ? 't/*.t' : 't/0*.t');
 
-WriteMakefile(
+ExtUtils::MakeMaker::WriteMakefile(
     'NAME'	   => 'SOAP::Lite',
     'VERSION_FROM' => 'lib/SOAP/Lite.pm',
     'PREREQ_PM'    => \%prereqs,
     'EXE_FILES'    => ['bin/SOAPsh.pl', 'bin/XMLRPCsh.pl', 'bin/stubmaker.pl'],
     test           => {TESTS => $tests},
 );
+
 
 ######################################################
 # Supporting subroutines

@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes,v 1.39 2007/11/17 22:53:49 kutterma Exp $
+# $Id: Changes,v 1.42 2008/01/02 16:44:04 kutterma Exp $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -15,7 +15,14 @@ http://rt.cpan.org/Public/Dist/Display.html?Name=SOAP-Lite
 -----------------------------------------------------------------------
 THIS RELEASE
 -----------------------------------------------------------------------
-0.70_03
+0.70_04 Jan 02 2008
+  ! Fixes #32008: Failed t/03-server.t tests 2-5 under Perl 5.10 on Mac OS X 10.3.9
+  ! Fixes [ 1855575 ] "P" autotyped as xsd:duration
+  ! Fixes [ 1842314 ] Expect: 100-Continue does not work with Apache::SOAP
+  ! Fixes #13140 unable to use local file as WSDL service description file 
+    Acually there is no bug, but just a missing comment in the examples...
+
+0.70_03 Nov 18 2007
   ! Fixes [ 1816906 ] 7/06_modules.t fails with Apache 1.27
   ! Fixes [ 1414914 ] longs are serialized into xsd:int by default
 - ! Fixes [ 1833803 ] int numbers serialized as long
@@ -28,7 +35,7 @@ THIS RELEASE
   ! Fixed #16897: SOAP::Lite 0.66 fails with UNIVERSAL::use
   ! Fixed #30741: SOAP::Transport::HTTP::Apache
 
-0.70_02 
+0.70_02 Nov 08 2007
   ! Fixed  [ 1828412 ] SOAP::Lite serializes faults with wrong element order,
     thanks to Tom Fischer.
   ! Fixed [ 1073360 ] Failure to read() long requests under mod_perl (fixed 
@@ -39,7 +46,7 @@ THIS RELEASE
     dealing with a cookie jar
   ! Fixed #22730 test failure on bleedperl
   ! Fixed #30271 Don't give strings with utf8 flag set to 
-  	MIME::Base64::encode_base64().
+    MIME::Base64::encode_base64().
   ! Fixed [ 1816907 ] t/01_core.t fails on 5.6.x
   ! Fixed #24810 missing prerequisite LWP::UserAgent
 
