@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: SOAP.pm,v 1.3 2007/10/03 18:31:49 kutterma Exp $
+# $Id: SOAP.pm,v 1.4 2008/01/03 15:20:05 kutterma Exp $
 #
 # ======================================================================
 
@@ -18,6 +18,10 @@ use SOAP::Transport::HTTP;
 $VERSION = '0.69_01';
 
 my $server = __PACKAGE__->new;
+
+sub server {
+    return $server;
+}
 
 sub handler {
   $server->configure(@_);
@@ -105,6 +109,20 @@ SOAP::Transport::HTTP documentation for other options.
   PerlSetVar options "compress_threshold => 10000"
 
 =back
+
+=head1 METHODS/SUBROUTINES
+
+=head2 server
+
+ my $server = Apache::XMLRPC::Lite->server();
+
+Returns the server object.
+
+Useful if you need to manipulate the server object from your code.
+
+=head2 handle
+
+Request handler. Called by apache.
 
 =head1 DEPENDENCIES
 
