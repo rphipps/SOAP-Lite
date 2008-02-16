@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes,v 1.46 2008/02/13 10:55:58 kutterma Exp $
+# $Id: Changes,v 1.48 2008/02/16 10:31:55 kutterma Exp $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -15,6 +15,9 @@ http://rt.cpan.org/Public/Dist/Display.html?Name=SOAP-Lite
 -----------------------------------------------------------------------
 THIS RELEASE
 -----------------------------------------------------------------------
+0.70_05 Feb 16 2008
+  ! Fixes failing test without FCGI installed
+
 0.70_05 Feb 13 2008
   ! Fixes #32971 Undefined subroutine &Apache::Constant::BAD_REQUEST called
   ! Fixes [ 1867264 ]       [PATCH] handle empty complexTypes correctly
