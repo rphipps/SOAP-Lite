@@ -1,0 +1,1991 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>SOAP::Lite - Perl's Web Services Toolkit</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+<table border="0" width="100%" cellspacing="0" cellpadding="3">
+<tr><td class="block" valign="middle">
+<big><strong><span class="block">&nbsp;SOAP::Lite - Perl's Web Services Toolkit</span></strong></big>
+</td></tr>
+</table>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#perl_version_warning">PERL VERSION WARNING</a></li>
+	<li><a href="#overview_of_classes_and_packages">OVERVIEW OF CLASSES AND PACKAGES</a></li>
+	<li><a href="#methods">METHODS</a></li>
+	<li><a href="#writing_a_soap_client">WRITING A SOAP CLIENT</a></li>
+	<ul>
+
+		<li><a href="#soap_message_styles">SOAP message styles</a></li>
+		<li><a href="#example_implementations">Example implementations</a></li>
+		<ul>
+
+			<li><a href="#rpc_encoded">RPC/ENCODED</a></li>
+			<li><a href="#rpc_literal">RPC/LITERAL</a></li>
+			<li><a href="#document_literal">DOCUMENT/LITERAL</a></li>
+		</ul>
+
+		<li><a href="#differences_between_the_implementations">Differences between the implementations</a></li>
+	</ul>
+
+	<li><a href="#writing_a_soap_server">WRITING A SOAP SERVER</a></li>
+	<li><a href="#features">FEATURES</a></li>
+	<ul>
+
+		<li><a href="#attachments">ATTACHMENTS</a></li>
+		<ul>
+
+			<li><a href="#examples">EXAMPLES</a></li>
+			<ul>
+
+				<li><a href="#client_sending_an_attachment">Client sending an attachment</a></li>
+				<li><a href="#client_retrieving_an_attachment">Client retrieving an attachment</a></li>
+				<li><a href="#server_receiving_an_attachment">Server receiving an attachment</a></li>
+				<li><a href="#server_responding_with_an_attachment">Server responding with an attachment</a></li>
+			</ul>
+
+		</ul>
+
+		<li><a href="#default_settings">DEFAULT SETTINGS</a></li>
+		<li><a href="#setting_maximum_message_size">SETTING MAXIMUM MESSAGE SIZE</a></li>
+		<li><a href="#in_out__out_parameters_and_autobinding">IN/OUT, OUT PARAMETERS AND AUTOBINDING</a></li>
+		<li><a href="#static_and_dynamic_service_deployment">STATIC AND DYNAMIC SERVICE DEPLOYMENT</a></li>
+		<ul>
+
+			<li><a href="#static_deployment_example">STATIC DEPLOYMENT EXAMPLE</a></li>
+			<li><a href="#dynamic_deployment_example">DYNAMIC DEPLOYMENT EXAMPLE</a></li>
+			<li><a href="#summary">SUMMARY</a></li>
+		</ul>
+
+		<li><a href="#compression">COMPRESSION</a></li>
+	</ul>
+
+	<li><a href="#security">SECURITY</a></li>
+	<li><a href="#interoperability">INTEROPERABILITY</a></li>
+	<ul>
+
+		<li><a href="#microsoft__net_client_with_soap__lite_server">Microsoft .NET client with SOAP::Lite Server</a></li>
+		<li><a href="#soap__lite_client_with_a__net_server">SOAP::Lite client with a .NET server</a></li>
+	</ul>
+
+	<li><a href="#troubleshooting">TROUBLESHOOTING</a></li>
+	<li><a href="#performance">PERFORMANCE</a></li>
+	<li><a href="#bugs_and_limitations">BUGS AND LIMITATIONS</a></li>
+	<li><a href="#platform_specifics">PLATFORM SPECIFICS</a></li>
+	<li><a href="#availability">AVAILABILITY</a></li>
+	<li><a href="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+	<li><a href="#hacking">HACKING</a></li>
+	<li><a href="#reporting_bugs">REPORTING BUGS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>SOAP::Lite - Perl's Web Services Toolkit</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>SOAP::Lite is a collection of Perl modules which provides a simple and
+lightweight interface to the Simple Object Access Protocol (SOAP) both on
+client and server side.</p>
+<p>
+</p>
+<hr />
+<h1><a name="perl_version_warning">PERL VERSION WARNING</a></h1>
+<p>SOAP::Lite 0.71 will be the last version of SOAP::Lite running on perl 5.005</p>
+<p>Future versions of SOAP::Lite will require at least perl 5.6.0</p>
+<p>If you have not had the time to upgrad your perl, you should consider this
+now.</p>
+<p>
+</p>
+<hr />
+<h1><a name="overview_of_classes_and_packages">OVERVIEW OF CLASSES AND PACKAGES</a></h1>
+<dl>
+<dt><strong><a name="item_lib_2fsoap_2flite_2epm"><em>lib/SOAP/Lite.pm</em></a></strong>
+
+<dd>
+<p><a href="../../../site/lib/SOAP/Lite.html">the SOAP::Lite manpage</a> - Main class provides all logic</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html">the SOAP::Transport manpage</a> - Transport backend</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Data.html">the SOAP::Data manpage</a> - Data objects</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Header.html">the SOAP::Header manpage</a> - Header Data Objects</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Serializer.html">the SOAP::Serializer manpage</a> - Serializes data structures to SOAP messages</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Deserializer.html">the SOAP::Deserializer manpage</a> - Deserializes SOAP messages into SOAP::SOM objects</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/SOM.html">the SOAP::SOM manpage</a> - SOAP Message objects</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Constants.html">the SOAP::Constants manpage</a> - Provides access to common constants and defaults</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Trace.html">the SOAP::Trace manpage</a> - Tracing facilities</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Schema.html">the SOAP::Schema manpage</a> - Provides access and <code>stub(s)</code> for <code>schema(s)</code></p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Schema.html#soap__schema__wsdl">SOAP::Schema::WSDL</a> - WSDL implementation for SOAP::Schema</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Server.html">the SOAP::Server manpage</a> - Handles requests on server side</p>
+</dd>
+<dd>
+<p>SOAP::Server::Object - Handles objects-by-reference</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Fault.html">the SOAP::Fault manpage</a> - Provides support for Faults on server side</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Utils.html">the SOAP::Utils manpage</a> - A set of private and public utility subroutines</p>
+</dd>
+</li>
+<dt><strong><a name="item_lib_2fsoap_2fpackager_2epm"><em>lib/SOAP/Packager.pm</em></a></strong>
+
+<dd>
+<p><a href="../../../site/lib/SOAP/Packager.html">the SOAP::Packager manpage</a> - Provides an abstract class for implementing custom packagers.</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Packager.html#soap__packager__mime">SOAP::Packager::MIME</a> - Provides MIME support to SOAP::Lite</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Packager.html#soap__packager__dime">SOAP::Packager::DIME</a> - Provides DIME support to SOAP::Lite</p>
+</dd>
+</li>
+<dt><strong><a name="item_lib_2fsoap_2ftransport_2fhttp_2epm"><em>lib/SOAP/Transport/HTTP.pm</em></a></strong>
+
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__http__client">SOAP::Transport::HTTP::Client</a> - Client interface to HTTP transport</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__http__server">SOAP::Transport::HTTP::Server</a> - Server interface to HTTP transport</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__http__cgi">SOAP::Transport::HTTP::CGI</a> - CGI implementation of server interface</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__http__daemon">SOAP::Transport::HTTP::Daemon</a> - Daemon implementation of server interface</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__http__apache">SOAP::Transport::HTTP::Apache</a> - mod_perl implementation of server interface</p>
+</dd>
+</li>
+<dt><strong><a name="item_lib_2fsoap_2ftransport_2fpop3_2epm"><em>lib/SOAP/Transport/POP3.pm</em></a></strong>
+
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__pop3__server">SOAP::Transport::POP3::Server</a> - Server interface to POP3 protocol</p>
+</dd>
+</li>
+<dt><strong><a name="item_lib_2fsoap_2ftransport_2fmailto_2epm"><em>lib/SOAP/Transport/MAILTO.pm</em></a></strong>
+
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__mailto__client">SOAP::Transport::MAILTO::Client</a> - Client interface to SMTP/sendmail</p>
+</dd>
+</li>
+<dt><strong><a name="item_lib_2fsoap_2ftransport_2flocal_2epm"><em>lib/SOAP/Transport/LOCAL.pm</em></a></strong>
+
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__local__client">SOAP::Transport::LOCAL::Client</a> - Client interface to local transport</p>
+</dd>
+</li>
+<dt><strong><a name="item_lib_2fsoap_2ftransport_2ftcp_2epm"><em>lib/SOAP/Transport/TCP.pm</em></a></strong>
+
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__tcp__server">SOAP::Transport::TCP::Server</a> - Server interface to TCP protocol</p>
+</dd>
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__tcp__client">SOAP::Transport::TCP::Client</a> - Client interface to TCP protocol</p>
+</dd>
+</li>
+<dt><strong><a name="item_lib_2fsoap_2ftransport_2fio_2epm"><em>lib/SOAP/Transport/IO.pm</em></a></strong>
+
+<dd>
+<p><a href="../../../site/lib/SOAP/Transport.html#soap__transport__io__server">SOAP::Transport::IO::Server</a> - Server interface to IO transport</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="methods">METHODS</a></h1>
+<p>All accessor methods return the current value when called with no arguments,
+while returning the object reference itself when called with a new value.
+This allows the set-attribute calls to be chained together.</p>
+<dl>
+<dt><strong><a name="item_new">new(optional key/value pairs)</a></strong>
+
+<dd>
+<pre>
+    $client = SOAP::Lite-&gt;new(proxy =&gt; $endpoint)</pre>
+</dd>
+<dd>
+<p>Constructor. Many of the accessor methods defined here may be initialized at
+creation by providing their name as a key, followed by the desired value.
+The example provides the value for the proxy element of the client.</p>
+</dd>
+<dt><strong><a name="item_transport">transport(optional transport object)</a></strong>
+
+<dd>
+<pre>
+    $transp = $client-&gt;transport( );</pre>
+</dd>
+<dd>
+<p>Gets or sets the transport object used for sending/receiving SOAP messages.</p>
+</dd>
+<dd>
+<p>See <a href="../../../site/lib/SOAP/Transport.html">the SOAP::Transport manpage</a> for details.</p>
+</dd>
+<dt><strong><a name="item_serializer">serializer(optional serializer object)</a></strong>
+
+<dd>
+<pre>
+    $serial = $client-&gt;serializer( )</pre>
+</dd>
+<dd>
+<p>Gets or sets the serializer object used for creating XML messages.</p>
+</dd>
+<dd>
+<p>See <a href="../../../site/lib/SOAP/Serializer.html">the SOAP::Serializer manpage</a> for details.</p>
+</dd>
+<dt><strong><a name="item_packager">packager(optional packager object)</a></strong>
+
+<dd>
+<pre>
+    $packager = $client-&gt;packager( )</pre>
+</dd>
+<dd>
+<p>Provides access to the <code>SOAP::Packager</code> object that the client uses to manage
+the use of attachments. The default packager is a MIME packager, but unless
+you specify parts to send, no MIME formatting will be done.</p>
+</dd>
+<dd>
+<p>See also: <a href="../../../site/lib/SOAP/Packager.html">the SOAP::Packager manpage</a>.</p>
+</dd>
+<dt><strong><a name="item_proxy">proxy(endpoint, optional extra arguments)</a></strong>
+
+<dd>
+<pre>
+    $client-&gt;proxy('<a href="http://soap.xml.info/">http://soap.xml.info/</a> endPoint');</pre>
+</dd>
+<dd>
+<p>The proxy is the server or endpoint to which the client is going to connect.
+This method allows the setting of the endpoint, along with any extra
+information that the transport object may need when communicating the request.</p>
+</dd>
+<dd>
+<p>This method is actually an alias to the proxy method of <a href="../../../site/lib/SOAP/Transport.html">the SOAP::Transport manpage</a>.
+It is the same as typing:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;transport( )-&gt;proxy(...arguments);</pre>
+</dd>
+<dd>
+<p>Extra parameters can be passed to <a href="#item_proxy"><code>proxy()</code></a> - see below.</p>
+</dd>
+<dl>
+<dt><strong><a name="item_compress_threshold">compress_threshold</a></strong>
+
+<dd>
+<p>See <a href="../../../site/lib/SOAP/Transport.html#compression">COMPRESSION</a> in <a href="../../../site/lib/HTTP/Transport.html">the HTTP::Transport manpage</a>.</p>
+</dd>
+</li>
+<dt><strong><a name="item_all_initialization_options_from_the_underlying_tra">All initialization options from the underlying transport layer</a></strong>
+
+<dd>
+<p>The options for <code>HTTP(S)</code> are the same as for LWP::UserAgent's <a href="#item_new"><code>new()</code></a> method.</p>
+</dd>
+<dd>
+<p>A common option is to create a instance of HTTP::Cookies and pass it as
+cookie_jar option:</p>
+</dd>
+<dd>
+<pre>
+ my $cookie_jar = HTTP::Cookies-&gt;new()
+ $client-&gt;proxy('<a href="http://www.example.org/webservice">http://www.example.org/webservice</a>',
+    cookie_jar =&gt; $cookie_jar,
+ );</pre>
+</dd>
+</li>
+</dl>
+<p>For example, if you wish to set the HTTP timeout for a SOAP::Lite client to 5
+seconds, use the following code:</p>
+<pre>
+  my $soap = SOAP::Lite
+   -&gt;uri($uri)
+   -&gt;proxy($proxyUrl, timeout =&gt; 5 );</pre>
+<p>See <a href="../../../site/lib/LWP/UserAgent.html">the LWP::UserAgent manpage</a>.</p>
+<dt><strong><a name="item_endpoint">endpoint(optional new endpoint address)</a></strong>
+
+<dd>
+<pre>
+    $client-&gt;endpoint('<a href="http://soap.xml.info/">http://soap.xml.info/</a> newPoint')</pre>
+</dd>
+<dd>
+<p>It may be preferable to set a new endpoint without the additional work of
+examining the new address for protocol information and checking to ensure the
+support code is loaded and available. This method allows the caller to change
+the endpoint that the client is currently set to connect to, without
+reloading the relevant transport code. Note that the proxy method must have
+been called before this method is used.</p>
+</dd>
+<dt><strong><a name="item_service">service(service URL)</a></strong>
+
+<dd>
+<pre>
+    $client-&gt;service('<a href="http://svc.perl.org/Svc.wsdl">http://svc.perl.org/Svc.wsdl</a>');</pre>
+</dd>
+<dd>
+<p><code>SOAP::Lite</code> offers some support for creating method stubs from service
+descriptions. At present, only WSDL support is in place. This method loads
+the specified WSDL schema and uses it as the basis for generating stubs.</p>
+</dd>
+<dt><strong><a name="item_outputxml"><code>outputxml(boolean)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;outputxml('true');</pre>
+</dd>
+<dd>
+<p>When set to a true value, the raw XML is returned by the call to a remote
+method.</p>
+</dd>
+<dd>
+<p>The default is to return the a <a href="../../../site/lib/SOAP/SOM.html">the SOAP::SOM manpage</a> object (false).</p>
+</dd>
+<dt><strong><a name="item_autotype"><code>autotype(boolean)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;autotype(0);</pre>
+</dd>
+<dd>
+<p>This method is a shortcut for:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;serializer-&gt;autotype(boolean);</pre>
+</dd>
+<dd>
+<p>By default, the serializer tries to automatically deduce types for the data
+being sent in a message. Setting a false value with this method disables the
+behavior.</p>
+</dd>
+<dt><strong><a name="item_readable"><code>readable(boolean)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;readable(1);</pre>
+</dd>
+<dd>
+<p>This method is a shortcut for:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;serializer-&gt;readable(boolean);</pre>
+</dd>
+<dd>
+<p>When this is used to set a true value for this property, the generated XML
+sent to the endpoint has extra characters (spaces and new lines) added in to
+make the XML itself more readable to human eyes (presumably for debugging).
+The default is to not send any additional characters.</p>
+</dd>
+<dt><strong><a name="item_default_ns"><code>default_ns($uri)</code></a></strong>
+
+<dd>
+<p>Sets the default namespace for the request to the specified uri. This
+overrides any previous namespace declaration that may have been set using a
+previous call to <a href="#item_ns"><code>ns()</code></a> or <a href="#item_default_ns"><code>default_ns()</code></a>. Setting the default namespace
+causes elements to be serialized without a namespace prefix, like this:</p>
+</dd>
+<dd>
+<pre>
+  &lt;soap:Envelope&gt;
+    &lt;soap:Body&gt;
+      &lt;myMethod xmlns=&quot;<a href="http://www.someuri.com">http://www.someuri.com</a>&quot;&gt;
+        &lt;foo /&gt;
+      &lt;/myMethod&gt;
+    &lt;/soap:Body&gt;
+  &lt;/soap:Envelope&gt;</pre>
+</dd>
+<dd>
+<p>Some .NET web services have been reported to require this XML namespace idiom.</p>
+</dd>
+</li>
+<dt><strong><a name="item_ns"><code>ns($uri,$prefix=undef)</code></a></strong>
+
+<dd>
+<p>Sets the namespace uri and optionally the namespace prefix for the request to
+the specified values. This overrides any previous namespace declaration that
+may have been set using a previous call to <a href="#item_ns"><code>ns()</code></a> or <a href="#item_default_ns"><code>default_ns()</code></a>.</p>
+</dd>
+<dd>
+<p>If a prefix is not specified, one will be generated for you automatically.
+Setting the namespace causes elements to be serialized with a declared
+namespace prefix, like this:</p>
+</dd>
+<dd>
+<pre>
+  &lt;soap:Envelope&gt;
+    &lt;soap:Body&gt;
+      &lt;my:myMethod xmlns:my=&quot;<a href="http://www.someuri.com">http://www.someuri.com</a>&quot;&gt;
+        &lt;my:foo /&gt;
+      &lt;/my:myMethod&gt;
+    &lt;/soap:Body&gt;
+  &lt;/soap:Envelope&gt;</pre>
+</dd>
+</li>
+<dt><strong><a name="item_use_prefix"><code>use_prefix(boolean)</code></a></strong>
+
+<dd>
+<p>Deprecated. Use the <a href="#item_ns"><code>ns()</code></a> and <a href="#item_default_ns"><code>default_ns</code></a> methods described above.</p>
+</dd>
+<dd>
+<p>Shortcut for <a href="#item_use_prefix"><code>serializer-&gt;use_prefix()</code></a>. This lets you turn on/off the
+use of a namespace prefix for the children of the /Envelope/Body element.
+Default is 'true'.</p>
+</dd>
+<dd>
+<p>When use_prefix is set to 'true', serialized XML will look like this:</p>
+</dd>
+<dd>
+<pre>
+  &lt;SOAP-ENV:Envelope ...attributes skipped&gt;
+    &lt;SOAP-ENV:Body&gt;
+      &lt;namesp1:mymethod xmlns:namesp1=&quot;urn:MyURI&quot; /&gt;
+    &lt;/SOAP-ENV:Body&gt;
+  &lt;/SOAP-ENV:Envelope&gt;</pre>
+</dd>
+<dd>
+<p>When use_prefix is set to 'false', serialized XML will look like this:</p>
+</dd>
+<dd>
+<pre>
+  &lt;SOAP-ENV:Envelope ...attributes skipped&gt;
+    &lt;SOAP-ENV:Body&gt;
+      &lt;mymethod xmlns=&quot;urn:MyURI&quot; /&gt;
+    &lt;/SOAP-ENV:Body&gt;
+  &lt;/SOAP-ENV:Envelope&gt;</pre>
+</dd>
+<dd>
+<p>Some .NET web services have been reported to require this XML namespace idiom.</p>
+</dd>
+</li>
+<dt><strong><a name="item_soapversion">soapversion(optional value)</a></strong>
+
+<dd>
+<pre>
+    $client-&gt;soapversion('1.2');</pre>
+</dd>
+<dd>
+<p>If no parameter is given, returns the current version of SOAP that is being
+used by the client object to encode requests. If a parameter is given, the
+method attempts to set that as the version of SOAP being used.</p>
+</dd>
+<dd>
+<p>The value should be either 1.1 or 1.2.</p>
+</dd>
+<dt><strong><a name="item_envprefix"><code>envprefix(QName)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;envprefix('env');</pre>
+</dd>
+<dd>
+<p>This method is a shortcut for:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;serializer-&gt;envprefix(QName);</pre>
+</dd>
+<dd>
+<p>Gets or sets the namespace prefix for the SOAP namespace. The default is
+SOAP.</p>
+</dd>
+<dd>
+<p>The prefix itself has no meaning, but applications may wish to chose one
+explicitly to denote different versions of SOAP or the like.</p>
+</dd>
+<dt><strong><a name="item_encprefix"><code>encprefix(QName)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;encprefix('enc');</pre>
+</dd>
+<dd>
+<p>This method is a shortcut for:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;serializer-&gt;encprefix(QName);</pre>
+</dd>
+<dd>
+<p>Gets or sets the namespace prefix for the encoding rules namespace.
+The default value is SOAP-ENC.</p>
+</dd>
+</dl>
+<p>While it may seem to be an unnecessary operation to set a value that isn't
+relevant to the message, such as the namespace labels for the envelope and
+encoding URNs, the ability to set these labels explicitly can prove to be a
+great aid in distinguishing and debugging messages on the server side of
+operations.</p>
+<dl>
+<dt><strong><a name="item_encoding">encoding(encoding URN)</a></strong>
+
+<dd>
+<pre>
+    $client-&gt;encoding($soap_12_encoding_URN);</pre>
+</dd>
+<dd>
+<p>This method is a shortcut for:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;serializer-&gt;encoding(args);</pre>
+</dd>
+<dd>
+<p>Where the earlier method dealt with the label used for the attributes related
+to the SOAP encoding scheme, this method actually sets the URN to be specified
+as the encoding scheme for the message. The default is to specify the encoding
+for SOAP 1.1, so this is handy for applications that need to encode according
+to SOAP 1.2 rules.</p>
+</dd>
+<dt><strong><a name="item_typelookup">typelookup</a></strong>
+
+<dd>
+<pre>
+    $client-&gt;typelookup;</pre>
+</dd>
+<dd>
+<p>This method is a shortcut for:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;serializer-&gt;typelookup;</pre>
+</dd>
+<dd>
+<p>Gives the application access to the type-lookup table from the serializer
+object. See the section on <a href="../../../site/lib/SOAP/Serializer.html">the SOAP::Serializer manpage</a>.</p>
+</dd>
+<dt><strong><a name="item_uri">uri(service specifier)</a></strong>
+
+<dd>
+<p>Deprecated - the <a href="#item_uri"><code>uri</code></a> subroutine is deprecated in order to provide a more
+intuitive naming scheme for subroutines that set namespaces. In the future,
+you will be required to use either the <a href="#item_ns"><code>ns()</code></a> or <a href="#item_default_ns"><code>default_ns()</code></a> subroutines
+instead of <a href="#item_uri"><code>uri()</code></a>.</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;uri($service_uri);</pre>
+</dd>
+<dd>
+<p>This method is a shortcut for:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;serializer-&gt;uri(service);</pre>
+</dd>
+<dd>
+<p>The URI associated with this accessor on a client object is the
+service-specifier for the request, often encoded for HTTP-based requests as
+the SOAPAction header. While the names may seem confusing, this method
+doesn't specify the endpoint itself. In most circumstances, the <a href="#item_uri"><code>uri</code></a> refers
+to the namespace used for the request.</p>
+</dd>
+<dd>
+<p>Often times, the value may look like a valid URL. Despite this, it doesn't
+have to point to an existing resource (and often doesn't). This method sets
+and retrieves this value from the object. Note that no transport code is
+triggered by this because it has no direct effect on the transport of the
+object.</p>
+</dd>
+</li>
+<dt><strong><a name="item_multirefinplace"><code>multirefinplace(boolean)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;multirefinplace(1);</pre>
+</dd>
+<dd>
+<p>This method is a shortcut for:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;serializer-&gt;multirefinplace(boolean);</pre>
+</dd>
+<dd>
+<p>Controls how the serializer handles values that have multiple references to
+them. Recall from previous SOAP chapters that a value may be tagged with an
+identifier, then referred to in several places. When this is the case for a
+value, the serializer defaults to putting the data element towards the top of
+the message, right after the opening tag of the method-specification. It is
+serialized as a standalone entity with an ID that is then referenced at the
+relevant places later on. If this method is used to set a true value, the
+behavior is different. When the multirefinplace attribute is true, the data
+is serialized at the first place that references it, rather than as a separate
+element higher up in the body. This is more compact but may be harder to read
+or trace in a debugging environment.</p>
+</dd>
+<dt><strong><a name="item_parts">parts( ARRAY )</a></strong>
+
+<dd>
+<p>Used to specify an array of <a href="../../../site/lib/MIME/Entity.html">the MIME::Entity manpage</a>'s to be attached to the
+transmitted SOAP message. Attachments that are returned in a response can be
+accessed by <a href="#item_parts"><code>SOAP::SOM::parts()</code></a>.</p>
+</dd>
+</li>
+<dt><strong><a name="item_self">self</a></strong>
+
+<dd>
+<pre>
+    $ref = SOAP::Lite-&gt;self;</pre>
+</dd>
+<dd>
+<p>Returns an object reference to the default global object the <code>SOAP::Lite</code>
+package maintains. This is the object that processes many of the arguments
+when provided on the use line.</p>
+</dd>
+</dl>
+<p>The following method isn't an accessor style of method but neither does it fit
+with the group that immediately follows it:</p>
+<dl>
+<dt><strong><a name="item_call"><code>call(arguments)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;call($method =&gt; @arguments);</pre>
+</dd>
+<dd>
+<p>As has been illustrated in previous chapters, the <code>SOAP::Lite</code> client objects
+can manage remote calls with auto-dispatching using some of Perl's more
+elaborate features. call is used when the application wants a greater degree
+of control over the details of the call itself. The method may be built up
+from a <a href="../../../site/lib/SOAP/Data.html">the SOAP::Data manpage</a> object, so as to allow full control over the namespace
+associated with the tag, as well as other attributes like encoding. This is
+also important for calling methods that contain characters not allowable in
+Perl function names, such as A.B.C.</p>
+</dd>
+</dl>
+<p>The next four methods used in the <code>SOAP::Lite</code> class are geared towards
+handling the types of events than can occur during the message lifecycle. Each
+of these sets up a callback for the event in question:</p>
+<dl>
+<dt><strong><a name="item_on_action"><code>on_action(callback)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;on_action(sub { qq(&quot;$_[0]&quot;) });</pre>
+</dd>
+<dd>
+<p>Triggered when the transport object sets up the SOAPAction header for an
+HTTP-based call. The default is to set the header to the string, uri#method,
+in which URI is the value set by the uri method described earlier, and method
+is the name of the method being called. When called, the routine referenced
+(or the closure, if specified as in the example) is given two arguments, uri
+and method, in that order.</p>
+</dd>
+<dd>
+<p>.NET web services usually expect <code>/</code> as separator for <a href="#item_uri"><code>uri</code></a> and <code>method</code>.
+To change SOAP::Lite's behaviour to use uri/method as SOAPAction header, use
+the following code:</p>
+</dd>
+<dd>
+<pre>
+    $client-&gt;on_action( sub { join '/', @_ } );
+=item on_fault(callback)</pre>
+</dd>
+<dd>
+<pre>
+    $client-&gt;on_fault(sub { popup_dialog($_[1]) });</pre>
+</dd>
+<dd>
+<p>Triggered when a method call results in a fault response from the server.
+When it is called, the argument list is first the client object itself,
+followed by the object that encapsulates the fault. In the example, the fault
+object is passed (without the client object) to a hypothetical GUI function
+that presents an error dialog with the text of fault extracted from the object
+(which is covered shortly under the <a href="../../../site/lib/SOAP/SOM.html">the SOAP::SOM manpage</a> methods).</p>
+</dd>
+<dt><strong><a name="item_on_nonserialized"><code>on_nonserialized(callback)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;on_nonserialized(sub { die &quot;$_[0]?!?&quot; });</pre>
+</dd>
+<dd>
+<p>Occasionally, the serializer may be given data it can't turn into SOAP-savvy
+XML; for example, if a program bug results in a code reference or something
+similar being passed in as a parameter to method call. When that happens, this
+callback is activated, with one argument. That argument is the data item that
+could not be understood. It will be the only argument. If the routine returns,
+the return value is pasted into the message as the serialization. Generally,
+an error is in order, and this callback allows for control over signaling that
+error.</p>
+</dd>
+<dt><strong><a name="item_on_debug"><code>on_debug(callback)</code></a></strong>
+
+<dd>
+<pre>
+    $client-&gt;on_debug(sub { print @_ });</pre>
+</dd>
+<dd>
+<p>Deprecated. Use the global +debug and +trace facilities described in
+<a href="../../../site/lib/SOAP/Trace.html">the SOAP::Trace manpage</a></p>
+</dd>
+<dd>
+<p>Note that this method will not work as expected: Instead of affecting the
+debugging behaviour of the object called on, it will globally affect the
+debugging behaviour for all objects of that class.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="writing_a_soap_client">WRITING A SOAP CLIENT</a></h1>
+<p>This chapter guides you to writing a SOAP client by example.</p>
+<p>The SOAP service to be accessed is a simple variation of the well-known
+hello world program. It accepts two parameters, a name and a given name,
+and returns ``Hello $given_name $name''.</p>
+<p>We will use Martin Kutter as the name for the call, so all variants will print
+the following message on success:</p>
+<pre>
+ Hello Martin Kutter!</pre>
+<p>
+</p>
+<h2><a name="soap_message_styles">SOAP message styles</a></h2>
+<p>There are three common (and one less common) variants of SOAP messages.</p>
+<p>These adress the message style (positional parameters vs. specified message
+documents) and encoding (as-is vs. typed).</p>
+<p>The different message styles are:</p>
+<ul>
+<li><strong><a name="item_rpc_2fencoded">rpc/encoded</a></strong>
+
+<p>Typed, positional parameters. Widely used in scripting languages.
+The type of the arguments is included in the message.
+Arrays and the like may be encoded using SOAP encoding rules (or others).</p>
+</li>
+<li><strong><a name="item_rpc_2fliteral">rpc/literal</a></strong>
+
+<p>As-is, positional parameters. The type of arguments is defined by some
+pre-exchanged interface definition.</p>
+</li>
+<li><strong><a name="item_document_2fencoded">document/encoded</a></strong>
+
+<p>Specified message with typed elements. Rarely used.</p>
+</li>
+<li><strong><a name="item_document_2fliteral">document/literal</a></strong>
+
+<p>Specified message with as-is elements. The message specification and
+element types are defined by some pre-exchanged interface definition.</p>
+</li>
+</ul>
+<p>As of 2008, document/literal has become the predominant SOAP message
+variant. rpc/literal and rpc/encoded are still in use, mainly with scripting
+languages, while document/encoded is hardly used at all.</p>
+<p>You will see clients for all common SOAP variants in this section.</p>
+<p>
+</p>
+<h2><a name="example_implementations">Example implementations</a></h2>
+<p>
+</p>
+<h3><a name="rpc_encoded">RPC/ENCODED</a></h3>
+<p>The web service accepts the parameters in the order ``name'', ``given name''.
+There's no interface definition.</p>
+<p>A web service client looks like this.</p>
+<pre>
+ use SOAP::Lite;
+ my $soap = SOAP::Lite-&gt;new( proxy =&gt; '<a href="http://localhost:80/helloworld.pl">http://localhost:80/helloworld.pl</a>');</pre>
+<pre>
+ my $som = $soap-&gt;call(sayHello, 'Kutter', 'Martin'),
+ die $som-&gt;fault-&gt;{ faultstring } if ($som-&gt;fault);
+ print $som-&gt;result, &quot;\n&quot;;</pre>
+<p>
+</p>
+<h3><a name="rpc_literal">RPC/LITERAL</a></h3>
+<p>SOAP web services using the document/literal message encoding are usually
+described by some Web Service Definition. Our web service has the following
+WSDL description:</p>
+<pre>
+ &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+ &lt;definitions xmlns:soap=&quot;<a href="http://schemas.xmlsoap.org/wsdl/soap/&quot">http://schemas.xmlsoap.org/wsdl/soap/&quot</a>;
+    xmlns:s=&quot;<a href="http://www.w3.org/2001/XMLSchema&quot">http://www.w3.org/2001/XMLSchema&quot</a>;
+    xmlns:s0=&quot;urn:HelloWorld&quot;
+    targetNamespace=&quot;urn:HelloWorld&quot;
+    xmlns=&quot;<a href="http://schemas.xmlsoap.org/wsdl/">http://schemas.xmlsoap.org/wsdl/</a>&quot;&gt;
+   &lt;types&gt;
+     &lt;s:schema targetNamespace=&quot;urn:HelloWorld&quot;&gt;
+       &lt;s:complexType name=&quot;sayHello&quot;&gt;
+         &lt;s:sequence&gt;
+            &lt;s:element minOccurs=&quot;0&quot; maxOccurs=&quot;1&quot; name=&quot;name&quot; type=&quot;s:string&quot; /&gt;
+             &lt;s:element minOccurs=&quot;0&quot; maxOccurs=&quot;1&quot; name=&quot;givenName&quot; type=&quot;s:string&quot; nillable=&quot;1&quot; /&gt;
+         &lt;/s:sequence&gt;
+        &lt;/s:complexType&gt;</pre>
+<pre>
+        &lt;s:complexType name=&quot;sayHelloResponse&quot;&gt;
+          &lt;s:sequence&gt;
+            &lt;s:element minOccurs=&quot;0&quot; maxOccurs=&quot;1&quot; name=&quot;sayHelloResult&quot; type=&quot;s:string&quot; /&gt;
+          &lt;/s:sequence&gt;
+      &lt;/s:complexType&gt;
+    &lt;/types&gt;
+    &lt;message name=&quot;sayHello&quot;&gt;
+      &lt;part name=&quot;parameters&quot; type=&quot;s0:sayHello&quot; /&gt;
+    &lt;/message&gt;
+    &lt;message name=&quot;sayHelloResponse&quot;&gt;
+      &lt;part name=&quot;parameters&quot; type=&quot;s0:sayHelloResponse&quot; /&gt;
+    &lt;/message&gt;</pre>
+<pre>
+    &lt;portType name=&quot;Service1Soap&quot;&gt;
+      &lt;operation name=&quot;sayHello&quot;&gt;
+        &lt;input message=&quot;s0:sayHelloSoapIn&quot; /&gt;
+        &lt;output message=&quot;s0:sayHelloSoapOut&quot; /&gt;
+      &lt;/operation&gt;
+    &lt;/portType&gt;</pre>
+<pre>
+    &lt;binding name=&quot;Service1Soap&quot; type=&quot;s0:Service1Soap&quot;&gt;
+      &lt;soap:binding transport=&quot;<a href="http://schemas.xmlsoap.org/soap/http&quot">http://schemas.xmlsoap.org/soap/http&quot</a>;
+          style=&quot;rpc&quot; /&gt;
+      &lt;operation name=&quot;sayHello&quot;&gt;
+        &lt;soap:operation soapAction=&quot;urn:HelloWorld#sayHello&quot;/&gt;
+        &lt;input&gt;
+          &lt;soap:body use=&quot;literal&quot; /&gt;
+        &lt;/input&gt;
+        &lt;output&gt;
+          &lt;soap:body use=&quot;literal&quot; /&gt;
+        &lt;/output&gt;
+      &lt;/operation&gt;
+    &lt;/binding&gt;
+    &lt;service name=&quot;HelloWorld&quot;&gt;
+      &lt;port name=&quot;HelloWorldSoap&quot; binding=&quot;s0:Service1Soap&quot;&gt;
+        &lt;soap:address location=&quot;<a href="http://localhost:80//helloworld.pl&quot">http://localhost:80//helloworld.pl&quot</a>; /&gt;
+      &lt;/port&gt;
+    &lt;/service&gt;
+  &lt;/definitions&gt;</pre>
+<p>The XML message (inside the SOAP Envelope) look like this:</p>
+<pre>
+ &lt;sayHello xmlns=&quot;urn:HelloWorld&quot;&gt;
+   &lt;name&gt;Kutter&lt;/name&gt;
+   &lt;givenName&gt;Martin&lt;/givenName&gt;
+ &lt;/sayHello&gt;</pre>
+<pre>
+ &lt;sayHelloResponse&gt;
+   &lt;sayHelloResult&gt;Hello Martin Kutter!&lt;/sayHelloResult&gt;
+ &lt;/sayHelloResponse&gt;</pre>
+<pre>
+ use SOAP::Lite;
+ my $soap = SOAP::Lite-&gt;new( proxy =&gt; '<a href="http://localhost:80/helloworld.pl">http://localhost:80/helloworld.pl</a>');</pre>
+<pre>
+ $soap-&gt;on_action( sub { &quot;urn:HelloWorld#sayHello&quot; });
+ $soap-&gt;autotype(0);
+ $soap-&gt;default_ns('urn:HelloWorld');</pre>
+<pre>
+ my $som = $soap-&gt;call('sayHello'
+    SOAP::Data-&gt;name('name')-&gt;value( 'Kutter' ),
+    SOAP::Data-&gt;name('givenName')-&gt;value('Martin'),
+);</pre>
+<pre>
+ die $som-&gt;fault-&gt;{ faultstring } if ($som-&gt;fault);
+ print $som-&gt;result, &quot;\n&quot;;</pre>
+<p>
+</p>
+<h3><a name="document_literal">DOCUMENT/LITERAL</a></h3>
+<p>SOAP web services using the document/literal message encoding are usually
+described by some Web Service Definition. Our web service has the following
+WSDL description:</p>
+<pre>
+ &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+ &lt;definitions xmlns:soap=&quot;<a href="http://schemas.xmlsoap.org/wsdl/soap/&quot">http://schemas.xmlsoap.org/wsdl/soap/&quot</a>;
+    xmlns:s=&quot;<a href="http://www.w3.org/2001/XMLSchema&quot">http://www.w3.org/2001/XMLSchema&quot</a>;
+    xmlns:s0=&quot;urn:HelloWorld&quot;
+    targetNamespace=&quot;urn:HelloWorld&quot;
+    xmlns=&quot;<a href="http://schemas.xmlsoap.org/wsdl/">http://schemas.xmlsoap.org/wsdl/</a>&quot;&gt;
+   &lt;types&gt;
+     &lt;s:schema targetNamespace=&quot;urn:HelloWorld&quot;&gt;
+       &lt;s:element name=&quot;sayHello&quot;&gt;
+         &lt;s:complexType&gt;
+           &lt;s:sequence&gt;
+              &lt;s:element minOccurs=&quot;0&quot; maxOccurs=&quot;1&quot; name=&quot;name&quot; type=&quot;s:string&quot; /&gt;
+               &lt;s:element minOccurs=&quot;0&quot; maxOccurs=&quot;1&quot; name=&quot;givenName&quot; type=&quot;s:string&quot; nillable=&quot;1&quot; /&gt;
+           &lt;/s:sequence&gt;
+          &lt;/s:complexType&gt;
+        &lt;/s:element&gt;</pre>
+<pre>
+        &lt;s:element name=&quot;sayHelloResponse&quot;&gt;
+          &lt;s:complexType&gt;
+            &lt;s:sequence&gt;
+              &lt;s:element minOccurs=&quot;0&quot; maxOccurs=&quot;1&quot; name=&quot;sayHelloResult&quot; type=&quot;s:string&quot; /&gt;
+            &lt;/s:sequence&gt;
+        &lt;/s:complexType&gt;
+      &lt;/s:element&gt;
+    &lt;/types&gt;
+    &lt;message name=&quot;sayHelloSoapIn&quot;&gt;
+      &lt;part name=&quot;parameters&quot; element=&quot;s0:sayHello&quot; /&gt;
+    &lt;/message&gt;
+    &lt;message name=&quot;sayHelloSoapOut&quot;&gt;
+      &lt;part name=&quot;parameters&quot; element=&quot;s0:sayHelloResponse&quot; /&gt;
+    &lt;/message&gt;</pre>
+<pre>
+    &lt;portType name=&quot;Service1Soap&quot;&gt;
+      &lt;operation name=&quot;sayHello&quot;&gt;
+        &lt;input message=&quot;s0:sayHelloSoapIn&quot; /&gt;
+        &lt;output message=&quot;s0:sayHelloSoapOut&quot; /&gt;
+      &lt;/operation&gt;
+    &lt;/portType&gt;</pre>
+<pre>
+    &lt;binding name=&quot;Service1Soap&quot; type=&quot;s0:Service1Soap&quot;&gt;
+      &lt;soap:binding transport=&quot;<a href="http://schemas.xmlsoap.org/soap/http&quot">http://schemas.xmlsoap.org/soap/http&quot</a>;
+          style=&quot;document&quot; /&gt;
+      &lt;operation name=&quot;sayHello&quot;&gt;
+        &lt;soap:operation soapAction=&quot;urn:HelloWorld#sayHello&quot;/&gt;
+        &lt;input&gt;
+          &lt;soap:body use=&quot;literal&quot; /&gt;
+        &lt;/input&gt;
+        &lt;output&gt;
+          &lt;soap:body use=&quot;literal&quot; /&gt;
+        &lt;/output&gt;
+      &lt;/operation&gt;
+    &lt;/binding&gt;
+    &lt;service name=&quot;HelloWorld&quot;&gt;
+      &lt;port name=&quot;HelloWorldSoap&quot; binding=&quot;s0:Service1Soap&quot;&gt;
+        &lt;soap:address location=&quot;<a href="http://localhost:80//helloworld.pl&quot">http://localhost:80//helloworld.pl&quot</a>; /&gt;
+      &lt;/port&gt;
+    &lt;/service&gt;
+  &lt;/definitions&gt;</pre>
+<p>The XML message (inside the SOAP Envelope) look like this:</p>
+<pre>
+ &lt;sayHello xmlns=&quot;urn:HelloWorld&quot;&gt;
+   &lt;name&gt;Kutter&lt;/name&gt;
+   &lt;givenName&gt;Martin&lt;/givenName&gt;
+ &lt;/sayHello&gt;</pre>
+<pre>
+ &lt;sayHelloResponse&gt;
+   &lt;sayHelloResult&gt;Hello Martin Kutter!&lt;/sayHelloResult&gt;
+ &lt;/sayHelloResponse&gt;</pre>
+<p>You can call this web service with the following client code:</p>
+<pre>
+ use SOAP::Lite;
+ my $soap = SOAP::Lite-&gt;new( proxy =&gt; '<a href="http://localhost:80/helloworld.pl">http://localhost:80/helloworld.pl</a>');</pre>
+<pre>
+ $soap-&gt;on_action( sub { &quot;urn:HelloWorld#sayHello&quot; });
+ $soap-&gt;autotype(0);
+ $soap-&gt;default_ns('urn:HelloWorld');</pre>
+<pre>
+ my $som = $soap-&gt;call(&quot;sayHello&quot;,
+    SOAP::Data-&gt;name('name')-&gt;value( 'Kutter' ),
+    SOAP::Data-&gt;name('givenName')-&gt;value('Martin'),
+);</pre>
+<pre>
+ die $som-&gt;fault-&gt;{ faultstring } if ($som-&gt;fault);
+ print $som-&gt;result, &quot;\n&quot;;</pre>
+<p>
+</p>
+<h2><a name="differences_between_the_implementations">Differences between the implementations</a></h2>
+<p>You may have noticed that there's no between the rpc/literal
+and the document/literal example's implementation. In fact, from SOAP::Lite's
+point of view, the only differences between rpc/literal and document/literal
+that parameters are always named.</p>
+<p>In our example, the rpc/literal variant already used named parameters (by
+using a single complexType only as positional parameter), so there's no
+difference at all.</p>
+<p>The differences would have been bigger if the rpc/literal example had used
+more than one positional parameter, but this is quite unlikely to happen in
+the future: Current interoperability standards (like the WS-I basic profile)
+mandate the use of a single complexType as only parameter in rpc/literal
+calls.</p>
+<p>
+</p>
+<hr />
+<h1><a name="writing_a_soap_server">WRITING A SOAP SERVER</a></h1>
+<p>See <a href="../../../site/lib/SOAP/Server.html">the SOAP::Server manpage</a>, or <a href="../../../site/lib/SOAP/Transport.html">the SOAP::Transport manpage</a>.</p>
+<p>
+</p>
+<hr />
+<h1><a name="features">FEATURES</a></h1>
+<p>
+</p>
+<h2><a name="attachments">ATTACHMENTS</a></h2>
+<p><code>SOAP::Lite</code> features support for the SOAP with Attachments specification.
+Currently, SOAP::Lite only supports MIME based attachments. DIME based
+attachments are yet to be fully functional.</p>
+<p>
+</p>
+<h3><a name="examples">EXAMPLES</a></h3>
+<p>
+</p>
+<h4><a name="client_sending_an_attachment">Client sending an attachment</a></h4>
+<p><code>SOAP::Lite</code> clients can specify attachments to be sent along with a request
+by using the <a href="#item_parts"><code>SOAP::Lite::parts()</code></a> method, which takes as an argument an
+ARRAY of <code>MIME::Entity</code>'s.</p>
+<pre>
+  use SOAP::Lite;
+  use MIME::Entity;
+  my $ent = build MIME::Entity
+    Type        =&gt; &quot;image/gif&quot;,
+    Encoding    =&gt; &quot;base64&quot;,
+    Path        =&gt; &quot;somefile.gif&quot;,
+    Filename    =&gt; &quot;saveme.gif&quot;,
+    Disposition =&gt; &quot;attachment&quot;;
+  my $som = SOAP::Lite
+    -&gt;uri($SOME_NAMESPACE)
+    -&gt;parts([ $ent ])
+    -&gt;proxy($SOME_HOST)
+    -&gt;some_method(SOAP::Data-&gt;name(&quot;foo&quot; =&gt; &quot;bar&quot;));</pre>
+<p>
+</p>
+<h4><a name="client_retrieving_an_attachment">Client retrieving an attachment</a></h4>
+<p>A client accessing attachments that were returned in a response by using the
+<a href="#item_parts"><code>SOAP::SOM::parts()</code></a> accessor.</p>
+<pre>
+  use SOAP::Lite;
+  use MIME::Entity;
+  my $soap = SOAP::Lite
+    -&gt;uri($NS)
+    -&gt;proxy($HOST);
+  my $som = $soap-&gt;foo();
+  foreach my $part (${$som-&gt;parts}) {
+    print $part-&gt;stringify;
+  }</pre>
+<p>
+</p>
+<h4><a name="server_receiving_an_attachment">Server receiving an attachment</a></h4>
+<p>Servers, like clients, use the SOAP::SOM module to access attachments
+trasmitted to it.</p>
+<pre>
+  package Attachment;
+  use SOAP::Lite;
+  use MIME::Entity;
+  use strict;
+  use vars qw(@ISA);
+  @ISA = qw(SOAP::Server::Parameters);
+  sub someMethod {
+    my $self = shift;
+    my $envelope = pop;
+    foreach my $part (@{$envelope-&gt;parts}) {
+      print &quot;AttachmentService: attachment found! (&quot;.ref($part).&quot;)\n&quot;;
+    }
+    # do something
+  }</pre>
+<p>
+</p>
+<h4><a name="server_responding_with_an_attachment">Server responding with an attachment</a></h4>
+<p>Servers wishing to return an attachment to the calling client need only return
+<code>MIME::Entity</code> objects along with SOAP::Data elements, or any other data
+intended for the response.</p>
+<pre>
+  package Attachment;
+  use SOAP::Lite;
+  use MIME::Entity;
+  use strict;
+  use vars qw(@ISA);
+  @ISA = qw(SOAP::Server::Parameters);
+  sub someMethod {
+    my $self = shift;
+    my $envelope = pop;
+    my $ent = build MIME::Entity
+        'Id'          =&gt; &quot;&lt;1234&gt;&quot;,
+        'Type'        =&gt; &quot;text/xml&quot;,
+        'Path'        =&gt; &quot;some.xml&quot;,
+        'Filename'    =&gt; &quot;some.xml&quot;,
+        'Disposition' =&gt; &quot;attachment&quot;;
+    return SOAP::Data-&gt;name(&quot;foo&quot; =&gt; &quot;blah blah blah&quot;),$ent;
+  }</pre>
+<p>
+</p>
+<h2><a name="default_settings">DEFAULT SETTINGS</a></h2>
+<p>Though this feature looks similar to
+<a href="#in_out__out_parameters_and_autobinding">autodispatch</a> they have (almost)
+nothing in common. This capability allows you specify default settings so that
+all objects created after that will be initialized with the proper default
+settings.</p>
+<p>If you wish to provide common <a href="#item_proxy"><code>proxy()</code></a> or <a href="#item_uri"><code>uri()</code></a> settings for all
+<code>SOAP::Lite</code> objects in your application you may do:</p>
+<pre>
+  use SOAP::Lite
+    proxy =&gt; '<a href="http://localhost/cgi-bin/soap.cgi">http://localhost/cgi-bin/soap.cgi</a>',
+    uri =&gt; '<a href="http://my.own.com/My/Examples">http://my.own.com/My/Examples</a>';</pre>
+<pre>
+  my $soap1 = new SOAP::Lite; # will get the same proxy()/uri() as above
+  print $soap1-&gt;getStateName(1)-&gt;result;</pre>
+<pre>
+  my $soap2 = SOAP::Lite-&gt;new; # same thing as above
+  print $soap2-&gt;getStateName(2)-&gt;result;</pre>
+<pre>
+  # or you may override any settings you want
+  my $soap3 = SOAP::Lite-&gt;proxy('<a href="http://localhost/">http://localhost/</a>');
+  print $soap3-&gt;getStateName(1)-&gt;result;</pre>
+<p><strong>Any</strong> <code>SOAP::Lite</code> properties can be propagated this way. Changes in object
+copies will not affect global settings and you may still change global
+settings with <a href="#item_self"><code>SOAP::Lite-&gt;self</code></a> call which returns reference to global
+object. Provided parameter will update this object and you can even set it to
+<code>undef</code>:</p>
+<pre>
+  SOAP::Lite-&gt;self(undef);</pre>
+<p>The <code>use SOAP::Lite</code> syntax also lets you specify default event handlers for
+your code. If you have different SOAP objects and want to share the same
+<a href="#item_on_action"><code>on_action()</code></a> (or <code>on_fault()</code> for that matter) handler. You can specify
+<a href="#item_on_action"><code>on_action()</code></a> during initialization for every object, but you may also do:</p>
+<pre>
+  use SOAP::Lite
+    on_action =&gt; sub {sprintf '%s#%s', @_};</pre>
+<p>and this handler will be the default handler for all your SOAP objects. You
+can override it if you specify a handler for a particular object. See <em>t/*.t</em>
+for example of <code>on_fault()</code> handler.</p>
+<p>Be warned, that since <code>use ...</code> is executed at compile time <strong>all</strong> <code>use</code>
+statements will be executed <strong>before</strong> script execution that can make
+unexpected results. Consider code:</p>
+<pre>
+  use SOAP::Lite proxy =&gt; '<a href="http://localhost/">http://localhost/</a>';
+  print SOAP::Lite-&gt;getStateName(1)-&gt;result;</pre>
+<pre>
+  use SOAP::Lite proxy =&gt; '<a href="http://localhost/cgi-bin/soap.cgi">http://localhost/cgi-bin/soap.cgi</a>';
+  print SOAP::Lite-&gt;getStateName(1)-&gt;result;</pre>
+<p><strong>Both</strong> SOAP calls will go to <code>'http://localhost/cgi-bin/soap.cgi'</code>. If you
+want to execute <code>use</code> at run-time, put it in <code>eval</code>:</p>
+<pre>
+  eval &quot;use SOAP::Lite proxy =&gt; '<a href="http://localhost/cgi-bin/soap.cgi">http://localhost/cgi-bin/soap.cgi</a>'; 1&quot; or die;</pre>
+<p>Or alternatively,</p>
+<pre>
+  SOAP::Lite-&gt;self-&gt;proxy('<a href="http://localhost/cgi-bin/soap.cgi">http://localhost/cgi-bin/soap.cgi</a>');</pre>
+<p>
+</p>
+<h2><a name="setting_maximum_message_size">SETTING MAXIMUM MESSAGE SIZE</a></h2>
+<p>One feature of <code>SOAP::Lite</code> is the ability to control the maximum size of a
+message a SOAP::Lite server will be allowed to process. To control this
+feature simply define <code>$SOAP::Constants::MAX_CONTENT_SIZE</code> in your code like
+so:</p>
+<pre>
+  use SOAP::Transport::HTTP;
+  use MIME::Entity;
+  $SOAP::Constants::MAX_CONTENT_SIZE = 10000;
+  SOAP::Transport::HTTP::CGI
+    -&gt;dispatch_to('TemperatureService')
+    -&gt;handle;</pre>
+<p>
+</p>
+<h2><a name="in_out__out_parameters_and_autobinding">IN/OUT, OUT PARAMETERS AND AUTOBINDING</a></h2>
+<p><code>SOAP::Lite</code> gives you access to all parameters (both in/out and out) and
+also does some additional work for you. Lets consider following example:</p>
+<pre>
+  &lt;mehodResponse&gt;
+    &lt;res1&gt;name1&lt;/res1&gt;
+    &lt;res2&gt;name2&lt;/res2&gt;
+    &lt;res3&gt;name3&lt;/res3&gt;
+  &lt;/mehodResponse&gt;</pre>
+<p>In that case:</p>
+<pre>
+  $result = $r-&gt;result; # gives you 'name1'
+  $paramout1 = $r-&gt;paramsout;      # gives you 'name2', because of scalar context
+  $paramout1 = ($r-&gt;paramsout)[0]; # gives you 'name2' also
+  $paramout2 = ($r-&gt;paramsout)[1]; # gives you 'name3'</pre>
+<p>or</p>
+<pre>
+  @paramsout = $r-&gt;paramsout; # gives you ARRAY of out parameters
+  $paramout1 = $paramsout[0]; # gives you 'res2', same as ($r-&gt;paramsout)[0]
+  $paramout2 = $paramsout[1]; # gives you 'res3', same as ($r-&gt;paramsout)[1]</pre>
+<p>Generally, if server returns <code>return (1,2,3)</code> you will get <code>1</code> as the result
+and <code>2</code> and <code>3</code> as out parameters.</p>
+<p>If the server returns <code>return [1,2,3]</code> you will get an ARRAY reference from
+<code>result()</code> and <code>undef</code> from <code>paramsout()</code>.</p>
+<p>Results can be arbitrary complex: they can be an array references, they can be
+objects, they can be anything and still be returned by <code>result()</code> . If only
+one parameter is returned, <code>paramsout()</code> will return <code>undef</code>.</p>
+<p>Furthermore, if you have in your output parameters a parameter with the same
+signature (name+type) as in the input parameters this parameter will be mapped
+into your input automatically. For example:</p>
+<p><strong>Server Code</strong>:</p>
+<pre>
+  sub mymethod {
+    shift; # object/class reference
+    my $param1 = shift;
+    my $param2 = SOAP::Data-&gt;name('myparam' =&gt; shift() * 2);
+    return $param1, $param2;
+  }</pre>
+<p><strong>Client Code</strong>:</p>
+<pre>
+  $a = 10;
+  $b = SOAP::Data-&gt;name('myparam' =&gt; 12);
+  $result = $soap-&gt;mymethod($a, $b);</pre>
+<p>After that, <code>$result == 10 and $b-&gt;value == 24</code>! Magic? Sort of.</p>
+<p>Autobinding gives it to you. That will work with objects also with one
+difference: you do not need to worry about the name and the type of object
+parameter. Consider the <code>PingPong</code> example (<em>examples/My/PingPong.pm</em>
+and <em>examples/pingpong.pl</em>):</p>
+<p><strong>Server Code</strong>:</p>
+<pre>
+  package My::PingPong;</pre>
+<pre>
+  sub new {
+    my $self = shift;
+    my $class = ref($self) || $self;
+    bless {_num=&gt;shift} =&gt; $class;
+  }</pre>
+<pre>
+  sub next {
+    my $self = shift;
+    $self-&gt;{_num}++;
+  }</pre>
+<p><strong>Client Code</strong>:</p>
+<pre>
+  use SOAP::Lite +autodispatch =&gt;
+    uri =&gt; 'urn:',
+    proxy =&gt; '<a href="http://localhost/">http://localhost/</a>';</pre>
+<pre>
+  my $p = My::PingPong-&gt;new(10); # $p-&gt;{_num} is 10 now, real object returned
+  print $p-&gt;next, &quot;\n&quot;;          # $p-&gt;{_num} is 11 now!, object autobinded</pre>
+<p>
+</p>
+<h2><a name="static_and_dynamic_service_deployment">STATIC AND DYNAMIC SERVICE DEPLOYMENT</a></h2>
+<p>Let us scrutinize the deployment process. When designing your SOAP server you
+can consider two kind of deployment: <strong>static</strong> and <strong>dynamic</strong>. For both,
+static and dynamic,  you should specify <code>MODULE</code>, <code>MODULE::method</code>,
+<code>method</code> or <code>PATH/</code> when creating <code>use</code>ing the SOAP::Lite module. The
+difference between static and dynamic deployment is that in case of 'dynamic',
+any module which is not present will be loaded on demand. See the
+<a href="#security">SECURITY</a> section for detailed description.</p>
+<p>When statically deploying a SOAP Server, you need to know all modules handling
+SOAP requests before.</p>
+<p>Dynamic deployment allows extending your SOAP Server's interface by just
+installing another module into the dispatch_to path (see below).</p>
+<p>
+</p>
+<h3><a name="static_deployment_example">STATIC DEPLOYMENT EXAMPLE</a></h3>
+<pre>
+  use SOAP::Transport::HTTP;
+  use My::Examples;           # module is preloaded</pre>
+<pre>
+  SOAP::Transport::HTTP::CGI
+     # deployed module should be present here or client will get
+     # 'access denied'
+    -&gt; dispatch_to('My::Examples')
+    -&gt; handle;</pre>
+<p>For static deployment you should specify the MODULE name directly.</p>
+<p>You should also use static binding when you have several different classes in
+one file and want to make them available for SOAP calls.</p>
+<p>
+</p>
+<h3><a name="dynamic_deployment_example">DYNAMIC DEPLOYMENT EXAMPLE</a></h3>
+<pre>
+  use SOAP::Transport::HTTP;
+  # name is unknown, module will be loaded on demand</pre>
+<pre>
+  SOAP::Transport::HTTP::CGI
+    # deployed module should be present here or client will get 'access denied'
+    -&gt; dispatch_to('/Your/Path/To/Deployed/Modules', 'My::Examples')
+    -&gt; handle;</pre>
+<p>For dynamic deployment you can specify the name either directly (in that case
+it will be <code>require</code>d without any restriction) or indirectly, with a PATH. In
+that case, the ONLY path that will be available will be the PATH given to the
+<code>dispatch_to()</code> method). For information how to handle this situation see
+<a href="#security">SECURITY</a> section.</p>
+<p>
+</p>
+<h3><a name="summary">SUMMARY</a></h3>
+<pre>
+  dispatch_to(
+    # dynamic dispatch that allows access to ALL modules in specified directory
+    PATH/TO/MODULES
+    # 1. specifies directory
+    # -- AND --
+    # 2. gives access to ALL modules in this directory without limits</pre>
+<pre>
+    # static dispatch that allows access to ALL methods in particular MODULE
+    MODULE
+    #  1. gives access to particular module (all available methods)
+    #  PREREQUISITES:
+    #    module should be loaded manually (for example with 'use ...')
+    #    -- OR --
+    #    you can still specify it in PATH/TO/MODULES</pre>
+<pre>
+    # static dispatch that allows access to particular method ONLY
+    MODULE::method
+    # same as MODULE, but gives access to ONLY particular method,
+    # so there is not much sense to use both MODULE and MODULE::method
+    # for the same MODULE
+  );</pre>
+<p>In addition to this <code>SOAP::Lite</code> also supports an experimental syntax that
+allows you to bind a specific URL or SOAPAction to a CLASS/MODULE or object.</p>
+<p>For example:</p>
+<pre>
+  dispatch_with({
+    URI =&gt; MODULE,        # '<a href="http://www.soaplite.com/">http://www.soaplite.com/</a>' =&gt; 'My::Class',
+    SOAPAction =&gt; MODULE, # '<a href="http://www.soaplite.com/method">http://www.soaplite.com/method</a>' =&gt; 'Another::Class',
+    URI =&gt; object,        # '<a href="http://www.soaplite.com/obj">http://www.soaplite.com/obj</a>' =&gt; My::Class-&gt;new,
+  })</pre>
+<p><code>URI</code> is checked before <code>SOAPAction</code>. You may use both the <code>dispatch_to()</code>
+and <code>dispatch_with()</code> methods in the same server, but note that
+<code>dispatch_with()</code> has a higher order of precedence. <code>dispatch_to()</code> will be
+checked only after <code>URI</code> and <code>SOAPAction</code> has been checked.</p>
+<p>See also:
+<a href="../../../site/lib/SOAP/Transport.html#example_apache__registry_usage">EXAMPLE APACHE::REGISTRY USAGE</a>,
+<a href="#security">SECURITY</a></p>
+<p>
+</p>
+<h2><a name="compression">COMPRESSION</a></h2>
+<p><code>SOAP::Lite</code> provides you option to enable transparent compression over the
+wire. Compression can be enabled by specifying a threshold value (in the form
+of kilobytes) for compression on both the client and server sides:</p>
+<p><em>Note: Compression currently only works for HTTP based servers and clients.</em></p>
+<p><strong>Client Code</strong></p>
+<pre>
+  print SOAP::Lite
+    -&gt;uri('<a href="http://localhost/My/Parameters">http://localhost/My/Parameters</a>')
+    -&gt;proxy('<a href="http://localhost/">http://localhost/</a>', options =&gt; {compress_threshold =&gt; 10000})
+    -&gt;echo(1 x 10000)
+    -&gt;result;</pre>
+<p><strong>Server Code</strong></p>
+<pre>
+  my $server = SOAP::Transport::HTTP::CGI
+    -&gt;dispatch_to('My::Parameters')
+    -&gt;options({compress_threshold =&gt; 10000})
+    -&gt;handle;</pre>
+<p>For more information see <a href="../../../site/lib/SOAP/Transport.html#compression">COMPRESSION</a> in
+<a href="../../../site/lib/HTTP/Transport.html">the HTTP::Transport manpage</a>.</p>
+<p>
+</p>
+<hr />
+<h1><a name="security">SECURITY</a></h1>
+<p>For security reasons, the exisiting path for Perl modules (<code>@INC</code>) will be
+disabled once you have chosen dynamic deployment and specified your own
+<code>PATH/</code>. If you wish to access other modules in your included package you
+have several options:</p>
+<ol>
+<li>
+<p>Switch to static linking:</p>
+<pre>
+   use MODULE;
+   $server-&gt;dispatch_to('MODULE');</pre>
+<p>Which can also be useful when you want to import something specific from the
+deployed modules:</p>
+<pre>
+   use MODULE qw(import_list);</pre>
+</li>
+<li>
+<p>Change <code>use</code> to <code>require</code>. The path is only unavailable during the
+initialization phase. It is available once more during execution. Therefore,
+if you utilize <code>require</code> somewhere in your package, it will work.</p>
+</li>
+<li>
+<p>Wrap <code>use</code> in an <code>eval</code> block:</p>
+<pre>
+   eval 'use MODULE qw(import_list)'; die if $@;</pre>
+</li>
+<li>
+<p>Set your include path in your package and then specify <code>use</code>. Don't forget to
+put <code>@INC</code> in a <code>BEGIN{}</code> block or it won't work. For example,</p>
+<pre>
+   BEGIN { @INC = qw(my_directory); use MODULE }</pre>
+</li>
+</ol>
+<p>
+</p>
+<hr />
+<h1><a name="interoperability">INTEROPERABILITY</a></h1>
+<p>
+</p>
+<h2><a name="microsoft__net_client_with_soap__lite_server">Microsoft .NET client with SOAP::Lite Server</a></h2>
+<p>In order to use a .NET client with a SOAP::Lite server, be sure you use fully
+qualified names for your return values. For example:</p>
+<pre>
+  return SOAP::Data-&gt;name('myname')
+                   -&gt;type('string')
+                   -&gt;uri($MY_NAMESPACE)
+                   -&gt;value($output);</pre>
+<p>In addition see comment about default incoding in .NET Web Services below.</p>
+<p>
+</p>
+<h2><a name="soap__lite_client_with_a__net_server">SOAP::Lite client with a .NET server</a></h2>
+<p>If experiencing problems when using a SOAP::Lite client to call a .NET Web
+service, it is recommended you check, or adhere to all of the following
+recommendations:</p>
+<dl>
+<dt><strong><a name="item_declare_a_proper_soapaction_in_your_call">Declare a proper soapAction in your call</a></strong>
+
+<dd>
+<p>For example, use
+<a href="#item_on_action"><code>on_action( sub { 'http://www.myuri.com/WebService.aspx#someMethod'; } )</code></a>.</p>
+</dd>
+</li>
+<dt><strong><a name="item_disable_charset_definition_in_content_2dtype_heade">Disable charset definition in Content-type header</a></strong>
+
+<dd>
+<p>Some users have said that Microsoft .NET prefers the value of
+the Content-type header to be a mimetype exclusively, but SOAP::Lite specifies
+a character set in addition to the mimetype. This results in an error similar
+to:</p>
+</dd>
+<dd>
+<pre>
+  Server found request content type to be 'text/xml; charset=utf-8',
+  but expected 'text/xml'</pre>
+</dd>
+<dd>
+<p>To turn off this behavior specify use the following code:</p>
+</dd>
+<dd>
+<pre>
+  use SOAP::Lite;
+  $SOAP::Constants::DO_NOT_USE_CHARSET = 1;
+  # The rest of your code</pre>
+</dd>
+</li>
+<dt><strong><a name="item_use_fully_qualified_name_for_method_parameters">Use fully qualified name for method parameters</a></strong>
+
+<dd>
+<p>For example, the following code is preferred:</p>
+</dd>
+<dd>
+<pre>
+  SOAP::Data-&gt;name(Query  =&gt; 'biztalk')
+            -&gt;uri('<a href="http://tempuri.org/">http://tempuri.org/</a>')</pre>
+</dd>
+<dd>
+<p>As opposed to:</p>
+</dd>
+<dd>
+<pre>
+  SOAP::Data-&gt;name('Query'  =&gt; 'biztalk')</pre>
+</dd>
+</li>
+<dt><strong><a name="item_place_method_in_default_namespace">Place method in default namespace</a></strong>
+
+<dd>
+<p>For example, the following code is preferred:</p>
+</dd>
+<dd>
+<pre>
+  my $method = SOAP::Data-&gt;name('add')
+                         -&gt;attr({xmlns =&gt; '<a href="http://tempuri.org/">http://tempuri.org/</a>'});
+  my @rc = $soap-&gt;call($method =&gt; @parms)-&gt;result;</pre>
+</dd>
+<dd>
+<p>As opposed to:</p>
+</dd>
+<dd>
+<pre>
+  my @rc = $soap-&gt;call(add =&gt; @parms)-&gt;result;
+  # -- OR --
+  my @rc = $soap-&gt;add(@parms)-&gt;result;</pre>
+</dd>
+</li>
+<dt><strong><a name="item_disable_use_of_explicit_namespace_prefixes">Disable use of explicit namespace prefixes</a></strong>
+
+<dd>
+<p>Some user's have reported that .NET will simply not parse messages that use
+namespace prefixes on anything but SOAP elements themselves. For example, the
+following XML would not be parsed:</p>
+</dd>
+<dd>
+<pre>
+  &lt;SOAP-ENV:Envelope ...attributes skipped&gt;
+    &lt;SOAP-ENV:Body&gt;
+      &lt;namesp1:mymethod xmlns:namesp1=&quot;urn:MyURI&quot; /&gt;
+    &lt;/SOAP-ENV:Body&gt;
+  &lt;/SOAP-ENV:Envelope&gt;</pre>
+</dd>
+<dd>
+<p>SOAP::Lite allows users to disable the use of explicit namespaces through the
+<a href="#item_use_prefix"><code>use_prefix()</code></a> method. For example, the following code:</p>
+</dd>
+<dd>
+<pre>
+  $som = SOAP::Lite-&gt;uri('urn:MyURI')
+                   -&gt;proxy($HOST)
+                   -&gt;use_prefix(0)
+                   -&gt;myMethod();</pre>
+</dd>
+<dd>
+<p>Will result in the following XML, which is more pallatable by .NET:</p>
+</dd>
+<dd>
+<pre>
+  &lt;SOAP-ENV:Envelope ...attributes skipped&gt;
+    &lt;SOAP-ENV:Body&gt;
+      &lt;mymethod xmlns=&quot;urn:MyURI&quot; /&gt;
+    &lt;/SOAP-ENV:Body&gt;
+  &lt;/SOAP-ENV:Envelope&gt;</pre>
+</dd>
+</li>
+<dt><strong><a name="item_modify_your__2enet_server_2c_if_possible">Modify your .NET server, if possible</a></strong>
+
+<dd>
+<p>Stefan Pharies &lt;<a href="mailto:stefanph@microsoft.com">stefanph@microsoft.com</a>&gt;:</p>
+</dd>
+<dd>
+<p>SOAP::Lite uses the SOAP encoding (section 5 of the soap 1.1 spec), and
+the default for .NET Web Services is to use a literal encoding. So
+elements in the request are unqualified, but your service expects them to
+be qualified. .Net Web Services has a way for you to change the expected
+message format, which should allow you to get your interop working.
+At the top of your class in the asmx, add this attribute (for Beta 1):</p>
+</dd>
+<dd>
+<pre>
+  [SoapService(Style=SoapServiceStyle.RPC)]</pre>
+</dd>
+<dd>
+<p>Another source said it might be this attribute (for Beta 2):</p>
+</dd>
+<dd>
+<pre>
+  [SoapRpcService]</pre>
+</dd>
+<dd>
+<p>Full Web Service text may look like:</p>
+</dd>
+<dd>
+<pre>
+  &lt;%@ WebService Language=&quot;C#&quot; Class=&quot;Test&quot; %&gt;
+  using System;
+  using System.Web.Services;
+  using System.Xml.Serialization;</pre>
+</dd>
+<dd>
+<pre>
+  [SoapService(Style=SoapServiceStyle.RPC)]
+  public class Test : WebService {
+    [WebMethod]
+    public int add(int a, int b) {
+      return a + b;
+    }
+  }</pre>
+</dd>
+<dd>
+<p>Another example from Kirill Gavrylyuk &lt;<a href="mailto:kirillg@microsoft.com">kirillg@microsoft.com</a>&gt;:</p>
+</dd>
+<dd>
+<p>``You can insert [SoapRpcService()] attribute either on your class or on
+operation level''.</p>
+</dd>
+<dd>
+<pre>
+  &lt;%@ WebService Language=CS class=&quot;DataType.StringTest&quot;%&gt;</pre>
+</dd>
+<dd>
+<pre>
+  namespace DataType {</pre>
+</dd>
+<dd>
+<pre>
+    using System;
+    using System.Web.Services;
+    using System.Web.Services.Protocols;
+    using System.Web.Services.Description;</pre>
+</dd>
+<dd>
+<pre>
+   [SoapRpcService()]
+   public class StringTest: WebService {
+     [WebMethod]
+     [SoapRpcMethod()]
+     public string RetString(string x) {
+       return(x);
+     }
+   }
+ }</pre>
+</dd>
+<dd>
+<p>Example from Yann Christensen &lt;<a href="mailto:yannc@microsoft.com">yannc@microsoft.com</a>&gt;:</p>
+</dd>
+<dd>
+<pre>
+  using System;
+  using System.Web.Services;
+  using System.Web.Services.Protocols;</pre>
+</dd>
+<dd>
+<pre>
+  namespace Currency {
+    [WebService(Namespace=&quot;<a href="http://www.yourdomain.com/example&quot">http://www.yourdomain.com/example&quot</a>;)]
+    [SoapRpcService]
+    public class Exchange {
+      [WebMethod]
+      public double getRate(String country, String country2) {
+        return 122.69;
+      }
+    }
+  }</pre>
+</dd>
+</li>
+</dl>
+<p>Special thanks goes to the following people for providing the above
+description and details on .NET interoperability issues:</p>
+<p>Petr Janata &lt;<a href="mailto:petr.janata@i.cz">petr.janata@i.cz</a>&gt;,</p>
+<p>Stefan Pharies &lt;<a href="mailto:stefanph@microsoft.com">stefanph@microsoft.com</a>&gt;,</p>
+<p>Brian Jepson &lt;<a href="mailto:bjepson@jepstone.net">bjepson@jepstone.net</a>&gt;, and others</p>
+<p>
+</p>
+<hr />
+<h1><a name="troubleshooting">TROUBLESHOOTING</a></h1>
+<dl>
+<dt><strong><a name="item_soap_3a_3alite_serializes__2218373_22_as_an_intege">SOAP::Lite serializes ``18373'' as an integer, but I want it to be a string!</a></strong>
+
+<dd>
+<p>SOAP::Lite guesses datatypes from the content provided, using a set of
+common-sense rules. These rules are not 100% reliable, though they fit for
+most data.</p>
+</dd>
+<dd>
+<p>You may force the type by passing a SOAP::Data object with a type specified:</p>
+</dd>
+<dd>
+<pre>
+ my $proxy = SOAP::Lite-&gt;proxy('<a href="http://www.example.org/soapservice">http://www.example.org/soapservice</a>');
+ my $som = $proxy-&gt;myMethod(
+     SOAP::Data-&gt;name('foo')-&gt;value(12345)-&gt;type('string')
+ );</pre>
+</dd>
+<dd>
+<p>You may also change the precedence of the type-guessing rules. Note that this
+means fiddling with SOAP::Lite's internals - this may not work as
+expected in future versions.</p>
+</dd>
+<dd>
+<p>The example above forces everything to be encoded as string (this is because
+the string test is normally last and allways returns true):</p>
+</dd>
+<dd>
+<pre>
+  my @list = qw(-1 45 foo bar 3838);
+  my $proxy = SOAP::Lite-&gt;uri($uri)-&gt;proxy($proxyUrl);
+  $proxy-&gt;serializer-&gt;typelookup-&gt;{string}-&gt;[0] = 0;
+  $proxy-&gt;myMethod(\@list);</pre>
+</dd>
+<dd>
+<p>See <a href="../../../site/lib/SOAP/Serializer.html#autotyping">SOAP::Serializer</a> for more details.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2bautodispatch_doesn_27t_work_in_perl_5_2e8"><code>+autodispatch</code> doesn't work in Perl 5.8</a></strong>
+
+<dd>
+<p>There is a bug in Perl 5.8's <code>UNIVERSAL::AUTOLOAD</code> functionality that
+prevents the <code>+autodispatch</code> functionality from working properly. The
+workaround is to use <code>dispatch_from</code> instead. Where you might normally do
+something like this:</p>
+</dd>
+<dd>
+<pre>
+   use Some::Module;
+   use SOAP::Lite +autodispatch =&gt;
+       uri =&gt; 'urn:Foo'
+       proxy =&gt; '<a href="http://">http://</a>...';</pre>
+</dd>
+<dd>
+<p>You would do something like this:</p>
+</dd>
+<dd>
+<pre>
+   use SOAP::Lite dispatch_from(Some::Module) =&gt;
+       uri =&gt; 'urn:Foo'
+       proxy =&gt; '<a href="http://">http://</a>...';</pre>
+</dd>
+</li>
+<dt><strong><a name="item_problems_using_soap_3a_3alite_27s_com_interface">Problems using SOAP::Lite's COM Interface</a></strong>
+
+<dl>
+<dt><strong><a name="item_can_27t_call_method__22server_22_on_undefined_valu">Can't call method ``server'' on undefined value</a></strong>
+
+<dd>
+<p>You probably did not register <em>Lite.dll</em> using <code>regsvr32 Lite.dll</code></p>
+</dd>
+</li>
+<dt><strong><a name="item_failed_to_load_perlctrl_runtime">Failed to load PerlCtrl Runtime</a></strong>
+
+<dd>
+<p>It is likely that you have install Perl in two different locations and the
+location of ActiveState's Perl is not the first instance of Perl specified
+in your PATH. To rectify, rename the directory in which the non-ActiveState
+Perl is installed, or be sure the path to ActiveState's Perl is specified
+prior to any other instance of Perl in your PATH.</p>
+</dd>
+</li>
+</dl>
+<dt><strong><a name="item_dynamic_libraries_are_not_found">Dynamic libraries are not found</a></strong>
+
+<dd>
+<p>If you are using the Apache web server, and you are seeing something like the
+following in your webserver log file:</p>
+</dd>
+<dd>
+<pre>
+  Can't load '/usr/local/lib/perl5/site_perl/.../XML/Parser/Expat/Expat.so'
+    for module XML::Parser::Expat: dynamic linker: /usr/local/bin/perl:
+    libexpat.so.0 is NEEDED, but object does not exist at
+    /usr/local/lib/perl5/.../DynaLoader.pm line 200.</pre>
+</dd>
+<dd>
+<p>Then try placing the following into your <em>httpd.conf</em> file and see if it
+fixes your problem.</p>
+</dd>
+<dd>
+<pre>
+ &lt;IfModule mod_env.c&gt;
+     PassEnv LD_LIBRARY_PATH
+ &lt;/IfModule&gt;</pre>
+</dd>
+</li>
+<dt><strong><a name="item_soap_client_reports__22500_unexpected_eof_before_s">SOAP client reports ``500 unexpected EOF before status line seen</a></strong>
+
+<dd>
+<p>See <a href="#item_apache_is_crashing_with_segfaults">Apache is crashing with segfaults</a></p>
+</dd>
+</li>
+<dt><strong><a name="item_apache_is_crashing_with_segfaults">Apache is crashing with segfaults</a></strong>
+
+<dd>
+<p>Using <code>SOAP::Lite</code> (or <a href="../../../site/lib/XML/Parser/Expat.html">the XML::Parser::Expat manpage</a>) in combination with mod_perl
+causes random segmentation faults in httpd processes. To fix, try configuring
+Apache with the following:</p>
+</dd>
+<dd>
+<pre>
+ RULE_EXPAT=no</pre>
+</dd>
+<dd>
+<p>If you are using Apache 1.3.20 and later, try configuring Apache with the
+following option:</p>
+</dd>
+<dd>
+<pre>
+ ./configure --disable-rule=EXPAT</pre>
+</dd>
+<dd>
+<p>See <a href="http://archive.covalent.net/modperl/2000/04/0185.xml">http://archive.covalent.net/modperl/2000/04/0185.xml</a> for more details and
+lot of thanks to Robert Barta &lt;<a href="mailto:rho@bigpond.net.au">rho@bigpond.net.au</a>&gt; for explaining this weird
+behavior.</p>
+</dd>
+<dd>
+<p>If this doesn't address the problem, you may wish to try <code>-Uusemymalloc</code>,
+or a similar option in order to instruct Perl to use the system's own <code>malloc</code>.</p>
+</dd>
+<dd>
+<p>Thanks to Tim Bunce &lt;<a href="mailto:Tim.Bunce@pobox.com">Tim.Bunce@pobox.com</a>&gt;.</p>
+</dd>
+</li>
+<dt><strong><a name="item_server">CGI scripts do not work under Microsoft Internet Information Server (IIS)</a></strong>
+
+<dd>
+<p>CGI scripts may not work under IIS unless scripts use the <code>.pl</code> extension,
+opposed to <code>.cgi</code>.</p>
+</dd>
+</li>
+<dt><strong><a name="item_java_sax_parser_unable_to_parse_message_composed_b">Java SAX parser unable to parse message composed by SOAP::Lite</a></strong>
+
+<dd>
+<p>In some cases SOAP messages created by <code>SOAP::Lite</code> may not be parsed
+properly by a SAX2/Java XML parser. This is due to a known bug in
+<code>org.xml.sax.helpers.ParserAdapter</code>. This bug manifests itself when an
+attribute in an XML element occurs prior to the XML namespace declaration on
+which it depends. However, according to the XML specification, the order of
+these attributes is not significant.</p>
+</dd>
+<dd>
+<p><a href="http://www.megginson.com/SAX/index.html">http://www.megginson.com/SAX/index.html</a></p>
+</dd>
+<dd>
+<p>Thanks to Steve Alpert (<a href="mailto:Steve_Alpert@idx.com">Steve_Alpert@idx.com</a>) for pointing on it.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="performance">PERFORMANCE</a></h1>
+<dl>
+<dt><strong><a name="item_processing_of_xml_encoded_fragments">Processing of XML encoded fragments</a></strong>
+
+<dd>
+<p><code>SOAP::Lite</code> is based on <a href="../../../site/lib/XML/Parser.html">the XML::Parser manpage</a> which is basically wrapper around
+James Clark's expat parser. Expat's behavior for parsing XML encoded string
+can affect processing messages that have lot of encoded entities, like XML
+fragments, encoded as strings. Providing low-level details, parser will call
+<code>char()</code> callback for every portion of processed stream, but individually for
+every processed entity or newline. It can lead to lot of calls and additional
+memory manager expenses even for small messages. By contrast, XML messages
+which are encoded as base64Binary, don't have this problem and difference in
+processing time can be significant. For XML encoded string that has about 20
+lines and 30 tags, number of call could be about 100 instead of one for
+the same string encoded as base64Binary.</p>
+</dd>
+<dd>
+<p>Since it is parser's feature there is NO fix for this behavior (let me know
+if you find one), especially because you need to parse message you already
+got (and you cannot control content of this message), however, if your are
+in charge for both ends of processing you can switch encoding to base64 on
+sender's side. It will definitely work with SOAP::Lite and it <strong>may</strong> work with
+other toolkits/implementations also, but obviously I cannot guarantee that.</p>
+</dd>
+<dd>
+<p>If you want to encode specific string as base64, just do
+<code>SOAP::Data-&gt;type(base64 =&gt; $string)</code> either on client or on server
+side. If you want change behavior for specific instance of SOAP::Lite, you
+may subclass <code>SOAP::Serializer</code>, override <code>as_string()</code> method that is
+responsible for string encoding (take a look into <code>as_base64Binary()</code>) and
+specify <strong>new</strong> serializer class for your SOAP::Lite object with:</p>
+</dd>
+<dd>
+<pre>
+  my $soap = new SOAP::Lite
+    serializer =&gt; My::Serializer-&gt;new,
+    ..... other parameters</pre>
+</dd>
+<dd>
+<p>or on server side:</p>
+</dd>
+<dd>
+<pre>
+  my $server = new SOAP::Transport::HTTP::Daemon # or any other server
+    serializer =&gt; My::Serializer-&gt;new,
+    ..... other parameters</pre>
+</dd>
+<dd>
+<p>If you want to change this behavior for <strong>all</strong> instances of SOAP::Lite, just
+substitute <code>as_string()</code> method with <code>as_base64Binary()</code> somewhere in your
+code <strong>after</strong> <code>use SOAP::Lite</code> and <strong>before</strong> actual processing/sending:</p>
+</dd>
+<dd>
+<pre>
+  *SOAP::Serializer::as_string = \&amp;SOAP::XMLSchema2001::Serializer::as_base64Binary;</pre>
+</dd>
+<dd>
+<p>Be warned that last two methods will affect <strong>all</strong> strings and convert them
+into base64 encoded. It doesn't make any difference for SOAP::Lite, but it
+<strong>may</strong> make a difference for other toolkits.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="bugs_and_limitations">BUGS AND LIMITATIONS</a></h1>
+<ul>
+<li>
+<p>No support for multidimensional, partially transmitted and sparse arrays
+(however arrays of arrays are supported, as well as any other data structures,
+and you can add your own implementation with SOAP::Data).</p>
+</li>
+<li>
+<p>Limited support for WSDL schema.</p>
+</li>
+<li>
+<p>XML::Parser::Lite relies on Unicode support in Perl and doesn't do entity decoding.</p>
+</li>
+<li>
+<p>Limited support for mustUnderstand and Actor attributes.</p>
+</li>
+</ul>
+<p>
+</p>
+<hr />
+<h1><a name="platform_specifics">PLATFORM SPECIFICS</a></h1>
+<dl>
+<dt><strong><a name="item_macos">MacOS</a></strong>
+
+<dd>
+<p>Information about XML::Parser for MacPerl could be found here:</p>
+</dd>
+<dd>
+<p><a href="http://bumppo.net/lists/macperl-modules/1999/07/msg00047.html">http://bumppo.net/lists/macperl-modules/1999/07/msg00047.html</a></p>
+</dd>
+<dd>
+<p>Compiled XML::Parser for MacOS could be found here:</p>
+</dd>
+<dd>
+<p><a href="http://www.perl.com/CPAN-local/authors/id/A/AS/ASANDSTRM/XML-Parser-2.27-bin-1-MacOS.tgz">http://www.perl.com/CPAN-local/authors/id/A/AS/ASANDSTRM/XML-Parser-2.27-bin-1-MacOS.tgz</a></p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="availability">AVAILABILITY</a></h1>
+<p>You can download the latest version SOAP::Lite for Unix or SOAP::Lite for
+Win32 from the following sources:</p>
+<pre>
+ * CPAN:                <a href="http://search.cpan.org/search?dist=SOAP-Lite">http://search.cpan.org/search?dist=SOAP-Lite</a>
+ * Sourceforge:         <a href="http://sourceforge.net/projects/soaplite/">http://sourceforge.net/projects/soaplite/</a></pre>
+<p>PPM packages are also available from sourceforge.</p>
+<p>You are welcome to send e-mail to the maintainers of SOAP::Lite with your
+with your comments, suggestions, bug reports and complaints.</p>
+<p>
+</p>
+<hr />
+<h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
+<p>Special thanks to Randy J. Ray, author of
+<em>Programming Web Services with Perl</em>, who has contributed greatly to the
+documentation effort of SOAP::Lite.</p>
+<p>Special thanks to O'Reilly publishing which has graciously allowed SOAP::Lite
+to republish and redistribute the SOAP::Lite reference manual found in
+Appendix B of <em>Programming Web Services with Perl</em>.</p>
+<p>And special gratitude to all the developers who have contributed patches,
+ideas, time, energy, and help in a million different forms to the development
+of this software.</p>
+<p>
+</p>
+<hr />
+<h1><a name="hacking">HACKING</a></h1>
+<p>SOAP::Lite's developement takes place on sourceforge.net.</p>
+<p>There's a subversion repository set up at</p>
+<pre>
+ https://soaplite.svn.sourceforge.net/svnroot/soaplite/</pre>
+<p>
+</p>
+<hr />
+<h1><a name="reporting_bugs">REPORTING BUGS</a></h1>
+<p>Please report all suspected SOAP::Lite bugs using Sourceforge. This ensures
+proper tracking of the issue and allows you the reporter to know when something
+gets fixed.</p>
+<p><a href="http://sourceforge.net/tracker/?group_id=66000&atid=513017">http://sourceforge.net/tracker/?group_id=66000&atid=513017</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright (C) 2000-2007 Paul Kulchenko. All rights reserved.</p>
+<p>This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.</p>
+<p>This text and all associated documentation for this library is made available
+under the Creative Commons Attribution-NoDerivs 2.0 license.
+<a href="http://creativecommons.org/licenses/by-nd/2.0/">http://creativecommons.org/licenses/by-nd/2.0/</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Paul Kulchenko (<a href="mailto:paulclinger@yahoo.com">paulclinger@yahoo.com</a>)</p>
+<p>Randy J. Ray (<a href="mailto:rjray@blackperl.com">rjray@blackperl.com</a>)</p>
+<p>Byrne Reese (<a href="mailto:byrne@majordojo.com">byrne@majordojo.com</a>)</p>
+<p>Martin Kutter (<a href="mailto:martin.kutter@fen-net.de">martin.kutter@fen-net.de</a>)</p>
+<table border="0" width="100%" cellspacing="0" cellpadding="3">
+<tr><td class="block" valign="middle">
+<big><strong><span class="block">&nbsp;SOAP::Lite - Perl's Web Services Toolkit</span></strong></big>
+</td></tr>
+</table>
+
+</body>
+
+</html>

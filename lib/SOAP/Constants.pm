@@ -5,7 +5,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Constants.pm,v 1.4 2008/02/13 12:23:44 kutterma Exp $
+# $Id: Constants.pm 161 2008-02-13 12:23:44Z kutterma $
 #
 # ======================================================================
 package SOAP::Constants;

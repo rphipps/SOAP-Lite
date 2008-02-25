@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: LOCAL.pm,v 1.4 2008/01/06 19:14:09 kutterma Exp $
+# $Id: LOCAL.pm 148 2008-01-06 19:14:09Z kutterma $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::LOCAL;
 
 use strict;
 use vars qw($VERSION);
-#$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name:  $ =~ /-(\d+)_([\d_]+)/);
+#$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name$ =~ /-(\d+)_([\d_]+)/);
 $VERSION = $SOAP::Lite::VERSION;
 
 # ======================================================================

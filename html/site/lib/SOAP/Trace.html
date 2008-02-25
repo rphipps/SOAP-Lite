@@ -1,0 +1,224 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>SOAP::Trace - used only to manage and manipulate the runtime tracing of execution within the toolkit</title>
+<link rel="stylesheet" href="../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+<table border="0" width="100%" cellspacing="0" cellpadding="3">
+<tr><td class="block" valign="middle">
+<big><strong><span class="block">&nbsp;SOAP::Trace - used only to manage and manipulate the runtime tracing of execution within the toolkit</span></strong></big>
+</td></tr>
+</table>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#trace_signals">TRACE SIGNALS</a></li>
+	<li><a href="#examples">EXAMPLES</a></li>
+	<ul>
+
+		<li><a href="#selecting_signals_to_trace">SELECTING SIGNALS TO TRACE</a></li>
+		<li><a href="#logging_signals_to_a_file">LOGGING SIGNALS TO A FILE</a></li>
+		<li><a href="#logging_message_contents">LOGGING MESSAGE CONTENTS</a></li>
+		<li><a href="#on_debug">ON_DEBUG</a></li>
+	</ul>
+
+	<li><a href="#acknowledgements">ACKNOWLEDGEMENTS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>SOAP::Trace - used only to manage and manipulate the runtime tracing of execution within the toolkit</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This class has no methods or objects. It is used only to manage and manipulate the runtime tracing of execution within the toolkit. In absence of methods, this section reviews the events that may be configured and the ways of configuring them.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>Tracing is enabled by the SOAP::Lite import method. This is usually done at compile-time, though it may be done explicitly by calling import directly. The commands for setting up tracing start with the keyword +trace. Alternately, +debug may be used; the two are interchangeable. After the initial keyword, one or more of the signals detailed here may be specified, optionally with a callback to handle them. When specifying multiple signals to be handled by a single callback, it is sufficient to list all of them first, followed finally by the callback, as in:</p>
+<pre>
+   use SOAP::Lite +trace =&gt; 
+     method =&gt; fault =&gt; \&amp;message_level, 
+     trace =&gt; objects =&gt; \&amp;lower_level;</pre>
+<p>In the fragment, the reference to message_level is installed as the callback for both method and fault signals, while lower_level is installed for trace and object events. If callbacks aren't explicitly provided, the default tracing action is to log a message to Perl's STDOUT file descriptor. Callbacks should expect a one or more arguments passed in, though the nature of the arguments varies based on the signal.</p>
+<p>Any signal can be disabled by prefacing the name with a hyphen, such as -result. This is useful with the pseudosignal ``all,'' which is shorthand for the full list of signals. The following fragment disables only the two signals, while still enabling the rest:</p>
+<pre>
+    SOAP::Lite-&gt;import(+trace =&gt; all =&gt; -result =&gt; -parameters);</pre>
+<p>If the keyword +trace (or +debug) is used without any signals specified, it enables all signals (as if all were implied).</p>
+<p>The signals and their meaning follow. Each also bears a note as to whether the signal is relevant to a server application, client application, or both.</p>
+<p>
+</p>
+<hr />
+<h1><a name="trace_signals">TRACE SIGNALS</a></h1>
+<dl>
+<dt><strong><a name="item_transport_client_only">transport <em>Client only</em></a></strong>
+
+<dd>
+<p>Triggered in the transport layer just before a request is sent and immediately after a response is received. Each time the signal is sent, the sole argument to the callback is the relevant object. On requests, this is a <a href="../../../site/lib/HTTP/Request.html">the HTTP::Request manpage</a> object; for responses, it's a <a href="../../../site/lib/HTTP/Response.html">the HTTP::Response manpage</a> object.</p>
+</dd>
+</li>
+<dt><strong><a name="item_dispatch_server_only">dispatch <em>Server only</em></a></strong>
+
+<dd>
+<p>Triggered with the full name of the method being dispatched, just before execution is passed to it. It is currently disabled in SOAP::Lite 0.55.</p>
+</dd>
+</li>
+<dt><strong><a name="item_result_server_only">result <em>Server only</em></a></strong>
+
+<dd>
+<p>Triggered after the method has been dispatched and is passed the results returned from the method as a list. The result values have not yet been serialized when this signal is sent.</p>
+</dd>
+</li>
+<dt><strong><a name="item_parameters_server_only">parameters <em>Server only</em></a></strong>
+
+<dd>
+<p>Triggered before a method call is actually dispatched, with the data that is intended for the call itself. The parameters for the method call are passed in as a list, after having been deserialized into Perl data.</p>
+</dd>
+</li>
+<dt><strong><a name="item_headers_server_only">headers <em>Server only</em></a></strong>
+
+<dd>
+<p>This signal should be for triggering on the headers of an incoming message, but it isn't implemented as of SOAP::Lite 0.55.</p>
+</dd>
+</li>
+<dt><strong><a name="item_objects_client_or_server">objects <em>Client or server</em></a></strong>
+
+<dd>
+<p>Highlights when an object is instantiated or destroyed. It is triggered in the new and DESTROY methods of the various SOAP::Lite classes.</p>
+</dd>
+</li>
+<dt><strong><a name="item_method_client_or_server">method <em>Client or server</em></a></strong>
+
+<dd>
+<p>Triggered with the list of arguments whenever the envelope method of <a href="../../../site/lib/SOAP/Serializer.html">the SOAP::Serializer manpage</a> is invoked with an initial argument of method. The initial string itself isn't passed to the callback.</p>
+</dd>
+</li>
+<dt><strong><a name="item_fault_client_or_server">fault <em>Client or server</em></a></strong>
+
+<dd>
+<p>As with the method signal earlier, except that this signal is triggered when SOAP::Serializer::envelope is called with an initial argument of fault.</p>
+</dd>
+</li>
+<dt><strong><a name="item_freeform_client_or_server">freeform <em>Client or server</em></a></strong>
+
+<dd>
+<p>Like the two previous, this signal is triggered when the method SOAP::Serializer::envelope is called with an initial parameter of freeform. This syntax is used when the method is creating SOAP::Data objects from free-form input data.</p>
+</dd>
+</li>
+<dt><strong><a name="item_trace_client_or_server">trace <em>Client or server</em></a></strong>
+
+<dd>
+<p>Triggered at the entry-point of many of the more-significant functions. Not all the functions within the SOAP::Lite classes trigger this signal. Those that do are primarily the highly visible functions described in the interface descriptions for the various classes.</p>
+</dd>
+</li>
+<dt><strong><a name="item_debug_client_or_server">debug <em>Client or server</em></a></strong>
+
+<dd>
+<p>Used in the various transport modules to track the contents of requests and responses (as ordinary strings, not as objects) at different points along the way.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="examples">EXAMPLES</a></h1>
+<p>
+</p>
+<h2><a name="selecting_signals_to_trace">SELECTING SIGNALS TO TRACE</a></h2>
+<p>The following code snippet will enable tracing for all signals:</p>
+<pre>
+  use SOAP::Lite +trace =&gt; 'all';</pre>
+<p>Or, the following will also do the trick:</p>
+<pre>
+  use SOAP::Lite +trace;</pre>
+<p>You can disable tracing for a set of signals by prefixing the signal name with a hyphen. Therefore, if you wish to enable tracing for every signal EXCEPT transport signals, then you would use the code below:</p>
+<pre>
+  use SOAP::Lite +trace =&gt; [ qw(all -transport) ];</pre>
+<p>
+</p>
+<h2><a name="logging_signals_to_a_file">LOGGING SIGNALS TO A FILE</a></h2>
+<p>You can optionally provide a subroutine or callback to each signal trace you declare. Each time a signal is received, it is passed to the corresponding subroutine. For example, the following code effectively logs all fault signals to a file called fault.log:</p>
+<pre>
+  use SOAP::Lite +trace =&gt; [ fault =&gt; \&amp;log_faults ];</pre>
+<pre>
+  sub log_faults {
+    open LOGFILE,&quot;&gt;fault.log&quot;;
+    print LOGFILE, $_[0] . &quot;\n&quot;;
+    close LOGFILE;
+  }</pre>
+<p>You can also use a single callback for multiple signals using the code below:</p>
+<pre>
+  use SOAP::Lite +trace =&gt; [ method, fault =&gt; \&amp;log ];</pre>
+<p>
+</p>
+<h2><a name="logging_message_contents">LOGGING MESSAGE CONTENTS</a></h2>
+<p>The transport signal is unique in the that the signal is not a text string, but the actually HTTP::Request being sent (just prior to be sent), or HTTP::Response object (immediately after it was received). The following code sample shows how to make use of this:</p>
+<pre>
+  use SOAP::Lite +trace =&gt; [ transport =&gt; &amp;log_message ];</pre>
+<pre>
+  sub log_message {
+    my ($in) = @_;
+    if (class($in) eq &quot;HTTP::Request&quot;) {
+      # do something...
+      print $in-&gt;contents; # ...for example
+    } elsif (class($in) eq &quot;HTTP::Response&quot;) {
+      # do something
+    }
+  }</pre>
+<p>
+</p>
+<h2><a name="on_debug">ON_DEBUG</a></h2>
+<p>The <code>on_debug</code> method is available, as in:</p>
+<pre>
+  use SOAP::Lite;
+  my $client = SOAP::Lite
+    -&gt;uri($NS)
+    -&gt;proxy($HOST)
+    -&gt;on_debug( sub { print @_; } );</pre>
+<p>
+</p>
+<hr />
+<h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
+<p>Special thanks to O'Reilly publishing which has graciously allowed SOAP::Lite to republish and redistribute large excerpts from <em>Programming Web Services with Perl</em>, mainly the SOAP::Lite reference found in Appendix B.</p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright (C) 2000-2004 Paul Kulchenko. All rights reserved.</p>
+<p>This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.</p>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Paul Kulchenko (<a href="mailto:paulclinger@yahoo.com">paulclinger@yahoo.com</a>)</p>
+<p>Randy J. Ray (<a href="mailto:rjray@blackperl.com">rjray@blackperl.com</a>)</p>
+<p>Byrne Reese (<a href="mailto:byrne@majordojo.com">byrne@majordojo.com</a>)</p>
+<table border="0" width="100%" cellspacing="0" cellpadding="3">
+<tr><td class="block" valign="middle">
+<big><strong><span class="block">&nbsp;SOAP::Trace - used only to manage and manipulate the runtime tracing of execution within the toolkit</span></strong></big>
+</td></tr>
+</table>
+
+</body>
+
+</html>

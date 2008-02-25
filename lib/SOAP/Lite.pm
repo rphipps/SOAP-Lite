@@ -4,24 +4,22 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm,v 1.74 2008/02/13 12:23:44 kutterma Exp $
+# $Id: Lite.pm 189 2008-02-25 21:35:47Z kutterma $
 #
 # ======================================================================
 
 # Formatting hint:
 # Target is the source code format laid out in Perl Best Practices (4 spaces
 # indent, opening brace on condition line, no cuddled else).
-# Not all code is formatted yet.
-# I don't trust perltidy, but rather format by hand, so please be patient.
 #
 # October 2007, Martin Kutter
 
 package SOAP::Lite;
 
-use 5.004;
+use 5.005;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.70_06';
+$VERSION = '0.70_07';
 
 # ======================================================================
 
@@ -2649,16 +2647,27 @@ sub find_target {
     no strict 'refs';
 
 # TODO - sort this mess out:
+# The task is to test whether the class in question has already been loaded.
+#
 # SOAP::Lite 0.60:
 #  unless (defined %{"${class}::"}) {
 # Patch to SOAP::Lite 0.60:
 # The following patch does not work for packages defined within a BEGIN block
 #  unless (exists($INC{join '/', split /::/, $class.'.pm'})) {
-# Combination of 0.60 and patch:
-    unless (defined(%{"${class}::"})
+# Combination of 0.60 and patch did not work reliably, either.
+#
+# Now we do the following: Check whether the class is main (always loaded)
+# or the class implements the method in question
+# or the package exists as file in %INC.
+#
+# This is still sort of a hack - but I don't know anything better
+# If you have some idea, please help me out...
+#
+    unless (($class eq 'main') || $class->can($method_name)
         || exists($INC{join '/', split /::/, $class . '.pm'})) {
+
         # allow all for static and only specified path for dynamic bindings
-        local @INC = (($static ? @INC : ()), grep {!ref && m![/\\.]!} $self->dispatch_to);
+        local @INC = (($static ? @INC : ()), grep {!ref && m![/\\.]!} $self->dispatch_to());
         eval 'local $^W; ' . "require $class";
         die "Failed to access class ($class): $@" if $@;
         $self->dispatched($class) unless $static;
@@ -3753,6 +3762,15 @@ SOAP::Lite - Perl's Web Services Toolkit
 SOAP::Lite is a collection of Perl modules which provides a simple and
 lightweight interface to the Simple Object Access Protocol (SOAP) both on
 client and server side.
+
+=head1 PERL VERSION WARNING
+
+SOAP::Lite 0.71 will be the last version of SOAP::Lite running on perl 5.005
+
+Future versions of SOAP::Lite will require at least perl 5.6.0
+
+If you have not had the time to upgrad your perl, you should consider this
+now.
 
 =head1 OVERVIEW OF CLASSES AND PACKAGES
 
@@ -5336,6 +5354,8 @@ Win32 from the following sources:
  * CPAN:                http://search.cpan.org/search?dist=SOAP-Lite
  * Sourceforge:         http://sourceforge.net/projects/soaplite/
 
+PPM packages are also available from sourceforge.
+
 You are welcome to send e-mail to the maintainers of SOAP::Lite with your
 with your comments, suggestions, bug reports and complaints.
 
@@ -5353,6 +5373,14 @@ And special gratitude to all the developers who have contributed patches,
 ideas, time, energy, and help in a million different forms to the development
 of this software.
 
+=head1 HACKING
+
+SOAP::Lite's developement takes place on sourceforge.net.
+
+There's a subversion repository set up at
+
+ https://soaplite.svn.sourceforge.net/svnroot/soaplite/
+
 =head1 REPORTING BUGS
 
 Please report all suspected SOAP::Lite bugs using Sourceforge. This ensures
@@ -5360,9 +5388,6 @@ proper tracking of the issue and allows you the reporter to know when something
 gets fixed.
 
 http://sourceforge.net/tracker/?group_id=66000&atid=513017
-
-If under dire circumstances you need immediate assistance with the resolution of
-an issue, you are welcome to contact Byrne Reese at <byrne at majordojo dot com>.
 
 =head1 COPYRIGHT
 

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: JABBER.pm,v 1.3 2004/11/14 19:30:50 byrnereese Exp $
+# $Id: JABBER.pm 51 2004-11-14 19:30:50Z byrnereese $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::JABBER;
 
 use strict;
 use vars qw($VERSION);
-#$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name:  $ =~ /-(\d+)_([\d_]+)/);
+#$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name$ =~ /-(\d+)_([\d_]+)/);
 $VERSION = $SOAP::Lite::VERSION;
 
 use Net::Jabber 1.0021 qw(Client); 

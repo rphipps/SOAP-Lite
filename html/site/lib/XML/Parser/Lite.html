@@ -1,0 +1,207 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>XML::Parser::Lite - Lightweight regexp-based XML parser</title>
+<link rel="stylesheet" href="../../../../Active.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+<table border="0" width="100%" cellspacing="0" cellpadding="3">
+<tr><td class="block" valign="middle">
+<big><strong><span class="block">&nbsp;XML::Parser::Lite - Lightweight regexp-based XML parser</span></strong></big>
+</td></tr>
+</table>
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#subroutines_methods">SUBROUTINES/METHODS</a></li>
+	<ul>
+
+		<li><a href="#new">new</a></li>
+		<li><a href="#sethandlers">setHandlers</a></li>
+		<li><a href="#parse">parse</a></li>
+	</ul>
+
+	<li><a href="#handler_methods">Handler methods</a></li>
+	<ul>
+
+		<li><a href="#init">Init</a></li>
+		<li><a href="#start">Start</a></li>
+		<li><a href="#char">Char</a></li>
+		<li><a href="#end">End</a></li>
+		<li><a href="#comment">Comment</a></li>
+		<li><a href="#xmldecl">XMLDecl</a></li>
+		<li><a href="#doctype">Doctype</a></li>
+		<li><a href="#final">Final</a></li>
+	</ul>
+
+	<li><a href="#see_also">SEE ALSO</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>XML::Parser::Lite - Lightweight regexp-based XML parser</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  use XML::Parser::Lite;</pre>
+<pre>
+  $p1 = new XML::Parser::Lite;
+  $p1-&gt;setHandlers(
+    Start =&gt; sub { shift; print &quot;start: @_\n&quot; },
+    Char =&gt; sub { shift; print &quot;char: @_\n&quot; },
+    End =&gt; sub { shift; print &quot;end: @_\n&quot; },
+  );
+  $p1-&gt;parse('&lt;foo id=&quot;me&quot;&gt;Hello World!&lt;/foo&gt;');</pre>
+<pre>
+  $p2 = new XML::Parser::Lite
+    Handlers =&gt; {
+      Start =&gt; sub { shift; print &quot;start: @_\n&quot; },
+      Char =&gt; sub { shift; print &quot;char: @_\n&quot; },
+      End =&gt; sub { shift; print &quot;end: @_\n&quot; },
+    }
+  ;
+  $p2-&gt;parse('&lt;foo id=&quot;me&quot;&gt;Hello &lt;bar&gt;cruel&lt;/bar&gt; World!&lt;/foo&gt;');</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This Perl implements an XML parser with a interface similar to
+XML::Parser. Though not all callbacks are supported, you should be able to
+use it in the same way you use XML::Parser. Due to using experimantal regexp
+features it'll work only on Perl 5.6 and above and may behave differently on
+different platforms.</p>
+<p>Note that you cannot use regular expressions or split in callbacks. This is
+due to a limitation of perl's regular expression implementation (which is
+not re-entrant).</p>
+<p>
+</p>
+<hr />
+<h1><a name="subroutines_methods">SUBROUTINES/METHODS</a></h1>
+<p>
+</p>
+<h2><a name="new">new</a></h2>
+<p>Constructor.</p>
+<p>As (almost) all SOAP::Lite constructors, <code>new()</code> returns the object called on
+when called as object method. This means that the following effectifely is
+a no-op if $obj is a object:</p>
+<pre>
+ $obj = $obj-&gt;new();</pre>
+<p>New accepts a single named parameter, <code>Handlers</code> with a hash ref as value:</p>
+<pre>
+ my $parser = XML::Parser::Lite-&gt;new(
+    Handlers =&gt; {
+        Start =&gt; sub { shift; print &quot;start: @_\n&quot; },
+        Char =&gt; sub { shift; print &quot;char: @_\n&quot; },
+        End =&gt; sub { shift; print &quot;end: @_\n&quot; },
+    }
+ );</pre>
+<p>The handlers given will be passed to setHandlers.</p>
+<p>
+</p>
+<h2><a name="sethandlers">setHandlers</a></h2>
+<p>Sets (or resets) the parsing handlers. Accepts a hash with the handler names
+and handler code references as parameters. Passing <code>undef</code> instead of a
+code reference replaces the handler by a no-op.</p>
+<p>The following handlers can be set:</p>
+<pre>
+ Init
+ Start
+ Char
+ End
+ Final</pre>
+<p>All other handlers are ignored.</p>
+<p>Calling setHandlers without parameters resets all handlers to no-ops.</p>
+<p>
+</p>
+<h2><a name="parse">parse</a></h2>
+<p>Parses the XML given. In contrast to <a href="../../../../site/lib/XML/Parser.html">XML::Parser</a>'s parse
+method, <code>parse()</code> only parses strings.</p>
+<p>
+</p>
+<hr />
+<h1><a name="handler_methods">Handler methods</a></h1>
+<p>
+</p>
+<h2><a name="init">Init</a></h2>
+<p>Called before parsing starts. You should perform any necessary initializations
+in Init.</p>
+<p>
+</p>
+<h2><a name="start">Start</a></h2>
+<p>Called at the start of each XML node. See <a href="../../../../site/lib/XML/Parser.html">the XML::Parser manpage</a> for details.</p>
+<p>
+</p>
+<h2><a name="char">Char</a></h2>
+<p>Called for each character sequence. May be called multiple times for the
+characters contained in an XML node (even for every single character).
+Your implementation has to make sure that it captures all characters.</p>
+<p>
+</p>
+<h2><a name="end">End</a></h2>
+<p>Called at the end of each XML node. See <a href="../../../../site/lib/XML/Parser.html">the XML::Parser manpage</a> for details</p>
+<p>
+</p>
+<h2><a name="comment">Comment</a></h2>
+<p>See <a href="../../../../site/lib/XML/Parser.html">the XML::Parser manpage</a> for details</p>
+<p>
+</p>
+<h2><a name="xmldecl">XMLDecl</a></h2>
+<p>See <a href="../../../../site/lib/XML/Parser.html">the XML::Parser manpage</a> for details</p>
+<p>
+</p>
+<h2><a name="doctype">Doctype</a></h2>
+<p>See <a href="../../../../site/lib/XML/Parser.html">the XML::Parser manpage</a> for details</p>
+<p>
+</p>
+<h2><a name="final">Final</a></h2>
+<p>Called at the end of the parsing process. You should perform any neccessary
+cleanup here.</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<pre>
+ XML::Parser</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright (C) 2000-2007 Paul Kulchenko. All rights reserved.</p>
+<p>Copyright (C) 2008- Martin Kutter. All rights reserved.</p>
+<p>This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.</p>
+<p>This parser is based on ``shallow parser'' <a href="http://www.cs.sfu.ca/~cameron/REX.html">http://www.cs.sfu.ca/~cameron/REX.html</a>
+Copyright (c) 1998, Robert D. Cameron.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Paul Kulchenko (<a href="mailto:paulclinger@yahoo.com">paulclinger@yahoo.com</a>)</p>
+<p>Martin Kutter (<a href="mailto:martin.kutter@fen-net.de">martin.kutter@fen-net.de</a>)</p>
+<p>Additional handlers supplied by Adam Leggett.</p>
+<table border="0" width="100%" cellspacing="0" cellpadding="3">
+<tr><td class="block" valign="middle">
+<big><strong><span class="block">&nbsp;XML::Parser::Lite - Lightweight regexp-based XML parser</span></strong></big>
+</td></tr>
+</table>
+
+</body>
+
+</html>
