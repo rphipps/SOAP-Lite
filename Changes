@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes 195 2008-02-25 22:23:33Z kutterma $
+# $Id: Changes 225 2008-03-29 14:12:50Z kutterma $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -15,6 +15,10 @@ http://rt.cpan.org/Public/Dist/Display.html?Name=SOAP-Lite
 -----------------------------------------------------------------------
 THIS RELEASE
 -----------------------------------------------------------------------
+0.71.01
+   ! #34515: Printing UTF-8 through SOAP::Transport::HTTP throws a warning
+   ! Version numbers updated
+   ! [1904955] Subclassing XMLRPC::Serializer broken
 0.71 Feb 2008
   - bumped up version. Just curious about commit e-mail.
 0.70_08 Feb 25 2008

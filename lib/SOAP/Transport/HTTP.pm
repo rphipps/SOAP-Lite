@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: HTTP.pm 157 2008-02-09 07:57:52Z kutterma $
+# $Id: HTTP.pm 222 2008-03-29 13:42:53Z kutterma $
 #
 # ======================================================================
 
@@ -37,10 +37,12 @@ sub patch {
     return if $_patched;
     BEGIN { local ($^W) = 0; }
     {
+        local $^W = 0;
         sub LWP::UserAgent::redirect_ok; *LWP::UserAgent::redirect_ok = sub {1}
     }
     {
         package LWP::Protocol;
+        local $^W = 0;
         my $collect = \&collect; # store original
         *collect = sub {
             if (defined $_[2]->header('Connection')
@@ -464,8 +466,7 @@ sub make_response {
 }
 
 sub handle {
-    my $self =
-     shift->new;
+    my $self = shift->new;
 
     my $length = $ENV{'CONTENT_LENGTH'} || 0;
 
@@ -476,7 +477,6 @@ sub handle {
         $self->response(HTTP::Response->new(413)) # REQUEST ENTITY TOO LARGE
     }
     else {
-
         if (exists $ENV{EXPECT} && $ENV{EXPECT} =~ /\b100-Continue\b/i) {
             print "HTTP/1.1 100 Continue\r\n\r\n";
         }
@@ -509,7 +509,20 @@ sub handle {
         ? $ENV{SERVER_PROTOCOL} || 'HTTP/1.0'
         : 'Status:';
     my $code = $self->response->code;
-    binmode(STDOUT);
+
+    # treat perls before 5.8 differently: They don't support :utf8 or :utf16
+    # layer for binmode - depends on charset
+    my %layer = ($] >= 5.008)
+        ? (
+            'utf-8' => 'utf8',
+            'utf-16' => 'utf16',
+        )
+        : ();
+    my ($charset) = $self->response->header('Content-type') =~m{ charset=([\w\-]+) }xm;
+    my $binmode = $layer{ $charset };
+
+    binmode(STDOUT, $binmode ? ":$binmode" : () );
+
     print STDOUT "$status $code ", HTTP::Status::status_message($code)
         , "\015\012", $self->response->headers_as_string("\015\012")
         , "\015\012", $self->response->content;

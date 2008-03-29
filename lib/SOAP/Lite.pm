@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm 197 2008-02-28 21:27:36Z kutterma $
+# $Id: Lite.pm 215 2008-03-15 21:06:48Z kutterma $
 #
 # ======================================================================
 
@@ -19,7 +19,7 @@ package SOAP::Lite;
 use 5.005;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.71';
+$VERSION = '0.71.01';
 
 # ======================================================================
 
@@ -1128,7 +1128,7 @@ sub encode_object {
     elsif (UNIVERSAL::isa($object => 'ARRAY')) {
         # Added in SOAP::Lite 0.65_6 to fix an XMLRPC bug
         return $self->encodingStyle eq ""
-            || ref $self eq 'XMLRPC::Serializer'
+            || $self->isa('XMLRPC::Serializer')
                 ? $self->encode_array($object, $name, $type, $attr)
                 : $self->encode_literal_array($object, $name, $type, $attr);
     }
@@ -1312,11 +1312,10 @@ sub register_ns {
 }
 
 sub find_prefix {
-    my $self = shift;
-    my ($ns) = @_;
-    foreach my $this_ns (keys %{$self->{'_namespaces'}}) {
-        return $self->{'_namespaces'}->{$this_ns} if ($ns eq $this_ns);
-    }
+    my ($self, $ns) = @_;
+    return (exists $self->{'_namespaces'}->{$ns})
+        ? $self->{'_namespaces'}->{$ns}
+        : ();
 }
 
 sub fixattrs {
