@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm 215 2008-03-15 21:06:48Z kutterma $
+# $Id: Lite.pm 230 2008-04-14 17:16:24Z kutterma $
 #
 # ======================================================================
 
@@ -19,8 +19,10 @@ package SOAP::Lite;
 use 5.005;
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.71.01';
-
+# perl's notion of a version is a series of one unbounded and 2 3-digit values
+# separated by .
+# to get it above '0.71' one has to say 0.710.001
+$VERSION = '0.71.02';
 # ======================================================================
 
 package SOAP::XMLSchemaApacheSOAP::Deserializer;
@@ -2441,7 +2443,7 @@ sub byName {
 package SOAP::Server;
 
 use Carp ();
-
+use Scalar::Util qw(weaken);
 sub DESTROY { SOAP::Trace::objects('()') }
 
 sub initialize {
@@ -2505,13 +2507,12 @@ sub new {
 sub init_context {
     my $self = shift;
     $self->{'_deserializer'}->{'_context'} = $self;
-    $self->{'_serializer'}->{'_context'} = $self;
-}
+    # weaken circular reference to avoid a memory hole
+    weaken($self->{'_deserializer'}->{'_context'});
 
-sub destroy_context {
-    my $self = shift;
-    delete($self->{'_deserializer'}->{'_context'});
-    delete($self->{'_serializer'}->{'_context'})
+    $self->{'_serializer'}->{'_context'} = $self;
+    # weaken circular reference to avoid a memory hole
+    weaken($self->{'_serializer'}->{'_context'});
 }
 
 sub BEGIN {
@@ -2771,11 +2772,9 @@ sub handle {
             ->prefix('s') # distinguish generated element names between client and server
             ->uri($method_uri)
             ->envelope(response => $method_name . 'Response', @results);
-        $self->destroy_context();
         return $result;
     };
 
-    $self->destroy_context();
     # void context
     return unless defined wantarray;
 
@@ -3371,6 +3370,8 @@ use SOAP::Lite::Utils;
 use SOAP::Constants;
 use SOAP::Packager;
 
+use Scalar::Util qw(weaken);
+
 @ISA = qw(SOAP::Cloneable);
 
 # provide access to global/autodispatched object
@@ -3498,13 +3499,12 @@ sub new {
 sub init_context {
     my $self = shift->new;
     $self->{'_deserializer'}->{'_context'} = $self;
-    $self->{'_serializer'}->{'_context'} = $self;
-}
+    # weaken circular reference to avoid a memory hole
+    weaken $self->{'_deserializer'}->{'_context'};
 
-sub destroy_context {
-    my $self = shift;
-    delete($self->{'_deserializer'}->{'_context'});
-    delete($self->{'_serializer'}->{'_context'})
+    $self->{'_serializer'}->{'_context'} = $self;
+    # weaken circular reference to avoid a memory hole
+    weaken $self->{'_serializer'}->{'_context'};
 }
 
 # Naming? wsdl_parser
@@ -3700,7 +3700,6 @@ sub call {
             }
         }
     }
-    $self->destroy_context();
     return $result;
 } # end of call()
 
