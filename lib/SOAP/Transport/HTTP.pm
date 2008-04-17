@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: HTTP.pm 222 2008-03-29 13:42:53Z kutterma $
+# $Id: HTTP.pm 238 2008-04-17 20:37:49Z kutterma $
 #
 # ======================================================================
 
@@ -12,7 +12,7 @@ package SOAP::Transport::HTTP;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.70_04';
+$VERSION = $SOAP::Lite::VERSION;
 
 use SOAP::Lite;
 use SOAP::Packager;
@@ -433,7 +433,9 @@ sub make_response {
                    $encoding ? 'charset=' . lc($encoding) : ()),
             'Content-Length' => SOAP::Utils::bytelength $response
         ),
-        $response,
+        ($] > 5.007)
+            ? do { require Encode; Encode::encode($encoding, $response) }
+            : $response,
     ));
     $self->response->headers->header('Content-Type' => 'Multipart/Related; type="text/xml"; start="<main_envelope>"; boundary="'.$is_multipart.'"') if $is_multipart;
 }
@@ -510,18 +512,7 @@ sub handle {
         : 'Status:';
     my $code = $self->response->code;
 
-    # treat perls before 5.8 differently: They don't support :utf8 or :utf16
-    # layer for binmode - depends on charset
-    my %layer = ($] >= 5.008)
-        ? (
-            'utf-8' => 'utf8',
-            'utf-16' => 'utf16',
-        )
-        : ();
-    my ($charset) = $self->response->header('Content-type') =~m{ charset=([\w\-]+) }xm;
-    my $binmode = $layer{ $charset };
-
-    binmode(STDOUT, $binmode ? ":$binmode" : () );
+    binmode(STDOUT);
 
     print STDOUT "$status $code ", HTTP::Status::status_message($code)
         , "\015\012", $self->response->headers_as_string("\015\012")

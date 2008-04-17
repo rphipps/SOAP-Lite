@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm 230 2008-04-14 17:16:24Z kutterma $
+# $Id: Lite.pm 236 2008-04-17 20:18:50Z kutterma $
 #
 # ======================================================================
 
@@ -19,10 +19,7 @@ package SOAP::Lite;
 use 5.005;
 use strict;
 use vars qw($VERSION);
-# perl's notion of a version is a series of one unbounded and 2 3-digit values
-# separated by .
-# to get it above '0.71' one has to say 0.710.001
-$VERSION = '0.71.02';
+use version; $VERSION = qv(0.71.03);
 # ======================================================================
 
 package SOAP::XMLSchemaApacheSOAP::Deserializer;
