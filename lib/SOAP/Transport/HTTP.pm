@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: HTTP.pm 238 2008-04-17 20:37:49Z kutterma $
+# $Id: HTTP.pm 247 2008-04-19 21:39:39Z kutterma $
 #
 # ======================================================================
 
@@ -437,10 +437,12 @@ sub make_response {
             ? do { require Encode; Encode::encode($encoding, $response) }
             : $response,
     ));
+
     $self->response->headers->header('Content-Type' => 'Multipart/Related; type="text/xml"; start="<main_envelope>"; boundary="'.$is_multipart.'"') if $is_multipart;
 }
 
-sub product_tokens { join '/', 'SOAP::Lite', 'Perl', SOAP::Transport::HTTP->VERSION }
+# ->VERSION leaks a scalar every call - no idea why.
+sub product_tokens { join '/', 'SOAP::Lite', 'Perl', $SOAP::Transport::HTTP::VERSION; }
 
 # ======================================================================
 

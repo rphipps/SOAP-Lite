@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                SOAP-Lite
-version:             v0.71.03
+version:             0.71.04
 abstract:            ~
 license:             ~
 generated_by:        ExtUtils::MakeMaker version 6.36
@@ -21,6 +21,7 @@ requires:
     Scalar::Util:                  0
     Test::More:                    0
     URI:                           0
+    version:                       0
     XML::Parser:                   2.23
 meta-spec:
     url:     http://module-build.sourceforge.net/META-spec-v1.2.html
