@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes 238 2008-04-17 20:37:49Z kutterma $
+# $Id: Changes 250 2008-05-05 21:44:30Z kutterma $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -15,7 +15,14 @@ http://rt.cpan.org/Public/Dist/Display.html?Name=SOAP-Lite
 -----------------------------------------------------------------------
 THIS RELEASE
 -----------------------------------------------------------------------
-0.71.03
+0.710.05
+   ! got version number right, finally. Thanks to Graham Barr,
+   Andreas J. Koenig and Matt S Trout (in alphabetical order) for support
+0.071.04
+   ! updated version number and fixed declaring version, so that perl 5.6.2
+   can parse it, too
+   ! fixed memory leaks with XMLRPC::Lite
+v0.71.03
    ! #35041: SOAP::Lite Passes Decoded Strings to LWP
    ! #35133: Version Unparsable by ExtUtils::MakeMaker
    ! #33973: KeepAlive fails to function
