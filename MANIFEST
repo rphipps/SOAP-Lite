@@ -206,6 +206,9 @@ t/SOAP/Lite/Deserializer/XMLSchema2001.t
 t/SOAP/Lite/Deserializer/XMLSchemaSOAP1_1.t
 t/SOAP/Lite/Deserializer/XMLSchemaSOAP1_2.t
 t/SOAP/Lite/Packager.t
+t/SOAP/Serializer.t
+t/SOAP/Transport/HTTP/CGI.t
+t/SOAP/Transport/HTTP/CGI/test_server.pl
 t/SOAP/Schema/WSDL.t
 t/SOAP/Transport/FTP.t
 t/SOAP/Transport/HTTP.t
@@ -216,5 +219,6 @@ t/SOAP/Transport/MAILTO.t
 t/SOAP/Transport/MQ.t
 t/SOAP/Transport/POP3.t
 t/TEST.pl
+t/XMLRPC/Lite.t
 t/XML/Parser/adam.xml
 t/XML/Parser/Lite.t

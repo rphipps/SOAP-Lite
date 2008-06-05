@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm 249 2008-05-05 20:35:05Z kutterma $
+# $Id: Lite.pm 254 2008-06-05 18:43:57Z kutterma $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package XMLRPC::Lite;
 use SOAP::Lite;
 use strict;
 use vars qw($VERSION);
-use version; $VERSION = qv('0.710.05');
+use version; $VERSION = qv('0.710.06');
 
 # ======================================================================
 
@@ -71,12 +71,16 @@ sub envelope {
 
     my $body;
     if ($type eq 'response') {
+        # shift off method name to make XMLRPT happy
+        my $method = shift
+            or die "Unspecified method for XMLRPC call\n";
         $body = XMLRPC::Data->name( methodResponse => \XMLRPC::Data->value(
                 XMLRPC::Data->type(params => [@_])
             )
         );
     }
     elsif ($type eq 'method') {
+        # shift off method name to make XMLRPT happy
         my $method = shift
             or die "Unspecified method for XMLRPC call\n";
         $body = XMLRPC::Data->name( methodCall => \XMLRPC::Data->value(
