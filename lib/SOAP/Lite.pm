@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm 254 2008-06-05 18:43:57Z kutterma $
+# $Id: Lite.pm 274 2008-06-13 18:57:53Z kutterma $
 #
 # ======================================================================
 
@@ -19,7 +19,7 @@ package SOAP::Lite;
 use 5.005;
 use strict;
 use vars qw($VERSION);
-use version; $VERSION = qv('0.710.06');
+use version; $VERSION = qv('0.710.07');
 # ======================================================================
 
 package SOAP::XMLSchemaApacheSOAP::Deserializer;
@@ -374,7 +374,14 @@ my %encode_attribute = ('&' => '&amp;', '>' => '&gt;', '<' => '&lt;', '"' => '&q
 sub encode_attribute { (my $e = $_[0]) =~ s/([&<>\"])/$encode_attribute{$1}/g; $e }
 
 my %encode_data = ('&' => '&amp;', '>' => '&gt;', '<' => '&lt;', "\xd" => '&#xd;');
-sub encode_data { my $e = $_[0]; if ($e) { $e =~ s/([&<>\015])/$encode_data{$1}/g; $e =~ s/\]\]>/\]\]&gt;/g; } $e }
+sub encode_data {
+    my $e = $_[0];
+    if ($e) {
+        $e =~ s/([&<>\015])/$encode_data{$1}/g;
+        $e =~ s/\]\]>/\]\]&gt;/g;
+    }
+    $e
+}
 
 # methods for internal tree (SOAP::Deserializer, SOAP::SOM and SOAP::Serializer)
 
@@ -1492,8 +1499,8 @@ sub envelope {
         # Find all the SOAP Body elements
         else {
             # proposed resolution for [ 1700326 ] encode_data called incorrectly in envelope
-            # push(@parameters, $_);
-            push (@parameters, SOAP::Utils::encode_data($_));
+            push(@parameters, $_);
+            # push (@parameters, SOAP::Utils::encode_data($_));
         }
     }
     my $header = @header ? SOAP::Data->set_value(@header) : undef;
@@ -1541,9 +1548,6 @@ sub envelope {
     }
     elsif ($type eq 'fault') {
         SOAP::Trace::fault(@parameters);
-        # parameters[1] needs to be escaped - thanks to aka_hct at gmx dot de
-        # commented on 2001/03/28 because of failing in ApacheSOAP
-        # need to find out more about it
         # -> attr({'xmlns' => ''})
         # Parameter order fixed thanks to Tom Fischer
         $body = SOAP::Data-> name(SOAP::Utils::qualify($self->envprefix => 'Fault'))
@@ -1558,7 +1562,7 @@ sub envelope {
                         my $detail = $parameters[2];
                         ref $detail
                             ? \$detail
-                            : $detail
+                            : SOAP::Utils::encode_data($detail)
                     })
                     : (),
         ));

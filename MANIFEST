@@ -222,3 +222,6 @@ t/TEST.pl
 t/XMLRPC/Lite.t
 t/XML/Parser/adam.xml
 t/XML/Parser/Lite.t
+
+SOAP-Lite-0.710.06.ppd
+SOAP-Lite-0.710.06.zip

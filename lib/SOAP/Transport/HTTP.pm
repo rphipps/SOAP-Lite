@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: HTTP.pm 247 2008-04-19 21:39:39Z kutterma $
+# $Id: HTTP.pm 267 2008-06-09 07:22:43Z kutterma $
 #
 # ======================================================================
 
@@ -104,11 +104,6 @@ sub new {
 
     $self->agent(join '/', 'SOAP::Lite', 'Perl', SOAP::Transport::HTTP->VERSION);
     $self->options({});
-    $self->http_request(HTTP::Request->new);
-    $self->http_request->headers(HTTP::Headers->new);
-
-    # TODO - add application/dime
-    $self->http_request->header(Accept => ['text/xml', 'multipart/*', 'application/soap']);
 
     while (@methods) {
         my($method, $params) = splice(@methods,0,2);
@@ -135,6 +130,11 @@ sub send_receive {
             && eval { require Compress::Zlib };
 
     # Initialize the basic about the HTTP Request object
+    $self->http_request(HTTP::Request->new);
+    $self->http_request->headers(HTTP::Headers->new);
+
+    # TODO - add application/dime
+    $self->http_request->header(Accept => ['text/xml', 'multipart/*', 'application/soap']);
     $self->http_request->method($method);
     $self->http_request->url($endpoint);
 

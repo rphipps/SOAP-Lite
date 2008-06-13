@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes 253 2008-06-05 18:26:18Z kutterma $
+# $Id: Changes 276 2008-06-13 19:04:55Z kutterma $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -15,6 +15,11 @@ http://rt.cpan.org/Public/Dist/Display.html?Name=SOAP-Lite
 -----------------------------------------------------------------------
 THIS RELEASE
 -----------------------------------------------------------------------
+0.710.07
+   ! [ 1963995 ] > not deserialized in result
+   ! [ 1833218 ] < and > not deserialized in faultstring/detail
+   ! [ 1959329 ] Incorrect Content-Type while sending requests with no parts
+   ! [ 1945385 ] Incorrect starting part detection for Multipart/Related
 0.710.06
    ! #36477 SOAP::Lite Envelope not stripped down for XMLRPC
    ! #36455 XMLRPC::Transport::HTTP::CGI generates extra params
