@@ -19,9 +19,23 @@ use constant BUFSIZE => 3000;
 
 BEGIN {
     my @names = qw(EWOULDBLOCK EAGAIN EINPROGRESS);
-    my %WOULDBLOCK = 
-        (eval {require Errno} ? map {Errno->can($_)->() => 1} grep {Errno->can($_)} @names : ()),
-        (eval {require POSIX} ? map {POSIX->can($_)->() => 1} grep {POSIX->can($_)} @names : ());
+    my %WOULDBLOCK =
+        (eval {require Errno}
+            ? map {
+                Errno->can($_)
+                    ? (Errno->can($_)->() => 1)
+                    : (),
+                } @names
+            : ()
+        ),
+        (eval {require POSIX}
+            ? map {
+                eval { POSIX->can($_)->() }
+                    ? (POSIX->can($_)->() => 1)
+                    : ()
+                } @names
+            : ()
+        );
 
     sub WOULDBLOCK { $WOULDBLOCK{$_[0]+0} }
 }

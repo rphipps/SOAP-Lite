@@ -1,9 +1,10 @@
 --- #YAML:1.0
 name:                SOAP-Lite
-version:             0.710.07
-abstract:            ~
-license:             ~
-author:              ~
+version:             0.710.08
+abstract:            Perl's Web Services Toolkit
+license:             perl
+author:              
+    - Pavel Kulchenko, Randy J Ray, Byrne Reese, Martin Kutter (MKUTTER@cpan.org)
 generated_by:        ExtUtils::MakeMaker version 6.44
 distribution_type:   module
 requires:     

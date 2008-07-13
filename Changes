@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes 276 2008-06-13 19:04:55Z kutterma $
+# $Id: Changes 298 2008-07-13 20:36:52Z kutterma $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -15,6 +15,16 @@ http://rt.cpan.org/Public/Dist/Display.html?Name=SOAP-Lite
 -----------------------------------------------------------------------
 THIS RELEASE
 -----------------------------------------------------------------------
+0.710.08 - Jul 13 2008
+   ! [ 2015071 ] HTTP header is no more accessible
+   The HTTP header can be pre-filled again. Now, the HTTP header is cloned
+   from a (possibly user defined) header for every request
+   ! #37358: Test Failure in Strawberry perl - IO::SessionData
+   ! #37359: Test Failure in Strawberry perl - IO::SessionSet
+   ! [ 2005296 ] CPANTS says META.yml broken
+   ! [ 2005288 ] CPANTS: has_humanreadable_license not ok
+   ! #37040: Memory leak when calling WS using wsdl
+   SOAP::Transport::HTTP->new() was leaking two scalars per call
 0.710.07
    ! [ 1963995 ] > not deserialized in result
    ! [ 1833218 ] < and > not deserialized in faultstring/detail

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm 274 2008-06-13 18:57:53Z kutterma $
+# $Id: Lite.pm 297 2008-07-13 20:32:25Z kutterma $
 #
 # ======================================================================
 
@@ -19,7 +19,7 @@ package SOAP::Lite;
 use 5.005;
 use strict;
 use vars qw($VERSION);
-use version; $VERSION = qv('0.710.07');
+use version; $VERSION = qv('0.710.08');
 # ======================================================================
 
 package SOAP::XMLSchemaApacheSOAP::Deserializer;
@@ -3207,7 +3207,8 @@ EOP
         }
         $self->{'_stub'} .= "    parameters => [\n";
         foreach (@{$services->{$service}{parameters}}) {
-#           next unless $_;
+            # This is a workaround for https://sourceforge.net/tracker/index.php?func=detail&aid=2001592&group_id=66000&atid=513017
+            next unless ref $_;
             $self->{'_stub'} .= "      SOAP::Data->new(name => '".$_->name."', type => '".$_->type."', attr => {";
             $self->{'_stub'} .= do {
                 my %attr = %{$_->attr};
@@ -3685,8 +3686,8 @@ sub call {
         for ($result->dataof(SOAP::SOM::paramsout), $result->dataof(SOAP::SOM::headers)) {
             my $signature = join $;, $_->name, $_->type || '';
             if (exists $signatures{$signature}) {
-    	        my $param = $signatures{$signature};
-    	        my($value) = $_->value; # take first value
+                my $param = $signatures{$signature};
+                my($value) = $_->value; # take first value
 
                 # fillup parameters
                 UNIVERSAL::isa($_[$param] => 'SOAP::Data')
@@ -4611,11 +4612,11 @@ intended for the response.
     my $self = shift;
     my $envelope = pop;
     my $ent = build MIME::Entity
-	'Id'          => "<1234>",
-	'Type'        => "text/xml",
-	'Path'        => "some.xml",
-	'Filename'    => "some.xml",
-	'Disposition' => "attachment";
+    'Id'          => "<1234>",
+    'Type'        => "text/xml",
+    'Path'        => "some.xml",
+    'Filename'    => "some.xml",
+    'Disposition' => "attachment";
     return SOAP::Data->name("foo" => "blah blah blah"),$ent;
   }
 
@@ -5391,6 +5392,10 @@ http://sourceforge.net/tracker/?group_id=66000&atid=513017
 =head1 COPYRIGHT
 
 Copyright (C) 2000-2007 Paul Kulchenko. All rights reserved.
+
+Copyright (C) 2007-2008 Martin Kutter
+
+=head1 LICENSE
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
