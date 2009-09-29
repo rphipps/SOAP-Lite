@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: FTP.pm 148 2008-01-06 19:14:09Z kutterma $
+# $Id: FTP.pm 314 2009-02-21 18:21:42Z kutterma $
 #
 # ======================================================================
 
@@ -12,12 +12,13 @@ package SOAP::Transport::FTP;
 
 use strict;
 use vars qw($VERSION);
+use SOAP::Lite;
 #$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name$ =~ /-(\d+)_([\d_]+)/);
 $VERSION = $SOAP::Lite::VERSION;
 
 use Net::FTP;
 use IO::File;
-use URI; 
+use URI;
 
 # ======================================================================
 
@@ -26,7 +27,7 @@ use SOAP::Lite;
 use vars qw(@ISA);
 @ISA = qw(SOAP::Client);
 
-sub new { 
+sub new {
     my $class = shift;
     return $class if ref $class;
 
@@ -39,14 +40,14 @@ sub new {
     my $self = bless {@arg_from} => $class;
     while (@method_from) {
         my($method, $param_ref) = splice(@method_from,0,2);
-        $self->$method(ref $param_ref eq 'ARRAY' ? @$param_ref : $param_ref) 
+        $self->$method(ref $param_ref eq 'ARRAY' ? @$param_ref : $param_ref)
     }
     return $self;
 }
 
 sub send_receive {
     my($self, %parameters) = @_;
-    my($envelope, $endpoint, $action) = 
+    my($envelope, $endpoint, $action) =
         @parameters{qw(envelope endpoint action)};
 
     $endpoint ||= $self->endpoint; # ftp://login:password@ftp.something/dir/file

@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm 254 2008-06-05 18:43:57Z kutterma $
+# $Id: Lite.pm 313 2008-12-14 19:09:17Z kutterma $
 #
 # ======================================================================
 
@@ -313,6 +313,9 @@ sub decode_value {
     }
     elsif ($name =~ /^(?:param|fault)$/) {
         return scalar(($self->decode_object($children->[0]))[1]);
+    }
+    elsif ($name =~ /^(?:nil)$/) {
+        return undef;
     }
     else {
         die "wrong element '$name'\n";

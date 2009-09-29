@@ -279,7 +279,7 @@ EOBASE64
 
 
 {
-    print "Serialization of docunemt/literal arrays\n";
+    print "Serialization of document/literal arrays\n";
     # check array serialization with autotyping disabled
     my $serializer = SOAP::Serializer->new;
     $serializer->autotype(0);
@@ -310,8 +310,8 @@ EOBASE64
         </c-gensym\d+>
         }xms 
     );
-
-    # deserialize it and check that a similar object is created
+    
+	# deserialize it and check that a similar object is created
     my $deserializer = SOAP::Deserializer->new;
     
     my $obj = $deserializer->deserialize($xml)->root;

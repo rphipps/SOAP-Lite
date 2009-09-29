@@ -17,7 +17,9 @@ my @PREREQS = (
           "MIME::Base64"    => 0,
           "URI"             => 0,
           "Scalar::Util"    => 0,
+          "Task::Weaken"    => 0, #to be sure than weaken works (Scalar::Util has XS part)
           "version"         => 0,
+          "constant"        => 1.14, #for multiple constants
         },
         2
     ],
@@ -163,7 +165,7 @@ if ($noncoretests) {
     $tests = join ' ' , @test_from;
 }
 else {
-    $tests = join ' ', glob ('t/0*.t');
+    $tests = join ' ', glob ('t/0*.t t/*xmlparserlite.t t/*loopback.t');
 }
 
 ExtUtils::MakeMaker::WriteMakefile(
@@ -177,6 +179,15 @@ ExtUtils::MakeMaker::WriteMakefile(
      },
     'EXE_FILES'     => ['bin/SOAPsh.pl', 'bin/XMLRPCsh.pl', 'bin/stubmaker.pl'],
     test            => {TESTS => $tests},
+    ($ExtUtils::MakeMaker::VERSION ge '6.48'? 
+     (MIN_PERL_VERSION => 5.005,
+      META_MERGE => {
+          resources=> {
+              repository => 'https://soaplite.svn.sourceforge.net/svnroot/soaplite/branches/0.71',
+          },
+          keywords => ['SOAP','SOAP client','SOAP server'],
+      },
+     ) : ()),
 );
 
 

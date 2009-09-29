@@ -221,7 +221,9 @@ HANDLER: {
         SOAP::Server->dispatch_to('\protocols', 'Calculator')
     ) { # end for
         my $result = SOAP::Deserializer->deserialize($server->handle($tests{'XML only'}));
-        ok(($result->result || 0) == 7);
+        my $value = $result->result;
+use Data::Dumper;		print Dumper $value;
+		ok($value + 0 == 7);
     }
 }
 
