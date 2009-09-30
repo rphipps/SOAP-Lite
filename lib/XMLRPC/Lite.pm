@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Lite.pm 313 2008-12-14 19:09:17Z kutterma $
+# $Id: Lite.pm 341 2009-09-30 18:34:58Z kutterma $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package XMLRPC::Lite;
 use SOAP::Lite;
 use strict;
 use vars qw($VERSION);
-use version; $VERSION = qv('0.710.06');
+use version; $VERSION = qv('0.710.10');
 
 # ======================================================================
 

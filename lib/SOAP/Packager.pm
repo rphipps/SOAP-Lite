@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: Packager.pm 339 2009-09-29 21:16:47Z kutterma $
+# $Id: Packager.pm 341 2009-09-30 18:34:58Z kutterma $
 #
 # ======================================================================
 
@@ -14,7 +14,7 @@ use strict;
 use vars;
 
 use vars qw($VERSION $SUPPORTED_TYPES);
-use version; $VERSION = qv('0.710.09');
+use version; $VERSION = qv('0.710.10');
 $SUPPORTED_TYPES = { };
 
 sub BEGIN {

@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes 337 2009-09-29 20:48:08Z kutterma $
+# $Id: Changes 341 2009-09-30 18:34:58Z kutterma $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -15,6 +15,8 @@ http://rt.cpan.org/Public/Dist/Display.html?Name=SOAP-Lite
 -----------------------------------------------------------------------
 THIS RELEASE
 -----------------------------------------------------------------------
+0.710.10
+   ! #49981: UDDI::Lite version not parsable by cpanplus (again)
 0.710.09
    ! #46444: use SOAP::Lite::Deserializer::XMLSchemaSOAP1_2 missing
    ! #37151: Strawberry perl 5.10 - Tests fail and then later hang

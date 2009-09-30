@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: FTP.pm 314 2009-02-21 18:21:42Z kutterma $
+# $Id: FTP.pm 341 2009-09-30 18:34:58Z kutterma $
 #
 # ======================================================================
 
@@ -12,9 +12,7 @@ package SOAP::Transport::FTP;
 
 use strict;
 use vars qw($VERSION);
-use SOAP::Lite;
-#$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name$ =~ /-(\d+)_([\d_]+)/);
-$VERSION = $SOAP::Lite::VERSION;
+use SOAP::Lite; $VERSION = $SOAP::Lite::VERSION;
 
 use Net::FTP;
 use IO::File;

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               SOAP-Lite
-version:            0.710.09
+version:            0.710.10
 abstract:           Perl's Web Services Toolkit
 author:
     - Pavel Kulchenko, Randy J Ray, Byrne Reese, Martin Kutter (MKUTTER@cpan.org)
