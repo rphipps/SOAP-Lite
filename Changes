@@ -1,7 +1,7 @@
 #
 # Revision history for Perl extension SOAP::Lite.
 #
-# $Id: Changes,v 1.17 2005/05/06 17:16:33 byrnereese Exp $
+# $Id: Changes,v 1.19 2005/12/25 07:52:17 byrnereese Exp $
 
 The contents of this file provides a change history for the SOAP::Lite
 Perl module. New features are designated with a '+' and bug fixes with
@@ -11,7 +11,12 @@ a '!'.
 THIS RELEASE
 -----------------------------------------------------------------------
 
-0.65-beta6 May 12 2005
+0.65-beta7 May 12 2005
+
+  + Added default_ns and ns to replace the confusing use of uri() and
+    use_prefex()
+
+0.65-beta6 June 3 2005
 
   ! Fixed bug resulting in XMLRPC requests to be serialized using the
     doc/literal serializer if serializing arrays
