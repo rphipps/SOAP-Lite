@@ -4,7 +4,7 @@
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
 #
-# $Id: HTTP.pm,v 1.16 2005/10/19 00:43:23 byrnereese Exp $
+# $Id: HTTP.pm,v 1.17 2006/01/27 21:30:38 byrnereese Exp $
 #
 # ======================================================================
 
@@ -183,9 +183,11 @@ sub send_receive {
 			   $SOAP::Constants::DEFAULT_HTTP_CONTENT_TYPE,
 			   !$SOAP::Constants::DO_NOT_USE_CHARSET && $encoding ?
 			   'charset=' . lc($encoding) : ());
-      }elsif (!$SOAP::Constants::DO_NOT_USE_CHARSET && $encoding ){
+      } elsif (!$SOAP::Constants::DO_NOT_USE_CHARSET && $encoding ){
 	my $tmpType = $self->http_request->headers->header('Content-type');
-	$self->http_request->content_type($tmpType.'; charset=' . lc($encoding));
+#	$self->http_request->content_type($tmpType.'; charset=' . lc($encoding));
+        my $addition = '; charset=' . lc($encoding);
+        $self->http_request->content_type($tmpType.$addition) if ($tmpType !~ /$addition/);
       }
 
       $self->http_request->content_length($bytelength);
