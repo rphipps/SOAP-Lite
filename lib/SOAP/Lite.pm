@@ -1,10 +1,10 @@
 # ======================================================================
 #
-# Copyright (C) 2000-2001 Paul Kulchenko (paulclinger@yahoo.com)
+# Copyright (C) 2000-2003 Paul Kulchenko (paulclinger@yahoo.com)
 # SOAP::Lite is free software; you can redistribute it
 # and/or modify it under the same terms as Perl itself.
-#                      
-# $Id: Lite.pm,v 1.47 2002/04/15 16:17:38 paulk Exp $
+#
+# $Id: Lite.pm,v 1.11 2003/08/11 05:54:51 paulclinger Exp $
 #
 # ======================================================================
 
@@ -13,7 +13,7 @@ package SOAP::Lite;
 use 5.004;
 use strict;
 use vars qw($VERSION);
-$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name: release-0_55-public $ =~ /-(\d+)_([\d_]+)/)
+$VERSION = sprintf("%d.%s", map {s/_//g; $_} q$Name: release-0_60-public $ =~ /-(\d+)_([\d_]+)/)
   or warn "warning: unspecified/non-released version of ", __PACKAGE__, "\n";
 
 # ======================================================================
@@ -135,6 +135,12 @@ sub as_hex {
   return [$name, {'xsi:type' => 'xsd:hex', %$attr}, join '', map {uc sprintf "%02x", ord} split '', $value];
 }
 
+sub as_long {
+  my $self = shift;
+  my($value, $name, $type, $attr) = @_;
+  return [$name, {'xsi:type' => 'xsd:long', %$attr}, $value];
+}
+
 sub as_string {
   my $self = shift;
   my($value, $name, $type, $attr) = @_;
@@ -213,6 +219,7 @@ sub as_base64Binary {
   return [$name, {'xsi:type' => 'xsd:base64Binary', %$attr}, MIME::Base64::encode_base64($value,'')];
 }
 
+sub as_long; *as_long = \&SOAP::XMLSchema1999::Serializer::as_long;
 sub as_string; *as_string = \&SOAP::XMLSchema1999::Serializer::as_string;
 sub as_hex; *as_hex = \&as_hexBinary;
 sub as_base64; *as_base64 = \&as_base64Binary;
@@ -270,14 +277,14 @@ BEGIN {
               $DO_NOT_USE_XML_PARSER $DO_NOT_CHECK_MUSTUNDERSTAND 
               $DO_NOT_USE_CHARSET $DO_NOT_PROCESS_XML_IN_MIME
               $DO_NOT_USE_LWP_LENGTH_HACK $DO_NOT_CHECK_CONTENT_TYPE
-              $MAX_CONTENT_SIZE
-  );  
+              $MAX_CONTENT_SIZE $PATCH_HTTP_KEEPALIVE
+  );
 
   $FAULT_CLIENT = 'Client';
   $FAULT_SERVER = 'Server';
   $FAULT_VERSION_MISMATCH = 'VersionMismatch';
   $FAULT_MUST_UNDERSTAND = 'MustUnderstand';
-  
+
   $HTTP_ON_SUCCESS_CODE = 200; # OK
   $HTTP_ON_FAULT_CODE   = 500; # INTERNAL_SERVER_ERROR
 
@@ -330,6 +337,7 @@ BEGIN {
   $DO_NOT_PROCESS_XML_IN_MIME = 0;
   $DO_NOT_USE_LWP_LENGTH_HACK = 0;
   $DO_NOT_CHECK_CONTENT_TYPE = 0;
+  $PATCH_HTTP_KEEPALIVE = 1;
 }
   
 # ======================================================================
@@ -672,14 +680,15 @@ sub new {
       _seen => {},
       _typelookup => {
         base64 => [10, sub {$_[0] =~ /[^\x09\x0a\x0d\x20-\x7f]/}, 'as_base64'],
-        'int'  => [20, sub {$_[0] =~ /^[+-]?\d+$/}, 'as_int'],
+        'int'  => [20, sub {$_[0] =~ /^[+-]?(\d+)$/ && $1 <= 2147483648;}, 'as_int'],
         float  => [30, sub {$_[0] =~ /^(-?(?:\d+(?:\.\d*)?|\.\d+|NaN|INF)|([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?)$/}, 'as_float'],
         string => [40, sub {1}, 'as_string'],
+        'long' => [25, sub {$_[0] =~ /^[+-]?(\d+)$/ && $1 <= 9223372036854775807;}, 'as_long'],
       },
       _encoding => 'UTF-8',
       _objectstack => {},
       _signature => [],
-      _maptype => {SOAPStruct => $SOAP::Constants::NS_APS},
+      _maptype => {},
       _on_nonserialized => sub {Carp::carp "Cannot marshall @{[ref shift]} reference" if $^W; return},
       _attr => {
         "{$SOAP::Constants::NS_ENV}encodingStyle" => $SOAP::Constants::NS_ENC,
@@ -1160,14 +1169,19 @@ sub serialize { SOAP::Trace::trace('()');
   return $self->xmlize($encoded);
 }
 
-sub envelope { SOAP::Trace::trace('()');
+sub envelope {
+  SOAP::Trace::trace('()');
   my $self = shift->new;
   my $type = shift;
 
-  my(@parameters, @header);
+  # SOAP::MIME added the attachments bit here
+  my(@parameters, @header, @attachments);
   for (@_) { 
-    defined $_ && ref $_ && UNIVERSAL::isa($_ => 'SOAP::Header') 
-      ? push(@header, $_) : push(@parameters, $_);
+    defined $_ && ref $_ && UNIVERSAL::isa($_ => 'SOAP::Header') ?
+      push(@header, $_) :
+	UNIVERSAL::isa($_ => 'MIME::Entity') ?
+	    push(@attachments, $_) :
+	      push(@parameters, $_);
   }
   my $header = @header ? SOAP::Data->set_value(@header) : undef;
   my($body,$parameters);
@@ -1181,15 +1195,15 @@ sub envelope { SOAP::Trace::trace('()');
   } elsif ($type eq 'fault') {
     SOAP::Trace::fault(@parameters);
     $body = SOAP::Data
-      -> name(qualify($self->envprefix => 'Fault'))
+      -> name(SOAP::Serializer::qualify($self->envprefix => 'Fault'))
     # commented on 2001/03/28 because of failing in ApacheSOAP
     # need to find out more about it
     # -> attr({'xmlns' => ''})
       -> value(\SOAP::Data->set_value(
-        SOAP::Data->name(faultcode => qualify($self->envprefix => $parameters[0])),
-        SOAP::Data->name(faultstring => $parameters[1]),
+        SOAP::Data->name(faultcode => SOAP::Serializer::qualify($self->envprefix => $parameters[0]))->type(""),
+        SOAP::Data->name(faultstring => $parameters[1])->type(""),
         defined($parameters[2]) ? SOAP::Data->name(detail => do{my $detail = $parameters[2]; ref $detail ? \$detail : $detail}) : (),
-        defined($parameters[3]) ? SOAP::Data->name(faultactor => $parameters[3]) : (),
+        defined($parameters[3]) ? SOAP::Data->name(faultactor => $parameters[3])->type("") : (),
       ));
   } elsif ($type eq 'freeform') {
     SOAP::Trace::freeform(@parameters);
@@ -1200,9 +1214,9 @@ sub envelope { SOAP::Trace::trace('()');
 
   $self->seen({}); # reinitialize multiref table
   my($encoded) = $self->encode_object(
-    SOAP::Data->name(qualify($self->envprefix => 'Envelope') => \SOAP::Data->value(
-      ($header ? SOAP::Data->name(qualify($self->envprefix => 'Header') => \$header) : ()),
-      SOAP::Data->name(qualify($self->envprefix => 'Body')   => \$body)
+    SOAP::Data->name(SOAP::Serializer::qualify($self->envprefix => 'Envelope') => \SOAP::Data->value(
+      ($header ? SOAP::Data->name(SOAP::Serializer::qualify($self->envprefix => 'Header') => \$header) : ()),
+      SOAP::Data->name(SOAP::Serializer::qualify($self->envprefix => 'Body')   => \$body)
     ))->attr($self->attr)
   );
   $self->signature($parameters->signature) if ref $parameters;
@@ -1214,6 +1228,25 @@ sub envelope { SOAP::Trace::trace('()');
   #                      vv -------- last of them (Body)
   #                            v --- subelements
   push(@{$encoded->[2]->[-1]->[2]}, $self->encode_multirefs) if ref $encoded->[2]->[-1]->[2];
+
+  # SOAP::MIME magic goes here...
+  if (@attachments) {
+    local $MIME::Entity::BOUNDARY_DELIMITER = "\r\n";
+    my $top = MIME::Entity->build('Type' => "Multipart/Related");
+    $top->attach('Type'             => 'text/xml',
+		 'Content-Transfer-Encoding' => '8bit',
+		 'Content-Location' => '/main_envelope',
+		 'Content-ID'       => '<main_envelope>',
+		 'Data'             => $self->xmlize($encoded) );
+    foreach $a (@attachments) {
+      $top->add_part($a);
+    }
+    # Each Transport layer is responsible for setting the proper top level 
+    # MIME type with a start="<main_envelope>" mime attribute.
+    # my ($boundary) = $top->head->multipart_boundary;
+    # $headers->header('Content-Type' => 'Multipart/Related; type="text/xml"; start="<main_envelope>"; boundary="'.$boundary.'"');
+    return $top->stringify;
+  }
   return $self->xmlize($encoded);
 }
 
@@ -1225,9 +1258,10 @@ sub DESTROY { SOAP::Trace::objects('()') }
 
 sub xmlparser {
   my $self = shift;
-  return eval { $SOAP::Constants::DO_NOT_USE_XML_PARSER ? undef : do {require XML::Parser; XML::Parser->new} } || 
-         eval { require XML::Parser::Lite; XML::Parser::Lite->new } ||
-         die "XML::Parser is not @{[$SOAP::Constants::DO_NOT_USE_XML_PARSER ? 'used' : 'available']} and ", $@;
+  return eval { $SOAP::Constants::DO_NOT_USE_XML_PARSER ? undef : do {
+    require XML::Parser; XML::Parser->new }} ||
+      eval { require XML::Parser::Lite; XML::Parser::Lite->new } ||
+	die "XML::Parser is not @{[$SOAP::Constants::DO_NOT_USE_XML_PARSER ? 'used' : 'available']} and ", $@;
 }
 
 sub parser {
@@ -1254,14 +1288,16 @@ sub decode { SOAP::Trace::trace('()');
     Start => sub { shift; $self->start(@_) },
     End   => sub { shift; $self->end(@_)   },
     Char  => sub { shift; $self->char(@_)  },
+    ExternEnt => sub { shift; die "External entity (pointing to '$_[1]') is not allowed" },
   );
-  $self->parser->parse($_[0]);
+  my $parsed = $self->parser->parse($_[0]);
+  return $parsed;
 }
 
-sub final { 
-  my $self = shift; 
+sub final {
+  my $self = shift;
 
-  # clean handlers, otherwise SOAP::Parser won't be deleted: 
+  # clean handlers, otherwise SOAP::Parser won't be deleted:
   # it refers to XML::Parser which refers to subs from SOAP::Parser
   # Thanks to Ryan Adams <iceman@mit.edu>
   # and Craig Johnston <craig.johnston@pressplay.com>
@@ -1269,7 +1305,7 @@ sub final {
 
   undef $self->{_values};
   $self->parser->setHandlers(
-    Final => undef, Start => undef, End   => undef, Char  => undef,
+    Final => undef, Start => undef, End => undef, Char => undef, ExternEnt => undef,
   );
   $self->{_done};
 }
@@ -1298,9 +1334,23 @@ use vars qw(@ISA);
 
 @ISA = qw(MIME::Parser);
 
-sub DESTROY { SOAP::Trace::objects('()') }
+sub DESTROY {
+  SOAP::Trace::objects('()');
+  my $self = shift;
+  $self->{_parts} = undef;
+}
 
-sub new { local $^W; require MIME::Parser; Exporter::require_version('MIME::Parser' => 5.220); 
+sub new { 
+  local $^W; 
+  require MIME::Parser;
+  require MIME::Entity;
+
+# removed requirement for MIME::Parser 6.106
+# even though it fixes interoperability problem with Axis, this version
+# is still marked as "experimantal" on CPAN and is not available for
+# auto-install (as of 08/08/03) --PK
+#  Exporter::require_version('MIME::Parser' => 6.106);
+
   my $self = shift;
 
   unless (ref $self) {
@@ -1315,22 +1365,64 @@ sub new { local $^W; require MIME::Parser; Exporter::require_version('MIME::Pars
   return $self;
 }
 
-sub get_multipart_id { (shift || '') =~ /^<(.+)>$/; $1 || '' }
-
-sub decode { 
+sub parts {
   my $self = shift;
+  @_ ? ($self->{_parts} = \@_, return $self) : return $self->{_parts};
+}
 
-  my $entity = eval { $self->parse_data(shift) } or die "Something wrong with MIME message: @{[$@ || $self->last_error]}\n";
+sub get_multipart_id {
+  my ($id) = shift;
+  ($id || '') =~ /^<?([^>]+)>?$/; $1 || '';
+}
 
-  my @result = 
-    $entity->head->mime_type eq 'multipart/form-data' ? $self->decode_form_data($entity) :
-    $entity->head->mime_type eq 'multipart/related' ? $self->decode_related($entity) :
-    $entity->head->mime_type eq 'text/xml' ? () :
+sub generate_random_string {
+  my ($self,$len) = @_;
+  my @chars=('a'..'z','A'..'Z','0'..'9','_');
+  my $random_string;
+  foreach (1..$len) {
+    $random_string .= $chars[rand @chars];
+  }
+  return $random_string;
+}
+
+# It seems to me that this need to return an array of parts, and
+# not just the SOAP Body - which is what it does.
+sub decode {
+  my $self = shift;
+  my $entity = eval { $self->parse_data(shift) }
+    or die "Something wrong with MIME message: @{[$@ || $self->last_error]}\n";
+
+  # initialize with empty array; autovivification doesn't work in this case --PK
+  $self->parts([]) if $entity->parts; 
+
+  # Changed to better populate the array with references
+  # to the MIME::Entity to prevent memory bloat
+  for (my $i=1;$i<=$entity->parts;$i++) {
+    push(@{$self->parts},\$entity->parts($i))
+      if ref($entity->parts($i)) eq "MIME::Entity";
+  }
+
+  my @result = ();
+  if ($entity->head->mime_type eq 'multipart/form-data') {
+    # In this case @result will contain all parts where the first
+    # element is the main payload or body - i believe this case is
+    # rare
+    @result = $self->decode_form_data($entity);
+  } elsif ($entity->head->mime_type eq 'multipart/related') {
+    # In this case @result will contain
+    @result = $self->decode_related($entity);
+  } elsif ($entity->head->mime_type eq 'text/xml') {
+    @result = ();
+  } else {
     die "Can't handle MIME messsage with specified type (@{[$entity->head->mime_type]})\n";
-
-  @result ? @result 
-          : $entity->bodyhandle->as_string ? [undef, '', undef, $entity->bodyhandle->as_string]
-                                           : die "No content in MIME message\n";
+  }
+  if (@result) {
+    return @result;
+  } elsif ($entity->bodyhandle->as_string) {
+    return [undef, '', undef, $entity->bodyhandle->as_string];
+  } else {
+    die "No content in MIME message\n";
+  }
 }
 
 sub decode_form_data { 
@@ -1340,28 +1432,40 @@ sub decode_form_data {
   foreach my $part ($entity->parts) {
     my $name = $part->head->mime_attr('content-disposition.name');
     my $type = $part->head->mime_type || '';
-
-    $name eq 'payload' 
+    $name eq 'payload'
       ? unshift(@result, [$name, '', $type, $part->bodyhandle->as_string])
-      : push(@result, [$name, '', $type, $part->bodyhandle->as_string]);
+	: push(@result, [$name, '', $type, $part->bodyhandle->as_string]);
   }
   @result;
 }
 
-sub decode_related { 
+sub decode_related {
   my($self, $entity) = @_;
   my $start = get_multipart_id($entity->head->mime_attr('content-type.start'));
-  my $location = $entity->head->mime_attr('content-location') || 'thismessage:/';
-
+  my $location = $entity->head->mime_attr('content-location') ||
+    'thismessage:/';
   my @result;
   foreach my $part ($entity->parts) {
-    my $pid = get_multipart_id($part->head->get('content-id',0));
-    my $plocation = $part->head->get('content-location',0) || '';
-    my $type = $part->head->mime_type || '';
-
-    $start && $pid eq $start 
-      ? unshift(@result, [$start, $location, $type, $part->bodyhandle->as_string])
-      : push(@result, [$pid, $plocation, $type, $part->bodyhandle->as_string]);
+    # Weird, the following use of head->get(SCALAR[,INDEX]) doesn't work as
+    # expected. Work around is to eliminate the INDEX.
+    my $pid = get_multipart_id($part->head->mime_attr('content-id'));
+    # If Content-ID is not supplied, then generate a random one (HACK - because
+    # MIME::Entity does not do this as it should... content-id is required
+    # according to MIME specification)
+    $pid = $self->generate_random_string(10) if $pid eq '';
+    my $type = $part->head->mime_type;
+    # If a Content-Location header cannot be found, this will look for an
+    # alternative in the following MIME Header attributes
+    my $plocation = $part->head->get('content-location') ||
+      $part->head->mime_attr('Content-Disposition.filename') ||
+	$part->head->mime_attr('Content-Type.name');
+    if ($start && $pid eq $start) {
+      # this puts the body as the first element of @result
+      unshift(@result, [$start,$location,$type,$part->bodyhandle->as_string]);
+    } else {
+      # this puts the current attachment at the end of @result
+      push(@result, [$pid,$plocation,$type,$part->bodyhandle->as_string]);
+    }
   }
   die "Can't find 'start' parameter in multipart MIME message\n"
     if @result > 1 && !$start;
@@ -1402,7 +1506,7 @@ sub BEGIN {
     freeform  => '/Envelope/Body/[>0]',
     paramsin  => '/Envelope/Body/[1]/[>0]',
     paramsall => '/Envelope/Body/[1]/[>0]',
-    paramsout => '/Envelope/Body/[1]/[>1]',
+    paramsout => '/Envelope/Body/[1]/[>1]'
   );
   for my $method (keys %results) {
     *$method = sub { 
@@ -1412,7 +1516,13 @@ sub BEGIN {
       defined $self->fault ? return : return $self->valueof($results{$method});
     };
   }
-
+  for my $method (qw(parts)) {
+    my $field = '_' . $method;
+    *$method = sub {
+      my $self = shift->new;
+      @_ ? ($self->{$field} = shift, return $self) : return $self->{$field};
+    }
+  }
   for my $method (qw(o_child o_value o_lname o_lattr o_qname)) { # import from SOAP::Utils
     *$method = \&{'SOAP::Utils::'.$method};
   }
@@ -1554,7 +1664,7 @@ sub DESTROY { SOAP::Trace::objects('()') }
 
 sub BEGIN {
   no strict 'refs';
-  for my $method (qw(ids hrefs parser base xmlschemas xmlschema)) {
+  for my $method (qw(ids hrefs parts parser base xmlschemas xmlschema)) {
     my $field = '_' . $method;
     *$method = sub {
       my $self = shift->new;
@@ -1563,18 +1673,18 @@ sub BEGIN {
   }
 }
 
-sub new { 
+sub new {
   my $self = shift;
   my $class = ref($self) || $self;
   return $self if ref $self;
 
   SOAP::Trace::objects('()');
   return bless {
-    _ids => {}, 
+    _ids => {},
     _hrefs => {},
     _parser => SOAP::Parser->new,
     _xmlschemas => {
-      $SOAP::Constants::NS_APS => 'SOAP::XMLSchemaApacheSOAP::Deserializer', 
+      $SOAP::Constants::NS_APS => 'SOAP::XMLSchemaApacheSOAP::Deserializer',
       map { $_ => $SOAP::Constants::XML_SCHEMAS{$_} . '::Deserializer'
           } keys %SOAP::Constants::XML_SCHEMAS
     },
@@ -1590,7 +1700,7 @@ sub mimeparser {
 
 sub is_xml {
   # Added check for envelope delivery. Fairly standard with MMDF and sendmail
-  # Thanks to Chris Davies <Chris.Davies@ManheimEurope.com> 
+  # Thanks to Chris Davies <Chris.Davies@ManheimEurope.com>
   $_[1] =~ /^\s*</ || $_[1] !~ /^(?:[\w-]+:|From )/;
 }
 
@@ -1607,17 +1717,20 @@ sub baselocation {
 
 sub mimedecode {
   my $self = shift->new;
-
   my $body;
   foreach ($self->mimeparser->decode($_[0])) {
     my($id, $location, $type, $value) = @$_;
-
     unless ($body) { # we are here for the first time, so it's a MAIN part
       $body = $self->parser->decode($value);
       $self->base($location); # store the base location
     } else {
       $location = $self->baselocation($location);
-      my $part = $type eq 'text/xml' && !$SOAP::Constants::DO_NOT_PROCESS_XML_IN_MIME ? $self->parser->decode($value) : ['mimepart', {}, $value];
+      my $part = $type eq 'text/xml' &&
+	!$SOAP::Constants::DO_NOT_PROCESS_XML_IN_MIME ?
+	  $self->parser->decode($value) : ['mimepart', {}, $value];
+      # ********WARNING********
+      # This below looks like unnecessary bloat!!!
+      # I should probably dereference the mimepart
       $self->ids->{$id} = $part if $id;
       $self->ids->{$location} = $part if $location;
     }
@@ -1625,29 +1738,52 @@ sub mimedecode {
   return $body;
 }
 
+# decode returns a parsed body in the form of an ARRAY
+# each element of the ARRAY is a HASH, ARRAY or SCALAR
 sub decode {
   my $self = shift->new;
-  return $self->is_xml($_[0]) 
-    ? $self->parser->decode($_[0]) 
+  return $self->is_xml($_[0])
+    ? $self->parser->decode($_[0])
     : $self->mimedecode($_[0]);
 }
 
-sub deserialize { SOAP::Trace::trace('()');
+# deserialize returns a SOAP::SOM object and parses straight
+# text as input
+sub deserialize {
+  SOAP::Trace::trace('()');
   my $self = shift->new;
 
-  # initialize 
-  $self->hrefs({}); 
-  $self->ids({}); 
+  # initialize
+  $self->hrefs({});
+  $self->ids({});
 
   # TBD: find better way to signal parsing errors
+  # This is returning a parsed body, however, if the message was mime
+  # formatted, then the self->ids hash should be populated with mime parts
+  # as will the self->mimeparser->parts array
   my $parsed = $self->decode($_[0]); # TBD: die on possible errors in Parser?
+  # Thought - decode should return an ARRAY which may contain MIME::Entities
+  # then the SOM object that is created and returned from this will know how
+  # to parse them out
 
-  # if there are some IDs (from mime processing), then process others
-  # otherwise delay till we first meet IDs
-  if (keys %{$self->ids()}) {$self->traverse_ids($parsed)} else {$self->ids($parsed)}
-
+  # Having this code here makes multirefs in the Body work, but multirefs
+  # that reference XML fragments in a MIME part do not work.
+  if (keys %{$self->ids()}) {
+    $self->traverse_ids($parsed);
+  } else {
+    $self->ids($parsed);
+  }
   $self->decode_object($parsed);
-  return SOAP::SOM->new($parsed);
+  my $som = SOAP::SOM->new($parsed);
+  # first check if MIME parser has been initialized 
+  # simple $self->mimeparser() call doesn't work because of
+  # "lazy initialization" --PK
+  if (defined $self->{'_mimeparser'} && $self->mimeparser->parts) {
+    # This seems like an unnecessary copy... does SOAP::SOM have a handle on
+    # the SOAP::Lite->mimeparser instance so that I can skip this?
+    $som->{'_parts'} = $self->mimeparser->parts; 
+  }
+  return $som;
 }
 
 sub traverse_ids {
@@ -1655,14 +1791,13 @@ sub traverse_ids {
   my $ref = shift;
   my($undef, $attrs, $children) = @$ref;
   #  ^^^^^^ to fix nasty error on Mac platform (Carl K. Cunningham)
-
   $self->ids->{$attrs->{id}} = $ref if exists $attrs->{id};
   return unless ref $children;
   for (@$children) {$self->traverse_ids($_)};
 }
 
 sub decode_object {
-  my $self = shift;              
+  my $self = shift;
   my $ref = shift;
   my($name, $attrs, $children, $value) = @$ref;
 
@@ -1677,19 +1812,19 @@ sub decode_object {
     next unless m/^($SOAP::Constants::NSMASK?):($SOAP::Constants::NSMASK)$/;
 
     $1 =~ /^[xX][mM][lL]/ ||
-      $uris{$1} && 
-        do { 
-          $attrs->{SOAP::Utils::longname($uris{$1}, $2)} = do { 
+      $uris{$1} &&
+        do {
+          $attrs->{SOAP::Utils::longname($uris{$1}, $2)} = do {
             my $value = $attrs->{$_};
             $2 ne 'type' && $2 ne 'arrayType'
               ? $value 
-              : SOAP::Utils::longname($value =~ m/^($SOAP::Constants::NSMASK?):(${SOAP::Constants::NSMASK}(?:\[[\d,]*\])*)/ 
+              : SOAP::Utils::longname($value =~ m/^($SOAP::Constants::NSMASK?):(${SOAP::Constants::NSMASK}(?:\[[\d,]*\])*)/
                   ? ($uris{$1} || die("Unresolved prefix '$1' for attribute value '$value'\n"), $2)
                   : ($uris{''} || die("Unspecified namespace for type '$value'\n"), $value)
                 );
           };
           1;
-        } || 
+        } ||
       die "Unresolved prefix '$1' for attribute '$_'\n";
   }
 
@@ -1727,14 +1862,14 @@ sub decode_value {
     if defined $encodingStyle &&
        length($encodingStyle) != 0 && # encodingStyle=""
        $encodingStyle !~ /(?:^|\b)$SOAP::Constants::NS_ENC/;
-                        # ^^^^^^^^ \b causing problems (!?) on some systems 
+                        # ^^^^^^^^ \b causing problems (!?) on some systems
                         # as reported by David Dyck <dcd@tc.fluke.com>
                         # so use (?:^|\b) instead
 
-  use vars '$arraytype'; # type of Array element specified on Array itself 
-  # either specified with xsi:type, or <enc:name/> or array element 
-  my($type) = grep {defined} 
-                map($attrs->{$_}, sort grep {/^\{$SOAP::Constants::NS_XSI_ALL\}type$/o} keys %$attrs), 
+  use vars '$arraytype'; # type of Array element specified on Array itself
+  # either specified with xsi:type, or <enc:name/> or array element
+  my($type) = grep {defined}
+                map($attrs->{$_}, sort grep {/^\{$SOAP::Constants::NS_XSI_ALL\}type$/o} keys %$attrs),
                 $name =~ /^\{$SOAP::Constants::NS_ENC\}/ ? $name : $arraytype;
   local $arraytype; # it's used only for one level, we don't need it anymore
 
@@ -1763,10 +1898,14 @@ sub decode_value {
     return $self->hrefs->{$id} if exists $self->hrefs->{$id};
     my $ids = $self->ids;
     # first time optimization. we don't traverse IDs unless asked for it
-    if (ref $ids ne 'HASH') { $self->ids({}); $self->traverse_ids($ids); $ids = $self->ids }
+    if (ref $ids ne 'HASH') {
+      $self->ids({});            # reset list of ids first time through
+      $self->traverse_ids($ids);
+      $ids = $self->ids;
+    }
     if (exists $ids->{$id}) {
       my $obj = ($self->decode_object(delete $ids->{$id}))[1];
-      return $self->hrefs->{$id} = $obj; 
+      return $self->hrefs->{$id} = $obj;
     } else {
       die "Unresolved (wrong?) href ($id) in element '$name'\n";
     }
@@ -2087,9 +2226,9 @@ sub find_target {
 
   my($class, $static);
   # try to bind directly
-  if (defined($class = $self->dispatch_with->{$method_uri} 
-                    || $self->dispatch_with->{$action}
-                    || ($action =~ /^"(.+)"$/ ? $self->dispatch_with->{$1} : undef))) {
+  if (defined($class = $self->dispatch_with->{$method_uri}
+                    || $self->dispatch_with->{$action || ''}
+	            || ($action =~ /^"(.+)"$/ ? $self->dispatch_with->{$1} : undef))) {
     # return object, nothing else to do here
     return ($class, $method_uri, $method_name) if ref $class;
     $static = 1;
@@ -2130,78 +2269,81 @@ sub find_target {
   return ($class, $method_uri, $method_name);
 }
 
-sub handle { SOAP::Trace::trace('()'); 
+sub handle {
+  SOAP::Trace::trace('()');
   my $self = shift;
-
   # we want to restore it when we are done
-  local $SOAP::Constants::DEFAULT_XML_SCHEMA = $SOAP::Constants::DEFAULT_XML_SCHEMA;
+  local $SOAP::Constants::DEFAULT_XML_SCHEMA
+    = $SOAP::Constants::DEFAULT_XML_SCHEMA;
 
   # SOAP version WILL NOT be restored when we are done.
   # is it problem?
 
-  my $result = eval { local $SIG{__DIE__}; 
-
+  my $result = eval {
+    local $SIG{__DIE__};
     $self->serializer->soapversion(1.1);
-  
     my $request = eval { $self->deserializer->deserialize($_[0]) };
-    die SOAP::Fault->faultcode($SOAP::Constants::FAULT_VERSION_MISMATCH)
-                   ->faultstring($@)
-      if $@ && $@ =~ /^$SOAP::Constants::WRONG_VERSION/;
+    die SOAP::Fault
+      ->faultcode($SOAP::Constants::FAULT_VERSION_MISMATCH)
+	->faultstring($@)
+	  if $@ && $@ =~ /^$SOAP::Constants::WRONG_VERSION/;
     die "Application failed during request deserialization: $@" if $@;
-  
     my $som = ref $request;
-  
-    die "Can't find root element in the message" unless $request->match($som->envelope);
-  
+    die "Can't find root element in the message" 
+      unless $request->match($som->envelope);
     $self->serializer->soapversion(SOAP::Lite->soapversion);
-    $self->serializer->xmlschema($SOAP::Constants::DEFAULT_XML_SCHEMA = $self->deserializer->xmlschema)
+    $self->serializer->xmlschema($SOAP::Constants::DEFAULT_XML_SCHEMA
+				 = $self->deserializer->xmlschema)
       if $self->deserializer->xmlschema;
-  
-    die SOAP::Fault->faultcode($SOAP::Constants::FAULT_MUST_UNDERSTAND)
-                   ->faultstring("Unrecognized header has mustUnderstand attribute set to 'true'")
-      if !$SOAP::Constants::DO_NOT_CHECK_MUSTUNDERSTAND &&
-         grep { $_->mustUnderstand && (!$_->actor || $_->actor eq $SOAP::Constants::NEXT_ACTOR)
-              } $request->dataof($som->headers);
-  
-    die "Can't find method element in the message" unless $request->match($som->method);
-  
+
+    die SOAP::Fault
+      ->faultcode($SOAP::Constants::FAULT_MUST_UNDERSTAND)
+	->faultstring("Unrecognized header has mustUnderstand attribute set to 'true'")
+	  if !$SOAP::Constants::DO_NOT_CHECK_MUSTUNDERSTAND &&
+	    grep { $_->mustUnderstand && 
+		     (!$_->actor || $_->actor eq $SOAP::Constants::NEXT_ACTOR)
+		   } $request->dataof($som->headers);
+
+    die "Can't find method element in the message"
+      unless $request->match($som->method);
     my($class, $method_uri, $method_name) = $self->find_target($request);
-  
-    my @results = eval { local $^W;
+    my @results = eval {
+      local $^W;
       my @parameters = $request->paramsin;
-  
+
       # SOAP::Trace::dispatch($fullname);
       SOAP::Trace::parameters(@parameters);
-  
-      push @parameters, $request if UNIVERSAL::isa($class => 'SOAP::Server::Parameters');
+
+      push @parameters, $request 
+	if UNIVERSAL::isa($class => 'SOAP::Server::Parameters');
+
       SOAP::Server::Object->references(
-        defined $parameters[0] && ref $parameters[0] && UNIVERSAL::isa($parameters[0] => $class) 
-         ? do { 
-             my $object = shift @parameters;
-             SOAP::Server::Object->object(ref $class ? $class : $object)->$method_name(
-               SOAP::Server::Object->objects(@parameters)), 
-             # send object back as a header
-             # preserve name, specify URI
-             SOAP::Header->uri($SOAP::Constants::NS_SL_HEADER => $object)
-                         ->name($request->dataof($som->method.'/[1]')->name)
-           }
-         : $class->$method_name(SOAP::Server::Object->objects(@parameters))
-      );
-    };
-  
+	  defined $parameters[0] && ref $parameters[0] &&
+          UNIVERSAL::isa($parameters[0] => $class) ? do {
+	    my $object = shift @parameters;
+	    SOAP::Server::Object->object(ref $class ? $class : $object)
+		->$method_name(SOAP::Server::Object->objects(@parameters)),
+		  # send object back as a header
+		  # preserve name, specify URI
+		  SOAP::Header
+		      ->uri($SOAP::Constants::NS_SL_HEADER => $object)
+			->name($request->dataof($som->method.'/[1]')->name)
+		      } # end do block
+       : $class->$method_name(SOAP::Server::Object->objects(@parameters)) );
+    }; # end eval block
     SOAP::Trace::result(@results);
-  
+
     # let application errors pass through with 'Server' code
-    die ref $@ ? 
-          $@ : $@ =~ /^Can't locate object method "$method_name"/ ? 
-          "Failed to locate method ($method_name) in class ($class)" : 
-          SOAP::Fault->faultcode($SOAP::Constants::FAULT_SERVER)->faultstring($@)
-      if $@;
-  
+    die ref $@ ?
+      $@ : $@ =~ /^Can't locate object method "$method_name"/ ?
+	"Failed to locate method ($method_name) in class ($class)" :
+	  SOAP::Fault->faultcode($SOAP::Constants::FAULT_SERVER)->faultstring($@)
+	      if $@;
+
     return $self->serializer
-      -> prefix('s') # distinguish generated element names between client and server
-      -> uri($method_uri) 
-      -> envelope(response => $method_name . 'Response', @results);
+      ->prefix('s') # distinguish generated element names between client and server
+	->uri($method_uri)
+	  ->envelope(response => $method_name . 'Response', @results);
   };
 
   # void context
@@ -2214,20 +2356,21 @@ sub handle { SOAP::Trace::trace('()');
   return $self->make_fault($SOAP::Constants::FAULT_CLIENT, $@) unless ref $@;
 
   # died with SOAP::Fault
-  return $self->make_fault($@->faultcode   || $SOAP::Constants::FAULT_SERVER, 
-                           $@->faultstring || 'Application error',
-                           $@->faultdetail, $@->faultactor)
+  return $self->make_fault($@->faultcode   || $SOAP::Constants::FAULT_SERVER,
+			   $@->faultstring || 'Application error',
+			   $@->faultdetail, $@->faultactor)
     if UNIVERSAL::isa($@ => 'SOAP::Fault');
 
   # died with complex detail
   return $self->make_fault($SOAP::Constants::FAULT_SERVER, 'Application error' => $@);
-}
 
-sub make_fault { 
-  my $self = shift; 
+} # end of handle()
+
+sub make_fault {
+  my $self = shift;
   my($code, $string, $detail, $actor) = @_;
   $self->serializer->fault($code, $string, $detail, $actor || $self->myuri);
-} 
+}
 
 # ======================================================================
 
@@ -2434,7 +2577,7 @@ FAKE
     push @result, $name => \%services;
   }
   return @result;
-}  
+}
 
 # ======================================================================
 
@@ -2452,7 +2595,7 @@ sub new {
     $self = bless {
       _deserializer => SOAP::Schema::Deserializer->new,
     } => $class;
-   
+
     SOAP::Trace::objects('()');
   }
 
@@ -2574,7 +2717,7 @@ EOP
 package SOAP;
 
 use vars qw($AUTOLOAD);
-use URI;
+require URI;
 
 my $soap; # shared between SOAP and SOAP::Lite packages
 
@@ -2584,7 +2727,7 @@ my $soap; # shared between SOAP and SOAP::Lite packages
     my($package, $method) = $AUTOLOAD =~ m/(?:(.+)::)([^:]+)$/;
     return if $method eq 'DESTROY';
 
-    my $soap = ref $_[0] && UNIVERSAL::isa($_[0] => 'SOAP::Lite') ? $_[0] : $soap;
+    my $soap = ref $_[0] && UNIVERSAL::isa($_[0] => 'SOAP::Lite') ? $_[0] : $soap || die "SOAP:: prefix shall only be used in combination with +autodispatch option\n";
 
     my $uri = URI->new($soap->uri);
     my $currenturi = $uri->path;
@@ -2599,7 +2742,7 @@ my $soap; # shared between SOAP and SOAP::Lite packages
     {
       my $pack = $package;
       for ($pack) { s!^/!!; s!/!::!g; }
-      shift @_ if !ref $_[0] && ($_[0] eq $pack || $_[0] eq 'SOAP') || 
+      shift @_ if @_ && !ref $_[0] && ($_[0] eq $pack || $_[0] eq 'SOAP') ||
                    ref $_[0] && UNIVERSAL::isa($_[0] => 'SOAP::Lite');
     }
 
@@ -2755,7 +2898,7 @@ sub BEGIN {
       my $self = shift->new;
       @_ ? ($self->transport->$method(@_), return $self) : return $self->transport->$method();
     }
-  }                                                
+  }
   for my $method (qw(autotype readable namespace encodingspace envprefix encprefix 
                      multirefinplace encoding typelookup uri header maptype xmlschema)) {
     *$method = sub { 
@@ -2763,6 +2906,11 @@ sub BEGIN {
       @_ ? ($self->serializer->$method(@_), return $self) : return $self->serializer->$method();
     }
   }                                                
+}
+
+sub parts {
+  my $self = shift;
+  @_ ? ($self->{_parts} = \@_, return $self) : return $self->{_parts};
 }
 
 sub service {
@@ -2807,24 +2955,48 @@ sub AUTOLOAD {
   goto &$AUTOLOAD;
 }
 
-sub call { SOAP::Trace::trace('()');
+sub call {
+  SOAP::Trace::trace('()');
   my $self = shift;
-
   return $self->{_call} unless @_;
-
   my $serializer = $self->serializer;
-
   die "Transport is not specified (using proxy() method or service description)\n"
     unless defined $self->proxy && UNIVERSAL::isa($self->proxy => 'SOAP::Client');
 
+  require HTTP::Headers; 
+  my $headers=new HTTP::Headers();
+  #  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  # This needs to be moved to HTTP transport layer - what is this doing here?!
+
+  my $top;
+  if ($self->parts) {
+    require MIME::Entity;
+    local $MIME::Entity::BOUNDARY_DELIMITER = "\r\n";
+    $top = MIME::Entity->build('Type' => "Multipart/Related");
+    my @args = @_;
+    $top->attach('Type'             => 'text/xml',
+		 'Content-Transfer-Encoding' => '8bit',
+		 'Content-Location' => '/main_envelope',
+		 'Content-ID'       => '<main_envelope>',
+		 'Data'             => $serializer->envelope(method => shift(@args), @args) );
+    foreach my $a (@{$self->parts}) {
+      $top->add_part($a);
+    }
+    $headers->header('Content-Type' => 'Multipart/Related; type="text/xml"; start="<main_envelope>"; boundary="'.$top->head->multipart_boundary.'"');
+  }
+
   $serializer->on_nonserialized($self->on_nonserialized);
   my $response = $self->transport->send_receive(
-    endpoint => $self->endpoint, 
+    endpoint => $self->endpoint,
     action   => scalar($self->on_action->($serializer->uriformethod($_[0]))),
                 # leave only parameters so we can later update them if required
-    envelope => $serializer->envelope(method => shift, @_), 
+    envelope => (defined $top ? $top->stringify_body : $serializer->envelope(method => shift, @_)),
     encoding => $serializer->encoding,
+    headers  => $headers,
   );
+
+  @{$self->parts || []} = (); # need to reset this --BR
+                        # ->parts(undef) doesn't do it, because it stores one empty value --PK
 
   return $response if $self->outputxml;
 
@@ -2833,7 +3005,7 @@ sub call { SOAP::Trace::trace('()');
 
   if (!$self->transport->is_success || # transport fault
       $@ ||                            # not deserializible
-      # fault message even if transport OK 
+      # fault message even if transport OK
       # or no transport error (for example, fo TCP, POP3, IO implementations)
       UNIVERSAL::isa($result => 'SOAP::SOM') && $result->fault) {
     return $self->{_call} = ($self->on_fault->($self, $@ ? $@ . ($response || '') : $result) || $result);
@@ -2842,26 +3014,26 @@ sub call { SOAP::Trace::trace('()');
   return unless $response; # nothing to do for one-ways
 
   # little bit tricky part that binds in/out parameters
-  if (UNIVERSAL::isa($result => 'SOAP::SOM') && 
-      ($result->paramsout || $result->headers) && 
+  if (UNIVERSAL::isa($result => 'SOAP::SOM') &&
+      ($result->paramsout || $result->headers) &&
       $serializer->signature) {
     my $num = 0;
     my %signatures = map {$_ => $num++} @{$serializer->signature};
     for ($result->dataof(SOAP::SOM::paramsout), $result->dataof(SOAP::SOM::headers)) {
       my $signature = join $;, $_->name, $_->type || '';
       if (exists $signatures{$signature}) {
-        my $param = $signatures{$signature};
-        my($value) = $_->value; # take first value
-        UNIVERSAL::isa($_[$param] => 'SOAP::Data') ? $_[$param]->SOAP::Data::value($value) :
-        UNIVERSAL::isa($_[$param] => 'ARRAY')      ? (@{$_[$param]} = @$value) :
-        UNIVERSAL::isa($_[$param] => 'HASH')       ? (%{$_[$param]} = %$value) :
-        UNIVERSAL::isa($_[$param] => 'SCALAR')     ? (${$_[$param]} = $$value) :
-                                                     ($_[$param] = $value)
-      }
+	my $param = $signatures{$signature};
+	my($value) = $_->value; # take first value
+          UNIVERSAL::isa($_[$param] => 'SOAP::Data') ? $_[$param]->SOAP::Data::value($value) :
+          UNIVERSAL::isa($_[$param] => 'ARRAY')      ? (@{$_[$param]} = @$value) :
+          UNIVERSAL::isa($_[$param] => 'HASH')       ? (%{$_[$param]} = %$value) :
+          UNIVERSAL::isa($_[$param] => 'SCALAR')     ? (${$_[$param]} = $$value) :
+                                                       ($_[$param] = $value)
+						     }
     }
   }
   return $result;
-}
+} # end of call()
 
 # ======================================================================
 
@@ -2997,15 +3169,13 @@ Supports SOAP 1.1 spec.
 
 =item *
 
-Interoperability tests with different implementations: Apache SOAP, Frontier, 
-Microsoft SOAP, Microsoft .NET, DevelopMentor, XMethods, 4s4c, Phalanx, 
-Kafka, SQLData, Lucin (in Java, Perl, C++, Python, VB, COM, XSLT). 
+Interoperability tests with different implementations: Apache SOAP, Apache Axis, Frontier, Microsoft SOAP, Microsoft .NET, DevelopMentor, XMethods, 4s4c, Phalanx, PocketSOAP, Kafka, SQLData, Lucin (in Java, Perl, C++, Python, VB, COM, XSLT). 
 
 =item *
 
-Provides COM interface. Single dll (standalone [2.5MB] or minimal [32kB]). 
-Works on Windows 9x/Me/NT/2K. Doesn't require ROPE or MSXML. 
-Examples in VB, Excel/VBA, C#, ASP, JavaScript, PerlScript and Perl. 
+Provides COM interface. Single dll (standalone [2.5MB] or minimal [32kB]).
+Works on Windows 9x/Me/NT/2K. Doesn't require ROPE or MSXML.
+Examples in VB, Excel/VBA, C#, ASP, JavaScript, PerlScript and Perl.
 
 =item *
 
@@ -4014,7 +4184,7 @@ library. To activate it you need to specify a list of traceable
 events/parts of SOAP::Lite:
 
   use SOAP::Lite +trace =>
-    qw(list of available traces here);
+    [qw(list of available traces here)];
 
 Available events are:
 
@@ -4033,7 +4203,7 @@ Available events are:
 For example:
 
   use SOAP::Lite +trace =>
-    qw(method fault);
+    [qw(method fault)];
 
 lets you output the parameter values for all your fault/normal envelopes onto STDERR. 
 If you want to log it you can either redirect STDERR to some file
@@ -4043,22 +4213,21 @@ If you want to log it you can either redirect STDERR to some file
 or (preferably) define your own function for a particular event:
 
   use SOAP::Lite +trace =>
-    method => sub {'log messages here'}, fault => \&log_faults;
+    [ method => sub {'log messages here'}, fault => \&log_faults ];
 
 You can share the same function for several events:
 
   use SOAP::Lite +trace =>
-    method, fault => \&log_methods_and_faults;
+    [method, fault => \&log_methods_and_faults];
 
-Also you can use 'all' to get all available tracing and use '-' in front of an event to 
-disable particular event:
+Also you can use 'all' to get all available tracing and use '-' in front of an event to disable particular event:
 
   use SOAP::Lite +trace =>
-    all, -transport; # to get all logging without transport messages
+    [ all, -transport ]; # to get all logging without transport messages
 
 Finally,
 
-  use SOAP::Lite +trace; 
+  use SOAP::Lite +trace;
 
 will switch all debugging on.
 
@@ -4067,7 +4236,7 @@ Also C<on_debug> is available for backward compatibility, as in
 
   use SOAP::Lite;
 
-  my $s = SOAP::Lite 
+  my $s = SOAP::Lite
     -> uri('http://tempuri.org/')
     -> proxy('http://beta.search.microsoft.com/search/MSComSearchService.asmx')
     -> on_debug(sub{print@_}) # show you request/response with headers
@@ -4080,10 +4249,10 @@ or switch it on individually, with
   use SOAP::Lite +trace => debug;
 
 or
-  
-  use SOAP::Lite +trace => debug => sub {'do_what_I_want_here'};
 
-Compare this with: 
+  use SOAP::Lite +trace => [debug => sub {'do_what_I_want_here'}];
+
+Compare this with:
 
   use SOAP::Lite +trace => transport;
  
@@ -4118,6 +4287,15 @@ This class gives you access to number of options that may affect behavior of
 SOAP::Lite objects. They are not true contstants, aren't they?
 
 =over
+
+=item $PATCH_HTTP_KEEPALIVE
+
+SOAP::Lite's HTTP Transport module attempts to provide a simple patch to
+LWP::Protocol to enable HTTP Keep Alive. By default, this patch is turned
+off, if however you would like to turn on the experimental patch change the
+constant like so:
+
+  $SOAP::Constants::PATCH_HTTP_KEEPALIVE = 1;
 
 =item $DO_NOT_USE_XML_PARSER
 
@@ -4750,6 +4928,23 @@ for description and examples.
 
 =over 4
 
+=item +autodispatch doesn't work in Perl 5.8
+
+There is a bug in Perl 5.8's UNIVERSAL::AUTOLOAD functionality that prevents
+the +autodispatch functionality from working properly. The workaround is to
+use dispatch_from instead. Where you might normally do something like this:
+
+   use Some::Module;
+   use SOAP::Lite +autodispatch =>
+       uri => 'urn:Foo'
+       proxy => 'http://...';
+
+You would do something like this:
+
+   use SOAP::Lite dispatch_from(Some::Module) =>
+       uri => 'urn:Foo'
+       proxy => 'http://...';
+
 =item HTTP transport
 
 See L<TROUBLESHOOTING|SOAP::Transport::HTTP/"TROUBLESHOOTING"> section in 
@@ -4961,13 +5156,14 @@ for provided help, feedback, support, patches and comments.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2000-2001 Paul Kulchenko. All rights reserved.
+Copyright (C) 2000-2003 Paul Kulchenko. All rights reserved.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Paul Kulchenko (paulclinger@yahoo.com)
+Byrne Reese (byrne@majordojo.com)
 
 =cut
